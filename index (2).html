@@ -1,0 +1,2654 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nortmont · Gestão de Despesas – Electric</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --teal:      #0F4245;
+  --teal-mid:  #1a5c60;
+  --teal-light:#d0e8e9;
+  --navy:      #011E3C;
+  --navy-mid:  #0a2d56;
+  --mint:      #E0EEE7;
+  --mint-dark: #b8d9c4;
+  --sage:      #A8CCA8;
+  --sage-light:#d4e8d4;
+  --ink:       #130F10;
+  --white:     #ffffff;
+  --surface:   #ffffff;
+  --surface-2: #f6faf7;
+  --border:    rgba(1,30,60,0.12);
+  --border-strong: rgba(1,30,60,0.22);
+  --text-primary:   #130F10;
+  --text-secondary: #2e4050;
+  --text-muted:     #6b8299;
+  --success:   #2F8F6E;
+  --success-bg:#e6f4ef;
+  --danger:    #B33A3A;
+  --danger-bg: #f8eaea;
+  --warning:   #C58B2A;
+  --warning-bg:#fdf3e3;
+  --info:      #3F598C;
+  --elev1: 0 1px 2px rgba(1,30,60,0.08);
+  --elev2: 0 4px 12px rgba(1,30,60,0.08);
+  --elev3: 0 10px 28px rgba(1,30,60,0.12);
+  --r-sm: 4px; --r-md: 8px; --r-lg: 14px; --r-xl: 24px; --r-pill: 999px;
+}
+
+body {
+  font-family: 'Montserrat', sans-serif;
+  background: var(--mint);
+  color: var(--text-primary);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+/* ─── HEADER ─── */
+.app-header {
+  background: var(--navy);
+  height: 64px;
+  padding: 0 36px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--elev3);
+}
+.logo-mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-mark svg { width: 32px; height: 32px; }
+.logo-mark .wordmark {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--sage);
+  letter-spacing: -0.01em;
+}
+.logo-mark .descriptor {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: rgba(168,204,168,0.55);
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+.header-divider {
+  width: 1px; height: 28px;
+  background: rgba(255,255,255,0.1);
+  margin: 0 6px;
+}
+.header-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.6);
+  letter-spacing: 0.02em;
+}
+
+/* ─── TABS ─── */
+.tabs-nav {
+  background: var(--navy-mid);
+  padding: 0 36px;
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  overflow-x: auto;
+}
+.tab-btn {
+  background: none;
+  border: none;
+  color: rgba(168,204,168,0.55);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0 20px;
+  height: 46px;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.18s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.tab-btn:hover { color: var(--sage); }
+.tab-btn.active { color: var(--sage); border-bottom-color: var(--teal-mid); }
+.tab-num {
+  width: 18px; height: 18px;
+  border: 1.5px solid currentColor;
+  border-radius: var(--r-pill);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px;
+  opacity: 0.7;
+}
+.tab-btn.active .tab-num { background: var(--teal-mid); border-color: var(--teal-mid); color: white; opacity: 1; }
+
+/* ─── MAIN ─── */
+.main { padding: 28px 36px; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ─── PAGE HEADER ─── */
+.page-header { margin-bottom: 22px; }
+.page-eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 4px;
+}
+.page-header h2 {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--navy);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.page-header p { font-size: 13px; color: var(--text-muted); margin-top: 3px; font-weight: 400; }
+
+/* ─── CARD ─── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  box-shadow: var(--elev2);
+  margin-bottom: 18px;
+}
+.card-eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ─── FORM ─── */
+.form-grid { display: grid; gap: 16px; }
+.form-grid.cols-1 { grid-template-columns: 1fr; }
+.form-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.form-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.form-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-group label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink);
+  background: var(--white);
+  border: 1.5px solid var(--border-strong);
+  border-radius: 10px;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--teal-mid);
+  box-shadow: 0 0 0 2px rgba(15,66,69,0.15);
+}
+.form-group input::placeholder,
+.form-group textarea::placeholder { color: var(--text-muted); font-weight: 300; }
+.form-group textarea { resize: vertical; min-height: 76px; }
+.form-group select { cursor: pointer; }
+
+/* ─── SECTION BADGE ─── */
+.section-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--mint);
+  color: var(--teal);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  margin-bottom: 14px;
+  border: 1px solid var(--mint-dark);
+}
+
+.divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+/* ─── BUTTONS ─── */
+.btn {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 11px 26px;
+  border-radius: var(--r-pill);
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.btn-primary { background: var(--navy); color: white; }
+.btn-primary:hover { background: var(--navy-mid); }
+.btn-primary:active { transform: scale(0.98); }
+.btn-teal { background: var(--teal); color: white; }
+.btn-teal:hover { background: var(--teal-mid); }
+.btn-danger {
+  background: none;
+  color: var(--danger);
+  border: 1.5px solid rgba(179,58,58,0.35);
+  padding: 5px 12px;
+  font-size: 11px;
+}
+.btn-danger:hover { background: var(--danger-bg); }
+.form-actions { margin-top: 22px; display: flex; gap: 10px; align-items: center; }
+
+/* ─── ALERT ─── */
+.alert {
+  display: none;
+  padding: 9px 14px;
+  border-radius: var(--r-pill);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  animation: fadeIn 0.2s ease;
+}
+.alert.success { background: var(--success-bg); color: var(--success); display: inline-flex; align-items: center; gap: 5px; }
+.alert.danger  { background: var(--danger-bg);  color: var(--danger);  display: inline-flex; align-items: center; gap: 5px; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+@keyframes slideUp { from { opacity:0; transform:translateX(-50%) translateY(20px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+
+/* ─── LIST HEADER ─── */
+.list-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.list-header span { font-size: 12px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.04em; }
+.badge {
+  background: var(--navy);
+  color: var(--sage);
+  font-size: 10px;
+  font-weight: 700;
+  font-family: 'Montserrat', monospace;
+  letter-spacing: 0.05em;
+  padding: 2px 9px;
+  border-radius: var(--r-pill);
+}
+
+/* ─── TABLE ─── */
+.data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.data-table thead th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.data-table thead th:first-child { border-radius: var(--r-sm) 0 0 0; }
+.data-table thead th:last-child  { border-radius: 0 var(--r-sm) 0 0; }
+.data-table tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+.data-table tbody tr:last-child { border-bottom: none; }
+.data-table tbody tr:hover { background: #f4faf6; }
+.data-table tbody td { padding: 10px 12px; color: var(--ink); vertical-align: middle; }
+.data-table tbody td.muted { color: var(--text-muted); font-size: 11px; }
+
+.empty-state {
+  padding: 36px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+.empty-state svg { width: 28px; height: 28px; margin: 0 auto 10px; display: block; opacity: 0.25; }
+
+/* ─── VEHICLE SECTION ─── */
+.veiculo-section {
+  display: none;
+  margin-top: 14px;
+  padding: 16px 18px;
+  background: #fffbeb;
+  border: 1.5px solid #fde68a;
+  border-radius: var(--r-lg);
+  animation: fadeIn 0.2s ease;
+}
+.veiculo-section.show { display: block; }
+.veiculo-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #92400e;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* ─── FILE UPLOAD ─── */
+.file-upload-wrap { position: relative; }
+.file-upload-wrap input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 2; }
+.file-upload-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+.file-upload-wrap:hover .file-upload-btn {
+  border-color: var(--teal-mid);
+  background: var(--teal-light);
+  color: var(--teal);
+}
+.file-name-display {
+  font-size: 11px;
+  color: var(--success);
+  font-weight: 600;
+  margin-top: 5px;
+  display: none;
+  align-items: center;
+  gap: 5px;
+  letter-spacing: 0.02em;
+}
+.file-name-display.show { display: flex; }
+
+/* ─── CC PILL ─── */
+.cc-pill {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+}
+.cc-eng  { background: var(--mint); color: var(--teal); border: 1px solid var(--mint-dark); }
+.cc-gest { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+
+
+
+/* ─── EDIT MODE ─── */
+.edit-banner {
+  display:none;
+  align-items:center;
+  gap:10px;
+  background:#fff8e6;
+  border:1.5px solid #fde68a;
+  border-radius:var(--r-md);
+  padding:10px 16px;
+  margin-bottom:14px;
+  font-size:12px;
+  font-weight:600;
+  color:#92400e;
+}
+.edit-banner.show { display:flex; }
+.btn-cancel {
+  background:none;
+  color:var(--danger);
+  border:1.5px solid rgba(179,58,58,0.35);
+  font-size:11px;
+  padding:5px 14px;
+  margin-left:auto;
+}
+.btn-cancel:hover { background:var(--danger-bg); }
+.btn-edit {
+  background:none;
+  color:var(--teal);
+  border:1.5px solid rgba(15,66,69,0.3);
+  padding:5px 10px;
+  font-size:11px;
+}
+.btn-edit:hover { background:var(--teal-light); }
+.btn-email {
+  background:none;
+  color:#1a73e8;
+  border:1.5px solid rgba(26,115,232,0.3);
+  padding:5px 10px;
+  font-size:11px;
+}
+.btn-email:hover { background:#e8f0fe; }
+
+/* ─── DASHBOARD ─── */
+.dash-card {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r-lg);
+  padding:20px 24px;
+  box-shadow:var(--elev2);
+}
+.dash-kpi {
+  background:var(--navy);
+  border-radius:var(--r-md);
+  padding:18px 20px;
+  color:white;
+}
+.dash-kpi .kpi-label { font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--sage);margin-bottom:6px; }
+.dash-kpi .kpi-val   { font-size:24px;font-weight:700;line-height:1.1; }
+.dash-kpi .kpi-sub   { font-size:11px;color:rgba(224,238,231,0.65);margin-top:3px; }
+.dash-kpi.teal  { background:var(--teal); }
+.dash-kpi.ok    { background:var(--success); }
+.dash-kpi.warn  { background:var(--danger); }
+.dash-kpi.amber { background:#b07a00; }
+
+.proj-card {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r-lg);
+  padding:18px 22px;
+  box-shadow:var(--elev1);
+  margin-bottom:14px;
+}
+.proj-card-header { display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px; }
+.proj-num { font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:2px; }
+.proj-title { font-size:15px;font-weight:700;color:var(--navy); }
+.proj-status-badge { font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:3px 10px;border-radius:var(--r-pill); }
+.status-ok     { background:#e6f4ef;color:#1a7a55;border:1px solid #a7d7c5; }
+.status-over   { background:var(--danger-bg);color:var(--danger);border:1px solid #f5b8b8; }
+.status-nobudg { background:#f1f5f9;color:var(--text-muted);border:1px solid var(--border); }
+.status-noexp  { background:#fff8e6;color:#92400e;border:1px solid #fde68a; }
+
+.bar-wrap { height:10px;background:#e5e7eb;border-radius:var(--r-pill);overflow:hidden;margin:6px 0 10px; }
+.bar-fill { height:100%;border-radius:var(--r-pill);transition:width 0.5s ease; }
+.bar-ok   { background:var(--teal); }
+.bar-over { background:var(--danger); }
+.bar-zero { background:#cbd5e1; }
+
+.proj-values { display:grid;grid-template-columns:repeat(4,1fr);gap:12px; }
+.proj-val-item { text-align:center; }
+.proj-val-item .pvl { font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted);margin-bottom:3px; }
+.proj-val-item .pvv { font-size:14px;font-weight:700;color:var(--navy); }
+.pvv.red  { color:var(--danger); }
+.pvv.green{ color:var(--success); }
+
+.proj-tipos { margin-top:10px;padding-top:10px;border-top:1px solid var(--border); }
+.proj-tipos-title { font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px; }
+.tipo-breakdown { display:flex;flex-wrap:wrap;gap:6px; }
+.tipo-chip { font-size:10px;font-weight:600;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-pill);padding:2px 9px;color:var(--text-secondary); }
+
+
+/* ─── MULTI-TIPO TABLE ─── */
+.tipo-table { width:100%; border-collapse:collapse; }
+.tipo-table tr { border-bottom:1px solid var(--border); transition:background 0.1s; }
+.tipo-table tr:last-child { border-bottom:none; }
+.tipo-table tr:hover { background:var(--surface-2); }
+.tipo-table td { padding:8px 10px; vertical-align:middle; }
+.tipo-table .td-label { font-size:13px; font-weight:500; color:var(--text-secondary); width:180px; white-space:nowrap; }
+.tipo-table .td-valor { width:200px; }
+.tipo-table .td-valor input { width:100%; font-family:'Montserrat',monospace; font-size:13px; border:1.5px solid var(--border-strong); border-radius:8px; padding:7px 12px; outline:none; background:white; color:var(--ink); transition:border-color 0.15s, box-shadow 0.15s; }
+.tipo-table .td-valor input:focus { border-color:var(--teal-mid); box-shadow:0 0 0 2px rgba(15,66,69,0.12); }
+.tipo-table .td-valor input:not(:placeholder-shown) { border-color:var(--teal-mid); background:#f4fcfa; font-weight:600; }
+.tipo-table .td-extra { font-size:12px; }
+.veiculo-inline { display:none; margin-top:6px; gap:8px; }
+.veiculo-inline.show { display:flex; }
+.veiculo-inline input { flex:1; font-family:'Montserrat',monospace; font-size:12px; text-transform:uppercase; border:1.5px solid #fde68a; border-radius:8px; padding:6px 10px; outline:none; background:#fffbeb; }
+.veiculo-inline input:focus { border-color:#d4a017; box-shadow:0 0 0 2px rgba(212,160,23,0.15); }
+
+/* ─── ATTACHMENT PREVIEW ─── */
+.anexo-preview {
+  display:none;
+  margin-top:10px;
+  border:1.5px solid var(--border-strong);
+  border-radius:var(--r-md);
+  overflow:hidden;
+  background:var(--surface-2);
+}
+.anexo-preview.show { display:block; }
+.anexo-preview-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 12px;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+}
+.anexo-preview-header .fname { font-size:12px; font-weight:600; color:var(--text-secondary); display:flex; align-items:center; gap:6px; }
+.anexo-preview-header .actions { display:flex; gap:6px; }
+.anexo-preview-body { max-height:200px; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#f8fafc; }
+.anexo-preview-body img { max-width:100%; max-height:200px; object-fit:contain; }
+.anexo-preview-body .pdf-icon { padding:24px; text-align:center; color:var(--text-muted); }
+.btn-anexo { font-family:'Montserrat',sans-serif; font-size:11px; font-weight:600; padding:4px 10px; border-radius:var(--r-pill); cursor:pointer; border:1.5px solid; transition:all 0.15s; }
+.btn-trocar { color:var(--teal); border-color:rgba(15,66,69,0.3); background:none; }
+.btn-trocar:hover { background:var(--teal-light); }
+.btn-remover-anexo { color:var(--danger); border-color:rgba(179,58,58,0.3); background:none; }
+.btn-remover-anexo:hover { background:var(--danger-bg); }
+
+
+/* ─── TIPO BUTTONS ─── */
+.tipo-grid { display:flex; flex-wrap:wrap; gap:8px; }
+.tipo-btn {
+  padding:8px 14px;
+  border:1.5px solid var(--border-strong);
+  border-radius:var(--r-pill);
+  background:var(--surface);
+  cursor:pointer;
+  font-size:12px;
+  font-weight:500;
+  font-family:'Montserrat',sans-serif;
+  color:var(--text-secondary);
+  transition:all 0.15s;
+  display:flex; align-items:center; gap:6px;
+  user-select:none;
+}
+.tipo-btn:hover { border-color:var(--teal); background:var(--mint); color:var(--teal); }
+.tipo-btn.selected { border-color:var(--teal); background:var(--teal); color:white; font-weight:600; }
+.tipo-required { font-size:10px; color:var(--danger); margin-top:4px; display:none; }
+.tipo-required.show { display:block; }
+
+/* ─── EMAIL STATUS BADGE ─── */
+.badge-email-ok  { display:inline-flex;align-items:center;gap:4px;background:#e6f4ef;color:#1a7a55;border:1px solid #a7d7c5;font-size:10px;font-weight:700;letter-spacing:0.06em;padding:2px 8px;border-radius:var(--r-pill);white-space:nowrap; }
+.badge-email-no  { display:inline-flex;align-items:center;gap:4px;background:#fde8e8;color:#b33a3a;border:1px solid #f5b8b8;font-size:10px;font-weight:700;letter-spacing:0.06em;padding:2px 8px;border-radius:var(--r-pill);white-space:nowrap; }
+.badge-email-pend{ display:inline-flex;align-items:center;gap:4px;background:#fff8e6;color:#92400e;border:1px solid #fde68a;font-size:10px;font-weight:700;letter-spacing:0.06em;padding:2px 8px;border-radius:var(--r-pill);white-space:nowrap; }
+
+/* ─── INLINE CONFIRM DELETE ─── */
+.confirm-delete { display:inline-flex;align-items:center;gap:5px;background:#fff0f0;border:1.5px solid #f5b8b8;border-radius:var(--r-md);padding:5px 10px; }
+.confirm-delete span { font-size:11px;font-weight:600;color:var(--danger); }
+.btn-confirm-yes { background:var(--danger);color:white;border:none;padding:3px 10px;font-size:11px;font-family:'Montserrat',sans-serif;font-weight:600;border-radius:var(--r-pill);cursor:pointer; }
+.btn-confirm-no  { background:none;color:var(--text-muted);border:1px solid var(--border-strong);padding:3px 10px;font-size:11px;font-family:'Montserrat',sans-serif;font-weight:600;border-radius:var(--r-pill);cursor:pointer; }
+
+
+/* ─── PRINT ─── */
+@media print {
+  .app-header, .tabs-nav, .no-print { display:none !important; }
+  body { background:white !important; font-size:11px; }
+  .main { padding:0 !important; max-width:100% !important; }
+  .tab-panel { display:none !important; }
+  #tab-relatorio { display:block !important; }
+  .card { box-shadow:none !important; border:1px solid #ccc !important; margin-bottom:10px !important; }
+  .print-only { display:block !important; }
+  .rel-filters { display:none !important; }
+  .data-table th, .data-table td { font-size:9px !important; padding:5px 7px !important; }
+}
+.print-only { display:none; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 680px) {
+  .main { padding: 16px; }
+  .tabs-nav { padding: 0 16px; }
+  .app-header { padding: 0 16px; }
+  .form-grid.cols-2,
+  .form-grid.cols-3,
+  .form-grid.cols-4 { grid-template-columns: 1fr; }
+}
+</style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+</head>
+<body>
+
+<!-- ═══ LOGIN SCREEN ═══ -->
+<div id="login-screen" style="
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  min-height:100vh; background:linear-gradient(135deg,#011E3C 0%,#0F4245 100%);
+  font-family:'Montserrat',sans-serif; padding:24px;
+">
+  <div style="
+    background:#fff; border-radius:20px; padding:48px 40px; max-width:420px; width:100%;
+    box-shadow:0 24px 64px rgba(0,0,0,0.3); text-align:center;
+  ">
+    <!-- Logo -->
+    <div style="margin-bottom:28px;">
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none" style="margin:0 auto 12px;display:block;">
+        <rect width="52" height="52" rx="14" fill="#011E3C"/>
+        <polygon points="26,10 34,34 26,29 18,34" fill="#A8CCA8"/>
+        <polygon points="14,38 22,18 26,29 18,34" fill="#0F4245"/>
+        <polygon points="38,38 30,18 26,29 34,34" fill="#1a5c60"/>
+      </svg>
+      <div style="font-size:20px;font-weight:700;color:#011E3C;letter-spacing:-0.02em;">Nortmont</div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:#6b8299;margin-top:2px;">Gestão de Despesas – Electric</div>
+    </div>
+
+    <div style="font-size:15px;font-weight:600;color:#130F10;margin-bottom:6px;">Acesso Restrito</div>
+    <div style="font-size:12px;color:#6b8299;margin-bottom:32px;line-height:1.6;">
+      Entre com sua conta Google autorizada para acessar o painel.
+    </div>
+
+    <!-- Google Sign-In button -->
+    <div id="g_id_onload"
+      data-client_id="907316473072-mki9ggn4bk22o2q509nbddqvm68ob8d7.apps.googleusercontent.com"
+      data-callback="onGoogleLogin"
+      data-auto_prompt="false">
+    </div>
+    <div class="g_id_signin"
+      data-type="standard"
+      data-size="large"
+      data-theme="outline"
+      data-text="signin_with"
+      data-shape="pill"
+      data-logo_alignment="left"
+      data-width="280">
+    </div>
+
+    <div id="login-erro" style="
+      display:none; margin-top:20px; background:#fde8e8; color:#b33a3a;
+      border:1px solid #f5b8b8; border-radius:10px; padding:12px 16px;
+      font-size:12px; font-weight:600;
+    "></div>
+
+    <div style="margin-top:28px;padding-top:20px;border-top:1px solid #e5e7eb;font-size:10px;color:#9ca3af;">
+      Apenas usuários autorizados têm acesso.<br>Contate o administrador para solicitar acesso.
+    </div>
+  </div>
+</div>
+
+<!-- ═══ APP (oculto até login) ═══ -->
+<div id="app-root" style="display:none;">
+
+<!-- ═══ HEADER ═══ -->
+<header class="app-header">
+  <div class="logo-mark">
+    <!-- Ícone Nortmont: três picos -->
+    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M4 38 L14 16 L22 28 L28 20 L36 10 L44 38" stroke="#A8CCA8" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <path d="M10 34 L14 24 L18 30" stroke="#A8CCA8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.5"/>
+    </svg>
+    <div>
+      <div class="wordmark">Nortmont</div>
+      <div class="descriptor">Consultoria em Negócios</div>
+    </div>
+  </div>
+  <div class="header-divider"></div>
+  <div class="header-title">Gestão de Despesas – Electric</div>
+  <div id="usuario-logado" style="margin-left:auto;display:flex;align-items:center;gap:10px;"></div>
+</header>
+
+<!-- ═══ TABS ═══ -->
+<nav class="tabs-nav">
+  <button class="tab-btn active" onclick="switchTab('manual')"><span class="tab-num">1</span> Manual · Centro de Custo</button>
+  <button class="tab-btn" onclick="switchTab('clientes')"><span class="tab-num">2</span> Clientes</button>
+  <button class="tab-btn" onclick="switchTab('colaboradores')"><span class="tab-num">3</span> Colaboradores</button>
+  <button class="tab-btn" onclick="switchTab('propostas')"><span class="tab-num">4</span> Propostas</button>
+  <button class="tab-btn" onclick="switchTab('despesas')"><span class="tab-num">5</span> Lançamento de Despesas</button>
+  <button class="tab-btn" onclick="switchTab('relatorio')" id="tab-btn-relatorio"><span class="tab-num">6</span> Relatório</button>
+  <button class="tab-btn" onclick="switchTab('custos')" id="tab-btn-custos"><span class="tab-num">7</span> Custos Orçados</button>
+  <button class="tab-btn" onclick="switchTab('dashboard')" id="tab-btn-dashboard"><span class="tab-num">8</span> Dashboard</button>
+</nav>
+
+<main class="main">
+
+  <!-- ═══ ABA 1: CLIENTES ═══ -->
+  <div id="tab-clientes" class="tab-panel">
+    <div class="page-header">
+      <div class="page-eyebrow">Cadastro · 01</div>
+      <h2>Clientes</h2>
+      <p>Registre os clientes para uso nos lançamentos de despesas.</p>
+    </div>
+    <div class="card">
+      <div class="card-eyebrow">Novo cliente</div>
+      <div class="form-grid cols-2">
+        <div class="form-group">
+          <label for="cli-nome">Nome do Cliente *</label>
+          <input type="text" id="cli-nome" placeholder="Razão social ou nome fantasia">
+        </div>
+        <div class="form-group">
+          <label for="cli-cnpj">CNPJ *</label>
+          <input type="text" id="cli-cnpj" placeholder="00.000.000/0001-00" maxlength="18" style="font-family:'Montserrat',monospace;letter-spacing:0.04em;">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="salvarCliente()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Adicionar Cliente
+        </button>
+        <div class="alert" id="alert-cliente"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="list-header">
+        <span>Clientes cadastrados</span>
+        <span class="badge" id="badge-clientes">0</span>
+      </div>
+      <div id="lista-clientes">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Nenhum cliente cadastrado ainda.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ABA 2: COLABORADORES ═══ -->
+  <div id="tab-colaboradores" class="tab-panel">
+    <div class="page-header">
+      <div class="page-eyebrow">Cadastro · 02</div>
+      <h2>Colaboradores</h2>
+      <p>Registre os colaboradores que realizam despesas.</p>
+    </div>
+    <div class="card">
+      <div class="card-eyebrow">Novo colaborador</div>
+      <div class="form-grid cols-2">
+        <div class="form-group">
+          <label for="col-nome">Nome do Colaborador *</label>
+          <input type="text" id="col-nome" placeholder="Nome completo">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="salvarColaborador()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Adicionar Colaborador
+        </button>
+        <div class="alert" id="alert-colaborador"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="list-header">
+        <span>Colaboradores cadastrados</span>
+        <span class="badge" id="badge-colaboradores">0</span>
+      </div>
+      <div id="lista-colaboradores">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
+          Nenhum colaborador cadastrado ainda.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ABA 3: PROPOSTAS ═══ -->
+  <div id="tab-propostas" class="tab-panel">
+    <div class="page-header">
+      <div class="page-eyebrow">Cadastro · 03</div>
+      <h2>Propostas</h2>
+      <p>Registre os números de proposta para vinculação aos lançamentos.</p>
+    </div>
+    <div class="card">
+      <div class="card-eyebrow">Nova proposta</div>
+      <div class="form-grid cols-2">
+        <div class="form-group">
+          <label for="prop-num">Número da Proposta *</label>
+          <input type="text" id="prop-num" placeholder="Ex: PRO-2024-001" style="font-family:'Montserrat',monospace;letter-spacing:0.04em;">
+        </div>
+        <div class="form-group">
+          <label for="prop-desc">Descrição (opcional)</label>
+          <input type="text" id="prop-desc" placeholder="Breve descrição do projeto">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="salvarProposta()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Adicionar Proposta
+        </button>
+        <div class="alert" id="alert-proposta"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="list-header">
+        <span>Propostas cadastradas</span>
+        <span class="badge" id="badge-propostas">0</span>
+      </div>
+      <div id="lista-propostas">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Nenhuma proposta cadastrada ainda.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ABA 4: DESPESAS ═══ -->
+  <div id="tab-despesas" class="tab-panel">
+    <div class="page-header">
+      <div class="page-eyebrow">Operacional · 04</div>
+      <h2>Lançamento de Despesas</h2>
+      <p>Registre despesas vinculadas a clientes, propostas e colaboradores.</p>
+    </div>
+    <div class="card">
+      <div class="edit-banner" id="edit-banner">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Modo edição — alterando lançamento existente
+        <button class="btn btn-cancel" onclick="cancelarEdicao()">✕ Cancelar edição</button>
+      </div>
+      <div class="card-eyebrow" id="card-eyebrow-despesa">Nova despesa</div>
+
+      <!-- IDENTIFICAÇÃO -->
+      <div class="section-badge">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Identificação
+      </div>
+      <div class="form-grid cols-3">
+        <div class="form-group">
+          <label for="desp-cliente">Cliente *</label>
+          <select id="desp-cliente"><option value="">— Selecione —</option></select>
+        </div>
+        <div class="form-group">
+          <label for="desp-proposta">Proposta *</label>
+          <select id="desp-proposta"><option value="">— Selecione —</option></select>
+        </div>
+        <div class="form-group">
+          <label for="desp-colaborador">Colaborador *</label>
+          <select id="desp-colaborador"><option value="">— Selecione —</option></select>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <!-- VIAGEM -->
+      <div class="section-badge">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Viagem / Período
+      </div>
+      <div class="form-grid cols-4">
+        <div class="form-group">
+          <label for="desp-cidade">Cidade / UF</label>
+          <select id="desp-cidade">
+            <option value="">— Selecione —</option>
+            <optgroup label="Acre (AC)">
+              <option>Rio Branco / AC</option><option>Acrelândia / AC</option><option>Assis Brasil / AC</option><option>Brasiléia / AC</option><option>Bujari / AC</option><option>Capixaba / AC</option><option>Cruzeiro do Sul / AC</option><option>Epitaciolândia / AC</option><option>Feijó / AC</option><option>Jordão / AC</option><option>Mâncio Lima / AC</option><option>Manoel Urbano / AC</option><option>Marechal Thaumaturgo / AC</option><option>Plácido de Castro / AC</option><option>Porto Acre / AC</option><option>Porto Walter / AC</option><option>Rodrigues Alves / AC</option><option>Santa Rosa do Purus / AC</option><option>Sena Madureira / AC</option><option>Senador Guiomard / AC</option><option>Tarauacá / AC</option><option>Xapuri / AC</option>
+            </optgroup>
+            <optgroup label="Alagoas (AL)">
+              <option>Maceió / AL</option><option>Arapiraca / AL</option><option>Palmeira dos Índios / AL</option><option>União dos Palmares / AL</option><option>Penedo / AL</option><option>Rio Largo / AL</option><option>Santana do Ipanema / AL</option><option>São Miguel dos Campos / AL</option><option>Delmiro Gouveia / AL</option><option>Coruripe / AL</option><option>Água Branca / AL</option><option>Anadia / AL</option><option>Atalaia / AL</option><option>Barra de Santo Antônio / AL</option><option>Batalha / AL</option><option>Cajueiro / AL</option><option>Campo Alegre / AL</option><option>Campo Grande / AL</option><option>Canapi / AL</option><option>Capela / AL</option><option>Craíbas / AL</option><option>Feira Grande / AL</option><option>Girau do Ponciano / AL</option><option>Igreja Nova / AL</option><option>Inhapi / AL</option><option>Jaramataia / AL</option><option>Junqueiro / AL</option><option>Limoeiro de Anadia / AL</option><option>Maravilha / AL</option><option>Marechal Deodoro / AL</option><option>Maribondo / AL</option><option>Mata Grande / AL</option><option>Messias / AL</option><option>Murici / AL</option><option>Olho d'Água das Flores / AL</option><option>Ouro Branco / AL</option><option>Pilar / AL</option><option>Piranhas / AL</option><option>Porto Calvo / AL</option><option>Porto Real do Colégio / AL</option><option>Quebrangulo / AL</option><option>Roteiro / AL</option><option>São Brás / AL</option><option>São José da Laje / AL</option><option>São Luís do Quitunde / AL</option><option>São Sebastião / AL</option><option>Teotônio Vilela / AL</option><option>Traipu / AL</option><option>Viçosa / AL</option>
+            </optgroup>
+            <optgroup label="Amapá (AP)">
+              <option>Macapá / AP</option><option>Santana / AP</option><option>Laranjal do Jari / AP</option><option>Oiapoque / AP</option><option>Amapá / AP</option><option>Calçoene / AP</option><option>Cutias / AP</option><option>Ferreira Gomes / AP</option><option>Itaubal / AP</option><option>Mazagão / AP</option><option>Pedra Branca do Amapari / AP</option><option>Porto Grande / AP</option><option>Pracuúba / AP</option><option>Serra do Navio / AP</option><option>Tartarugalzinho / AP</option><option>Vitória do Jari / AP</option>
+            </optgroup>
+            <optgroup label="Amazonas (AM)">
+              <option>Manaus / AM</option><option>Parintins / AM</option><option>Itacoatiara / AM</option><option>Manacapuru / AM</option><option>Coari / AM</option><option>Tefé / AM</option><option>Tabatinga / AM</option><option>Maués / AM</option><option>Humaitá / AM</option><option>Lábrea / AM</option><option>Barcelos / AM</option><option>Borba / AM</option><option>Carauari / AM</option><option>Eirunepé / AM</option><option>Iranduba / AM</option><option>Manicoré / AM</option><option>Novo Airão / AM</option><option>Presidente Figueiredo / AM</option><option>Rio Preto da Eva / AM</option><option>São Gabriel da Cachoeira / AM</option><option>São Paulo de Olivença / AM</option><option>Santo Antônio do Içá / AM</option><option>Tonantins / AM</option><option>Urucará / AM</option><option>Urucurituba / AM</option>
+            </optgroup>
+            <optgroup label="Bahia (BA)">
+              <option>Salvador / BA</option><option>Feira de Santana / BA</option><option>Vitória da Conquista / BA</option><option>Camaçari / BA</option><option>Juazeiro / BA</option><option>Ilhéus / BA</option><option>Lauro de Freitas / BA</option><option>Jequié / BA</option><option>Teixeira de Freitas / BA</option><option>Paulo Afonso / BA</option><option>Barreiras / BA</option><option>Alagoinhas / BA</option><option>Porto Seguro / BA</option><option>Simões Filho / BA</option><option>Eunápolis / BA</option><option>Serrinha / BA</option><option>Itabuna / BA</option><option>Senhor do Bonfim / BA</option><option>Santo Antônio de Jesus / BA</option><option>Brumado / BA</option><option>Amargosa / BA</option><option>Bom Jesus da Lapa / BA</option><option>Cruz das Almas / BA</option><option>Cachoeira / BA</option><option>Conceição do Coité / BA</option><option>Euclides da Cunha / BA</option><option>Guanambi / BA</option><option>Irecê / BA</option><option>Itaberaba / BA</option><option>Itapetinga / BA</option><option>Jacobina / BA</option><option>Luís Eduardo Magalhães / BA</option><option>Morro do Chapéu / BA</option><option>Pojuca / BA</option><option>Seabra / BA</option><option>Valença / BA</option>
+            </optgroup>
+            <optgroup label="Ceará (CE)">
+              <option>Fortaleza / CE</option><option>Caucaia / CE</option><option>Juazeiro do Norte / CE</option><option>Maracanaú / CE</option><option>Sobral / CE</option><option>Crato / CE</option><option>Itapipoca / CE</option><option>Maranguape / CE</option><option>Iguatu / CE</option><option>Quixadá / CE</option><option>Canindé / CE</option><option>Aquiraz / CE</option><option>Pacatuba / CE</option><option>Crateús / CE</option><option>Russas / CE</option><option>Aracati / CE</option><option>Barbalha / CE</option><option>Cascavel / CE</option><option>Horizonte / CE</option><option>Limoeiro do Norte / CE</option><option>Morada Nova / CE</option><option>Pacajus / CE</option><option>Quixeramobim / CE</option><option>Tianguá / CE</option><option>Tauá / CE</option>
+            </optgroup>
+            <optgroup label="Distrito Federal (DF)">
+              <option>Brasília / DF</option><option>Águas Claras / DF</option><option>Ceilândia / DF</option><option>Gama / DF</option><option>Guará / DF</option><option>Planaltina / DF</option><option>Samambaia / DF</option><option>Santa Maria / DF</option><option>Sobradinho / DF</option><option>Taguatinga / DF</option>
+            </optgroup>
+            <optgroup label="Espírito Santo (ES)">
+              <option>Vitória / ES</option><option>Vila Velha / ES</option><option>Cariacica / ES</option><option>Serra / ES</option><option>Cachoeiro de Itapemirim / ES</option><option>Linhares / ES</option><option>São Mateus / ES</option><option>Colatina / ES</option><option>Guarapari / ES</option><option>Aracruz / ES</option><option>Barra de São Francisco / ES</option><option>Castelo / ES</option><option>Conceição da Barra / ES</option><option>Domingos Martins / ES</option><option>Ecoporanga / ES</option><option>Guaçuí / ES</option><option>Ibiraçu / ES</option><option>Itapemirim / ES</option><option>Marataízes / ES</option><option>Nova Venécia / ES</option><option>Santa Teresa / ES</option><option>São Gabriel da Palha / ES</option><option>Viana / ES</option>
+            </optgroup>
+            <optgroup label="Goiás (GO)">
+              <option>Goiânia / GO</option><option>Aparecida de Goiânia / GO</option><option>Anápolis / GO</option><option>Rio Verde / GO</option><option>Luziânia / GO</option><option>Águas Lindas de Goiás / GO</option><option>Valparaíso de Goiás / GO</option><option>Trindade / GO</option><option>Formosa / GO</option><option>Novo Gama / GO</option><option>Itumbiara / GO</option><option>Senador Canedo / GO</option><option>Catalão / GO</option><option>Jataí / GO</option><option>Planaltina / GO</option><option>Caldas Novas / GO</option><option>Cidade Ocidental / GO</option><option>Mineiros / GO</option><option>Quirinópolis / GO</option><option>São Luís de Montes Belos / GO</option><option>Uruaçu / GO</option>
+            </optgroup>
+            <optgroup label="Maranhão (MA)">
+              <option>São Luís / MA</option><option>Imperatriz / MA</option><option>São José de Ribamar / MA</option><option>Timon / MA</option><option>Caxias / MA</option><option>Codó / MA</option><option>Açailândia / MA</option><option>Bacabal / MA</option><option>Balsas / MA</option><option>Pinheiro / MA</option><option>Barra do Corda / MA</option><option>Coroatá / MA</option><option>Paço do Lumiar / MA</option><option>Pedreiras / MA</option><option>Santa Inês / MA</option><option>Chapadinha / MA</option><option>Grajaú / MA</option><option>Pinheiro / MA</option><option>Rosário / MA</option><option>Viana / MA</option>
+            </optgroup>
+            <optgroup label="Mato Grosso (MT)">
+              <option>Cuiabá / MT</option><option>Várzea Grande / MT</option><option>Rondonópolis / MT</option><option>Sinop / MT</option><option>Tangará da Serra / MT</option><option>Cáceres / MT</option><option>Sorriso / MT</option><option>Lucas do Rio Verde / MT</option><option>Primavera do Leste / MT</option><option>Alta Floresta / MT</option><option>Barra do Garças / MT</option><option>Colíder / MT</option><option>Juína / MT</option><option>Nova Mutum / MT</option><option>Nova Xavantina / MT</option><option>Pontes e Lacerda / MT</option>
+            </optgroup>
+            <optgroup label="Mato Grosso do Sul (MS)">
+              <option>Campo Grande / MS</option><option>Dourados / MS</option><option>Três Lagoas / MS</option><option>Corumbá / MS</option><option>Ponta Porã / MS</option><option>Naviraí / MS</option><option>Nova Andradina / MS</option><option>Aquidauana / MS</option><option>Coxim / MS</option><option>Sidrolândia / MS</option><option>Cassilândia / MS</option><option>Maracaju / MS</option><option>Rio Brilhante / MS</option>
+            </optgroup>
+            <optgroup label="Minas Gerais (MG)">
+              <option>Belo Horizonte / MG</option><option>Uberlândia / MG</option><option>Contagem / MG</option><option>Juiz de Fora / MG</option><option>Betim / MG</option><option>Montes Claros / MG</option><option>Ribeirão das Neves / MG</option><option>Uberaba / MG</option><option>Governador Valadares / MG</option><option>Ipatinga / MG</option><option>Sete Lagoas / MG</option><option>Divinópolis / MG</option><option>Santa Luzia / MG</option><option>Ibirité / MG</option><option>Poços de Caldas / MG</option><option>Patos de Minas / MG</option><option>Pouso Alegre / MG</option><option>Teófilo Otoni / MG</option><option>Barbacena / MG</option><option>Caratinga / MG</option><option>Coronel Fabriciano / MG</option><option>Itabira / MG</option><option>Itabirito / MG</option><option>Lavras / MG</option><option>Manhuaçu / MG</option><option>Muriaé / MG</option><option>Nova Lima / MG</option><option>Ouro Preto / MG</option><option>Sabará / MG</option><option>Timóteo / MG</option><option>Varginha / MG</option><option>Viçosa / MG</option>
+            </optgroup>
+            <optgroup label="Pará (PA)">
+              <option>Belém / PA</option><option>Ananindeua / PA</option><option>Santarém / PA</option><option>Marabá / PA</option><option>Castanhal / PA</option><option>Parauapebas / PA</option><option>Altamira / PA</option><option>Abaetetuba / PA</option><option>Cametá / PA</option><option>Itaituba / PA</option><option>Barcarena / PA</option><option>Bragança / PA</option><option>Redenção / PA</option><option>Tucuruí / PA</option><option>Marituba / PA</option>
+            </optgroup>
+            <optgroup label="Paraíba (PB)">
+              <option>João Pessoa / PB</option><option>Campina Grande / PB</option><option>Santa Rita / PB</option><option>Patos / PB</option><option>Bayeux / PB</option><option>Sousa / PB</option><option>Caruaru / PB</option><option>Cajazeiras / PB</option><option>Guarabira / PB</option><option>Cabedelo / PB</option>
+            </optgroup>
+            <optgroup label="Paraná (PR)">
+              <option>Curitiba / PR</option><option>Londrina / PR</option><option>Maringá / PR</option><option>Ponta Grossa / PR</option><option>Cascavel / PR</option><option>São José dos Pinhais / PR</option><option>Foz do Iguaçu / PR</option><option>Colombo / PR</option><option>Guarapuava / PR</option><option>Paranaguá / PR</option><option>Araucária / PR</option><option>Toledo / PR</option><option>Apucarana / PR</option><option>Pinhais / PR</option><option>Campo Largo / PR</option><option>Almirante Tamandaré / PR</option><option>Francisco Beltrão / PR</option><option>Umuarama / PR</option><option>Sarandi / PR</option>
+            </optgroup>
+            <optgroup label="Pernambuco (PE)">
+              <option>Recife / PE</option><option>Caruaru / PE</option><option>Olinda / PE</option><option>Petrolina / PE</option><option>Paulista / PE</option><option>Jaboatão dos Guararapes / PE</option><option>Cabo de Santo Agostinho / PE</option><option>Garanhuns / PE</option><option>Igarassu / PE</option><option>Camaragibe / PE</option><option>Gravatá / PE</option><option>Vitória de Santo Antão / PE</option>
+            </optgroup>
+            <optgroup label="Piauí (PI)">
+              <option>Teresina / PI</option><option>Parnaíba / PI</option><option>Picos / PI</option><option>Piripiri / PI</option><option>Floriano / PI</option><option>Campo Maior / PI</option><option>Barras / PI</option><option>União / PI</option><option>Uruçuí / PI</option>
+            </optgroup>
+            <optgroup label="Rio de Janeiro (RJ)">
+              <option>Rio de Janeiro / RJ</option><option>São Gonçalo / RJ</option><option>Duque de Caxias / RJ</option><option>Nova Iguaçu / RJ</option><option>Niterói / RJ</option><option>Belford Roxo / RJ</option><option>Campos dos Goytacazes / RJ</option><option>São João de Meriti / RJ</option><option>Petrópolis / RJ</option><option>Volta Redonda / RJ</option><option>Magé / RJ</option><option>Itaboraí / RJ</option><option>Mesquita / RJ</option><option>Nova Friburgo / RJ</option><option>Macaé / RJ</option><option>Queimados / RJ</option><option>Nilópolis / RJ</option><option>Barra Mansa / RJ</option><option>Angra dos Reis / RJ</option><option>Cabo Frio / RJ</option>
+            </optgroup>
+            <optgroup label="Rio Grande do Norte (RN)">
+              <option>Natal / RN</option><option>Mossoró / RN</option><option>Parnamirim / RN</option><option>São Gonçalo do Amarante / RN</option><option>Macaíba / RN</option><option>Ceará-Mirim / RN</option><option>Caicó / RN</option><option>Açu / RN</option><option>Currais Novos / RN</option>
+            </optgroup>
+            <optgroup label="Rio Grande do Sul (RS)">
+              <option>Porto Alegre / RS</option><option>Caxias do Sul / RS</option><option>Pelotas / RS</option><option>Canoas / RS</option><option>Santa Maria / RS</option><option>Gravataí / RS</option><option>Viamão / RS</option><option>Novo Hamburgo / RS</option><option>São Leopoldo / RS</option><option>Rio Grande / RS</option><option>Alvorada / RS</option><option>Passo Fundo / RS</option><option>Sapucaia do Sul / RS</option><option>Uruguaiana / RS</option><option>Santa Cruz do Sul / RS</option><option>Cachoeirinha / RS</option><option>Bagé / RS</option><option>Bento Gonçalves / RS</option><option>Erechim / RS</option><option>Guaíba / RS</option>
+            </optgroup>
+            <optgroup label="Rondônia (RO)">
+              <option>Porto Velho / RO</option><option>Ji-Paraná / RO</option><option>Ariquemes / RO</option><option>Vilhena / RO</option><option>Cacoal / RO</option><option>Rolim de Moura / RO</option><option>Guajará-Mirim / RO</option><option>Jaru / RO</option><option>Ouro Preto do Oeste / RO</option><option>Pimenta Bueno / RO</option>
+            </optgroup>
+            <optgroup label="Roraima (RR)">
+              <option>Boa Vista / RR</option><option>Caracaraí / RR</option><option>Alto Alegre / RR</option><option>Mucajaí / RR</option><option>Pacaraima / RR</option><option>Rorainópolis / RR</option>
+            </optgroup>
+            <optgroup label="Santa Catarina (SC)">
+              <option>Florianópolis / SC</option><option>Joinville / SC</option><option>Blumenau / SC</option><option>São José / SC</option><option>Criciúma / SC</option><option>Chapecó / SC</option><option>Itajaí / SC</option><option>Jaraguá do Sul / SC</option><option>Lages / SC</option><option>Palhoça / SC</option><option>Balneário Camboriu / SC</option><option>Biguaçu / SC</option><option>São Bento do Sul / SC</option><option>Caçador / SC</option><option>Concórdia / SC</option><option>Tubarão / SC</option><option>Araranguá / SC</option><option>Camboriú / SC</option><option>Canoinhas / SC</option><option>Navegantes / SC</option>
+            </optgroup>
+            <optgroup label="São Paulo (SP)">
+              <option>São Paulo / SP</option><option>Guarulhos / SP</option><option>Campinas / SP</option><option>São Bernardo do Campo / SP</option><option>Santo André / SP</option><option>São José dos Campos / SP</option><option>Ribeirão Preto / SP</option><option>Osasco / SP</option><option>Sorocaba / SP</option><option>Mauá / SP</option><option>São José do Rio Preto / SP</option><option>Santos / SP</option><option>Mogi das Cruzes / SP</option><option>Diadema / SP</option><option>Jundiaí / SP</option><option>Piracicaba / SP</option><option>Carapicuíba / SP</option><option>Bauru / SP</option><option>São Vicente / SP</option><option>Franca / SP</option><option>Itaquaquecetuba / SP</option><option>Guarujá / SP</option><option>Praia Grande / SP</option><option>Limeira / SP</option><option>Suzano / SP</option><option>Taubaté / SP</option><option>Americana / SP</option><option>Araraquara / SP</option><option>Barueri / SP</option><option>Indaiatuba / SP</option><option>São Caetano do Sul / SP</option><option>Betim / SP</option><option>São Carlos / SP</option><option>Marília / SP</option><option>Araçatuba / SP</option><option>Cotia / SP</option><option>Presidente Prudente / SP</option><option>Atibaia / SP</option><option>Taboão da Serra / SP</option><option>Jacareí / SP</option><option>Botucatu / SP</option><option>Itapevi / SP</option><option>Hortolândia / SP</option><option>Embu das Artes / SP</option><option>Itu / SP</option><option>Barueri / SP</option>
+            </optgroup>
+            <optgroup label="Sergipe (SE)">
+              <option>Aracaju / SE</option><option>Nossa Senhora do Socorro / SE</option><option>Lagarto / SE</option><option>Itabaiana / SE</option><option>São Cristóvão / SE</option><option>Estância / SE</option><option>Nossa Senhora da Glória / SE</option><option>Tobias Barreto / SE</option><option>Simão Dias / SE</option>
+            </optgroup>
+            <optgroup label="Tocantins (TO)">
+              <option>Palmas / TO</option><option>Araguaína / TO</option><option>Gurupi / TO</option><option>Porto Nacional / TO</option><option>Paraíso do Tocantins / TO</option><option>Colinas do Tocantins / TO</option><option>Guaraí / TO</option><option>Tocantinópolis / TO</option><option>Dianópolis / TO</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="desp-ida">Ida</label>
+          <input type="date" id="desp-ida">
+        </div>
+        <div class="form-group">
+          <label for="desp-volta">Volta</label>
+          <input type="date" id="desp-volta">
+        </div>
+        <div class="form-group">
+          <label for="desp-dias">Dias</label>
+          <input type="number" id="desp-dias" min="0" step="1" placeholder="0" style="font-family:'Montserrat',monospace;">
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <!-- CLASSIFICAÇÃO -->
+      <div class="section-badge">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Classificação da Despesa
+      </div>
+      <div class="form-grid cols-2" style="margin-bottom:16px;">
+        <div class="form-group">
+          <label for="desp-cc">Centro de Custo *</label>
+          <select id="desp-cc">
+            <option value="">— Selecione —</option>
+            <option value="Engenharia">Engenharia</option>
+            <option value="Gestão">Gestão</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="desp-competencia">Data de Competência *</label>
+          <input type="date" id="desp-competencia">
+        </div>
+      </div>
+
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px;">
+        Tipo de Despesa e Valor — preencha os tipos que se aplicam a esta viagem
+      </div>
+      <div class="tipo-required" id="tipo-required" style="margin-bottom:6px;">Informe pelo menos um tipo de despesa com valor.</div>
+      <div style="border:1.5px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--surface);">
+        <table class="tipo-table">
+          <tbody>
+            <tr><td class="td-label">💰 Adiantamento</td>
+              <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Adiantamento" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this)"></td>
+              <td class="td-extra"></td></tr>
+            <tr><td class="td-label">🚗 Táxi/Uber</td>
+              <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Táxi/Uber" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this)"></td>
+              <td class="td-extra"></td></tr>
+            <tr><td class="td-label">✈️ Passagem Aérea</td>
+              <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Passagem Aérea" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this)"></td>
+              <td class="td-extra"></td></tr>
+            <tr><td class="td-label">🚙 Aluguel de Carro</td>
+              <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Aluguel de Carro" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this)"></td>
+              <td class="td-extra"></td></tr>
+            <tr><td class="td-label">⛽ Combustível</td>
+              <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Combustível" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this);toggleVeiculoInline(this)"></td>
+              <td class="td-extra">
+                <div class="veiculo-inline" id="veiculo-inline">
+                  <input type="text" id="desp-placa" placeholder="Placa (ex: ABC1D23)" maxlength="8">
+                  <input type="text" id="desp-modelo" placeholder="Modelo do veículo">
+                </div>
+              </td></tr>
+            <tr><td class="td-label">🅿️ Estacionamento</td>
+              <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Estacionamento" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this)"></td>
+              <td class="td-extra"></td></tr>
+            <tr><td class="td-label">🛣️ Pedágio</td>
+              <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Pedágio" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this)"></td>
+              <td class="td-extra"></td></tr>
+            <tr><td class="td-label">🏨 Hospedagem</td>
+              <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Hospedagem" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this)"></td>
+              <td class="td-extra"></td></tr>
+            <tr><td class="td-label">🍽️ Alimentação</td>
+              <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Alimentação" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this)"></td>
+              <td class="td-extra"></td></tr>
+            <tr><td class="td-label">⏰ Hora Extra</td>
+              <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Hora Extra" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this)"></td>
+              <td class="td-extra"></td></tr>
+            <tr><td class="td-label">📋 Outros</td>
+              <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Outros" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this)"></td>
+              <td class="td-extra"></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="divider"></div>
+      <!-- OBSERVAÇÕES -->
+      <div class="form-grid cols-1">
+        <div class="form-group">
+          <label for="desp-obs">Observações</label>
+          <textarea id="desp-obs" placeholder="Informações adicionais sobre a despesa..."></textarea>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <!-- COMPROVANTE -->
+      <div class="section-badge">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+        Comprovante
+      </div>
+      <div class="form-group" style="max-width:480px;">
+        <label>Comprovante (PDF ou Imagem)</label>
+        <div class="file-upload-wrap" id="upload-area">
+          <input type="file" id="desp-pdf" accept="application/pdf,image/*" onchange="onPdfChange(this)">
+          <div class="file-upload-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Clique para anexar PDF ou Imagem
+          </div>
+        </div>
+        <div class="anexo-preview" id="anexo-preview">
+          <div class="anexo-preview-header">
+            <div class="fname">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span id="pdf-name-text"></span>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn-anexo btn-trocar" onclick="document.getElementById('desp-pdf').click()">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Trocar
+              </button>
+              <button type="button" class="btn-anexo btn-remover-anexo" onclick="removerAnexo()">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                Remover
+              </button>
+            </div>
+          </div>
+          <div class="anexo-preview-body" id="anexo-preview-body"></div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-teal" onclick="salvarDespesa()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Registrar Despesa
+        </button>
+        <div class="alert" id="alert-despesa"></div>
+      </div>
+    </div>
+
+    <!-- LISTA DESPESAS -->
+    <div class="card">
+      <div class="list-header">
+        <span>Despesas lançadas</span>
+        <span class="badge" id="badge-despesas">0</span>
+      </div>
+      <div style="overflow-x:auto;">
+        <div id="lista-despesas">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Nenhuma despesa registrada ainda.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ABA 5: MANUAL ═══ -->
+  <div id="tab-manual" class="tab-panel active">
+    <div class="page-header">
+      <div class="page-eyebrow">Referência · 05</div>
+      <h2>Manual de Centro de Custo</h2>
+      <p>Orientações para classificação de despesas, pagamentos e categorização financeira — Maio 2026.</p>
+    </div>
+
+    <!-- ALERTA USO INTERNO -->
+    <div style="display:flex;align-items:center;gap:10px;background:#fff8e6;border:1.5px solid #fde68a;border-radius:10px;padding:12px 16px;margin-bottom:18px;font-size:12px;color:#92400e;font-weight:500;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Documento confidencial · Uso interno — Nortmont, Maio 2026.
+    </div>
+
+    <!-- SEÇÃO 01 -->
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <div style="width:32px;height:32px;background:var(--navy);border-radius:var(--r-pill);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <span style="font-size:10px;font-weight:700;color:var(--sage);letter-spacing:0.05em;">01</span>
+        </div>
+        <div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);">Seção 01</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);letter-spacing:-0.01em;">Objetivo e Importância</div>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--text-secondary);line-height:1.65;margin-bottom:12px;">Este documento estabelece as regras, orientações e boas práticas para a correta identificação do centro de custo nas despesas realizadas por todos os colaboradores, abrangendo todas as áreas e setores. Seu cumprimento é essencial para o funcionamento do sistema financeiro e para a categorização adequada de todos os custos.</p>
+      <div style="background:var(--mint);border-left:3px solid var(--teal);border-radius:0 var(--r-md) var(--r-md) 0;padding:12px 16px;font-size:12px;color:var(--teal);font-weight:500;line-height:1.6;">As informações solicitadas não representam uma exigência pessoal, mas uma necessidade do sistema financeiro para garantir controle, rastreabilidade e correta alocação das despesas.</div>
+
+      <div style="margin-top:18px;display:grid;gap:10px;">
+        <!-- Alerta veículo -->
+        <div style="display:flex;gap:12px;align-items:flex-start;background:#fff8e6;border:1.5px solid #fde68a;border-radius:var(--r-md);padding:12px 14px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2.5" style="flex-shrink:0;margin-top:1px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div><div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#92400e;margin-bottom:4px;">Uso de Veículo — Regra Obrigatória</div><div style="font-size:12px;color:#78350f;line-height:1.55;">É <strong>expressamente proibido</strong> utilizar carro pessoal para visitas, exames ou deslocamentos a serviço. Sempre utilize: carro da empresa, Uber ou locação de veículo.</div></div>
+        </div>
+        <!-- Alerta e-mail -->
+        <div style="display:flex;gap:12px;align-items:flex-start;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:var(--r-md);padding:12px 14px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1e40af" stroke-width="2.5" style="flex-shrink:0;margin-top:1px"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <div><div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#1e40af;margin-bottom:4px;">E-mail correto para pagamentos</div><div style="font-size:12px;color:#1e3a8a;line-height:1.55;">Adiantamentos, boletos, reembolsos → <strong>contasapagar@electricservice.com.br</strong>. O e-mail do financeiro é exclusivo para clientes e faturamento.</div></div>
+        </div>
+        <!-- Alerta aprovação -->
+        <div style="display:flex;gap:12px;align-items:flex-start;background:var(--success-bg);border:1.5px solid #a7f3d0;border-radius:var(--r-md);padding:12px 14px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#065f46" stroke-width="2.5" style="flex-shrink:0;margin-top:1px"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#065f46;margin-bottom:4px;">Aprovação de Compras — Obrigatório</div><div style="font-size:12px;color:#064e3b;line-height:1.55;">Todas as compras — Engenharia ou Consultoria/Gestão — devem ser <strong>previamente aprovadas pelo Controller</strong> antes de serem realizadas.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 03 -->
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <div style="width:32px;height:32px;background:var(--navy);border-radius:var(--r-pill);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <span style="font-size:10px;font-weight:700;color:var(--sage);letter-spacing:0.05em;">03</span>
+        </div>
+        <div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);">Seção 03</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);letter-spacing:-0.01em;">Regras Gerais Obrigatórias</div>
+        </div>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);margin-bottom:10px;">3.1 · Acertos individuais por viagem e cliente</div>
+      <p style="font-size:13px;color:var(--text-secondary);line-height:1.65;margin-bottom:12px;">Todo acerto deve ser realizado individualmente para cada viagem e para cada cliente. <strong>Não é permitido agrupar despesas de viagens ou serviços distintos</strong> em um único lançamento.</p>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:18px;">
+        <thead><tr>
+          <th style="text-align:left;padding:8px 12px;background:var(--surface-2);font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);">Situação</th>
+          <th style="text-align:left;padding:8px 12px;background:var(--surface-2);font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);">Procedimento correto</th>
+        </tr></thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 12px;color:var(--ink)">Visita ao Cliente A – Viagem 1</td><td style="padding:9px 12px;color:var(--teal);font-weight:600">Lançamento para a Viagem 1</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 12px;color:var(--ink)">Mesma proposta – Viagem 2 (mesmo cliente)</td><td style="padding:9px 12px;color:var(--teal);font-weight:600">Lançamento separado para a Viagem 2</td></tr>
+          <tr><td style="padding:9px 12px;color:var(--ink)">Clientes A e B na mesma viagem</td><td style="padding:9px 12px;color:var(--teal);font-weight:600">Separar despesas entre cliente A e B</td></tr>
+        </tbody>
+      </table>
+
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);margin-bottom:10px;">3.2 · Prazo para conferência das despesas</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;">
+        <div style="background:var(--mint);border-radius:var(--r-md);padding:14px;text-align:center;border:1px solid var(--mint-dark)">
+          <div style="font-size:22px;font-weight:700;color:var(--navy)">2</div>
+          <div style="font-size:10px;font-weight:600;color:var(--teal);letter-spacing:0.06em;text-transform:uppercase;margin-top:2px">dias úteis</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">após término da viagem</div>
+        </div>
+        <div style="background:var(--mint);border-radius:var(--r-md);padding:14px;text-align:center;border:1px solid var(--mint-dark)">
+          <div style="font-size:15px;font-weight:700;color:var(--navy)">Mesmo mês</div>
+          <div style="font-size:10px;font-weight:600;color:var(--teal);letter-spacing:0.06em;text-transform:uppercase;margin-top:2px">de competência</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">a despesa deve ser lançada</div>
+        </div>
+        <div style="background:var(--mint);border-radius:var(--r-md);padding:14px;text-align:center;border:1px solid var(--mint-dark)">
+          <div style="font-size:15px;font-weight:700;color:var(--navy)">Prioridade</div>
+          <div style="font-size:10px;font-weight:600;color:var(--teal);letter-spacing:0.06em;text-transform:uppercase;margin-top:2px">fim de mês</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">não ultrapassar o pagamento</div>
+        </div>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);margin-bottom:10px;">3.4 · Uso de veículo e combustível</div>
+      <div style="background:#fff8e6;border:1.5px solid #fde68a;border-radius:var(--r-md);padding:12px 16px;font-size:12px;color:#78350f;line-height:1.6;">
+        Toda despesa com <strong>combustível</strong> deve obrigatoriamente estar acompanhada da identificação do veículo utilizado — <strong>placa e/ou modelo</strong>. Não é permitido lançar combustível sem indicar o veículo.
+      </div>
+    </div>
+
+    <!-- SEÇÃO 04 -->
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <div style="width:32px;height:32px;background:var(--navy);border-radius:var(--r-pill);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <span style="font-size:10px;font-weight:700;color:var(--sage);letter-spacing:0.05em;">04</span>
+        </div>
+        <div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);">Seção 04</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);letter-spacing:-0.01em;">Classificação por Tipo de Despesa</div>
+        </div>
+      </div>
+
+      <!-- 4.1 Despesas de viagem -->
+      <div style="background:var(--surface-2);border-radius:var(--r-md);padding:14px 16px;margin-bottom:12px;border:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--teal);margin-bottom:8px;">4.1 · Despesas de viagem</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.65;margin-bottom:10px;">Deslocamentos, hospedagem, alimentação ou translado durante visita técnica ou serviço externo.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <span style="background:var(--mint);color:var(--teal);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:3px 9px;border-radius:var(--r-pill);border:1px solid var(--mint-dark)">Nome do cliente</span>
+          <span style="background:var(--mint);color:var(--teal);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:3px 9px;border-radius:var(--r-pill);border:1px solid var(--mint-dark)">Datas de ida e volta</span>
+          <span style="background:var(--mint);color:var(--teal);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:3px 9px;border-radius:var(--r-pill);border:1px solid var(--mint-dark)">Cidade/UF</span>
+          <span style="background:var(--mint);color:var(--teal);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:3px 9px;border-radius:var(--r-pill);border:1px solid var(--mint-dark)">Nº da proposta</span>
+          <span style="background:var(--mint);color:var(--teal);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:3px 9px;border-radius:var(--r-pill);border:1px solid var(--mint-dark)">Tipo de cada despesa</span>
+          <span style="background:#fff8e6;color:#92400e;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:3px 9px;border-radius:var(--r-pill);border:1px solid #fde68a">Veículo (se combustível)</span>
+          <span style="background:var(--mint);color:var(--teal);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:3px 9px;border-radius:var(--r-pill);border:1px solid var(--mint-dark)">Comprovante</span>
+        </div>
+      </div>
+
+      <!-- 4.3 Ferramentas -->
+      <div style="background:var(--surface-2);border-radius:var(--r-md);padding:14px 16px;margin-bottom:12px;border:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--teal);margin-bottom:8px;">4.3 · Compra de equipamentos e ferramentas</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr>
+            <th style="text-align:left;padding:6px 10px;background:var(--mint);font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);border-bottom:1px solid var(--mint-dark);">Informação</th>
+            <th style="text-align:left;padding:6px 10px;background:var(--mint);font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);border-bottom:1px solid var(--mint-dark);">Opções</th>
+          </tr></thead>
+          <tbody>
+            <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 10px;color:var(--ink);font-weight:500">Área de destino</td><td style="padding:8px 10px;color:var(--text-secondary)">Consultoria/Gestão ou Engenharia</td></tr>
+            <tr><td style="padding:8px 10px;color:var(--ink);font-weight:500">Alocação do equipamento</td><td style="padding:8px 10px;color:var(--text-secondary)">Exclusivo para cliente específico · Uso geral (múltiplos serviços)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mês de competência -->
+      <div style="background:var(--navy);border-radius:var(--r-md);padding:16px 18px;color:white;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--sage);margin-bottom:8px;">O que é "Mês de Competência"?</div>
+        <p style="font-size:12px;color:rgba(224,238,231,0.85);line-height:1.65;margin-bottom:8px;">Mês de competência é o mês em que a despesa <strong style="color:var(--sage)">efetivamente ocorreu</strong>, independentemente de quando o pagamento será feito.</p>
+        <div style="background:rgba(168,204,168,0.12);border-radius:var(--r-sm);padding:10px 12px;font-size:11px;color:rgba(224,238,231,0.7);">
+          <strong style="color:var(--sage)">Exemplo:</strong> Ensaio elétrico realizado em 28/06 → lançar como competência <strong style="color:var(--sage)">Junho</strong>, mesmo que o pagamento ocorra em julho.
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 07 — Passo a passo -->
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+        <div style="width:32px;height:32px;background:var(--navy);border-radius:var(--r-pill);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <span style="font-size:10px;font-weight:700;color:var(--sage);letter-spacing:0.05em;">07</span>
+        </div>
+        <div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);">Seção 07</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);letter-spacing:-0.01em;">Passo a Passo: Do Adiantamento à Conciliação</div>
+        </div>
+      </div>
+      <div style="display:grid;gap:0;">
+        <div style="display:flex;gap:14px;align-items:flex-start;padding-bottom:16px;position:relative;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0">
+            <div style="width:36px;height:36px;background:var(--teal);border-radius:var(--r-pill);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;letter-spacing:0.05em;">01</div>
+            <div style="width:2px;flex:1;min-height:24px;background:var(--mint-dark);margin-top:4px;"></div>
+          </div>
+          <div style="padding-top:6px"><div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:3px;">Solicitação</div><div style="font-size:12px;color:var(--text-secondary);line-height:1.55;">Solicitar adiantamento, locação e despesas ao financeiro <strong>mínimo 7 dias úteis</strong> antes da viagem/serviço.</div></div>
+        </div>
+        <div style="display:flex;gap:14px;align-items:flex-start;padding-bottom:16px;position:relative;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0">
+            <div style="width:36px;height:36px;background:var(--teal);border-radius:var(--r-pill);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;letter-spacing:0.05em;">02</div>
+            <div style="width:2px;flex:1;min-height:24px;background:var(--mint-dark);margin-top:4px;"></div>
+          </div>
+          <div style="padding-top:6px"><div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:3px;">Realização</div><div style="font-size:12px;color:var(--text-secondary);line-height:1.55;">Guardar todos os comprovantes durante a viagem ou execução do serviço.</div></div>
+        </div>
+        <div style="display:flex;gap:14px;align-items:flex-start;padding-bottom:16px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0">
+            <div style="width:36px;height:36px;background:var(--teal);border-radius:var(--r-pill);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;letter-spacing:0.05em;">03</div>
+            <div style="width:2px;flex:1;min-height:24px;background:var(--mint-dark);margin-top:4px;"></div>
+          </div>
+          <div style="padding-top:6px"><div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:3px;">Registro</div><div style="font-size:12px;color:var(--text-secondary);line-height:1.55;">Registrar cada despesa informando tipo, valor, cliente e centro de custo.</div></div>
+        </div>
+        <div style="display:flex;gap:14px;align-items:flex-start;padding-bottom:16px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0">
+            <div style="width:36px;height:36px;background:var(--teal);border-radius:var(--r-pill);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;letter-spacing:0.05em;">04</div>
+            <div style="width:2px;flex:1;min-height:24px;background:var(--mint-dark);margin-top:4px;"></div>
+          </div>
+          <div style="padding-top:6px"><div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:3px;">Conferência</div><div style="font-size:12px;color:var(--text-secondary);line-height:1.55;">Conferir despesas com o adiantamento, apresentando todos os comprovantes — <strong>até 2 dias úteis</strong> após o término.</div></div>
+        </div>
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div style="flex-shrink:0"><div style="width:36px;height:36px;background:var(--navy);border-radius:var(--r-pill);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--sage);letter-spacing:0.05em;">05</div></div>
+          <div style="padding-top:6px"><div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:3px;">Fechamento</div><div style="font-size:12px;color:var(--text-secondary);line-height:1.55;">O financeiro valida, aprova e realiza o acerto (reembolso de saldo ou devolução de excedente) — dentro do mês de competência.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 08 — FAQ -->
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <div style="width:32px;height:32px;background:var(--navy);border-radius:var(--r-pill);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <span style="font-size:10px;font-weight:700;color:var(--sage);letter-spacing:0.05em;">08</span>
+        </div>
+        <div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);">Seção 08</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);letter-spacing:-0.01em;">Dúvidas Frequentes</div>
+        </div>
+      </div>
+      <div style="display:grid;gap:10px;">
+        <details style="border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;">
+          <summary style="padding:12px 16px;font-size:13px;font-weight:600;color:var(--navy);cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;">Posso juntar despesas de dois clientes em um só acerto? <span style="font-size:18px;color:var(--teal)">+</span></summary>
+          <div style="padding:0 16px 14px;font-size:12px;color:var(--text-secondary);line-height:1.65;border-top:1px solid var(--border);">Não. Cada cliente e cada viagem deve ter seu próprio lançamento de acerto, independentemente dos valores envolvidos.</div>
+        </details>
+        <details style="border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;">
+          <summary style="padding:12px 16px;font-size:13px;font-weight:600;color:var(--navy);cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;">E se eu perder o comprovante? <span style="font-size:18px;color:var(--teal)">+</span></summary>
+          <div style="padding:0 16px 14px;font-size:12px;color:var(--text-secondary);line-height:1.65;border-top:1px solid var(--border);">Comunique imediatamente ao financeiro. Em alguns casos, é possível solicitar segunda via ao fornecedor. Despesas sem comprovante ficam sujeitas à análise e aprovação do financeiro.</div>
+        </details>
+        <details style="border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;">
+          <summary style="padding:12px 16px;font-size:13px;font-weight:600;color:var(--navy);cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;">Preciso informar centro de custo para valores pequenos? <span style="font-size:18px;color:var(--teal)">+</span></summary>
+          <div style="padding:0 16px 14px;font-size:12px;color:var(--text-secondary);line-height:1.65;border-top:1px solid var(--border);">Sim. Toda despesa, independentemente do valor, deve ser identificada com o centro de custo correto. Não há valor mínimo isento desta obrigação.</div>
+        </details>
+      </div>
+    </div>
+
+    <!-- RODAPÉ DO MANUAL -->
+    <div style="text-align:center;padding:20px;font-size:11px;color:var(--text-muted);font-weight:500;letter-spacing:0.05em;">
+      Contamos com a colaboração de todos. — <strong style="color:var(--navy)">Nortmont · Maio 2026</strong>
+    </div>
+  </div>
+
+
+  <!-- ═══ ABA 6: RELATÓRIO ═══ -->
+  <div id="tab-relatorio" class="tab-panel">
+
+    <!-- PRINT HEADER -->
+    <div class="print-only" style="margin-bottom:14px;padding-bottom:10px;border-bottom:1.5px solid #ccc;">
+      <strong style="font-size:15px;color:#011E3C">Nortmont · Relatório de Despesas</strong>
+      <div style="font-size:10px;color:#666;margin-top:2px;" id="print-subtitle"></div>
+    </div>
+
+    <!-- TOP HEADER -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;" class="no-print">
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;">Despesas · Visão Geral</div>
+        <h2 style="font-size:22px;font-weight:700;color:var(--navy);letter-spacing:-0.02em;line-height:1.1;">Relatório de Despesas</h2>
+      </div>
+      <div style="text-align:right;padding-top:4px;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);" id="rel-header-count"></div>
+        <div style="font-size:15px;font-weight:700;color:var(--navy);margin-top:2px;" id="rel-header-total"></div>
+      </div>
+    </div>
+
+    <!-- INFO BANNER -->
+    <div style="display:flex;align-items:flex-start;gap:9px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--teal);border-radius:0 var(--r-md) var(--r-md) 0;padding:11px 15px;margin-bottom:18px;font-size:12px;color:var(--text-secondary);line-height:1.55;" class="no-print">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.5" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Totais e registros consideram <strong>todos os lançamentos salvos</strong> — use os filtros abaixo para refinar por cliente, tipo, centro de custo ou período.
+    </div>
+
+    <!-- FAIXA CARDS -->
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-bottom:18px;border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;background:var(--surface);box-shadow:var(--elev1);" id="rel-faixa-cards"></div>
+
+    <!-- FILTROS -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:6px;box-shadow:var(--elev1);" class="no-print">
+      <div style="font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 1.41 13.45"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+        O filtro de data refere-se à DATA DE IDA
+      </div>
+      <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr 1fr 1fr;gap:12px;align-items:end;">
+        <div class="form-group">
+          <label>Cliente</label>
+          <div style="position:relative;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="rel-cliente-txt" placeholder="Buscar cliente..." oninput="renderRelatorio()" style="padding-left:32px;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Colaborador</label>
+          <select id="rel-colaborador" onchange="renderRelatorio()"><option value="">Todos</option></select>
+        </div>
+        <div class="form-group">
+          <label>Tipo de Despesa</label>
+          <select id="rel-tipo" onchange="renderRelatorio()">
+            <option value="">Todos os tipos</option>
+            <option>Adiantamento</option><option>Táxi/Uber</option><option>Passagem Aérea</option>
+            <option>Aluguel de Carro</option><option>Combustível</option><option>Estacionamento</option>
+            <option>Pedágio</option><option>Hospedagem</option><option>Alimentação</option>
+            <option>Outros</option><option>Hora Extra</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Centro de Custo</label>
+          <select id="rel-cc" onchange="renderRelatorio()">
+            <option value="">Todos</option>
+            <option value="Engenharia">Engenharia</option>
+            <option value="Gestão">Gestão</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Período · Ida de</label>
+          <input type="date" id="rel-de" onchange="renderRelatorio()">
+        </div>
+        <div class="form-group">
+          <label>Período · Até</label>
+          <input type="date" id="rel-ate" onchange="renderRelatorio()">
+        </div>
+        <div class="form-group">
+          <label>Competência (mês)</label>
+          <input type="month" id="rel-competencia" onchange="renderRelatorio()">
+        </div>
+      </div>
+    </div>
+
+    <!-- COUNT BAR -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 4px;margin-bottom:4px;" class="no-print">
+      <span style="font-size:13px;font-weight:600;color:var(--text-secondary);" id="rel-count-label"></span>
+      <button onclick="limparFiltros()" style="background:none;border:none;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:var(--text-muted);display:flex;align-items:center;gap:5px;padding:4px 8px;border-radius:var(--r-pill);transition:background 0.15s;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background='none'">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Limpar filtros
+      </button>
+    </div>
+
+    <!-- TABELA -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--elev1);">
+      <div style="overflow-x:auto;">
+        <div id="rel-table"></div>
+      </div>
+    </div>
+
+    <!-- PRINT BUTTON -->
+    <div style="margin-top:14px;display:flex;justify-content:flex-end;" class="no-print">
+      <button class="btn btn-teal" onclick="imprimirRelatorio()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Imprimir / Exportar PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ ABA 7: CUSTOS ORÇADOS ═══ -->
+  <div id="tab-custos" class="tab-panel">
+    <div class="page-header">
+      <div class="page-eyebrow">Cadastro · 07</div>
+      <h2>Custos Orçados por Projeto</h2>
+      <p>Defina o valor orçado para cada proposta para acompanhar o realizado no Dashboard.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-eyebrow">Novo orçamento de projeto</div>
+      <div class="form-grid cols-2">
+        <div class="form-group">
+          <label for="custo-proposta">Proposta *</label>
+          <select id="custo-proposta">
+            <option value="">— Selecione a proposta —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="custo-orcado">Custo Orçado para o Projeto (R$) *</label>
+          <input type="text" id="custo-orcado" placeholder="0,00" inputmode="decimal"
+            style="font-family:'Montserrat',monospace;letter-spacing:0.03em;"
+            oninput="maskCustoOrcado(this)">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-teal" onclick="salvarCusto()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Salvar Orçamento
+        </button>
+        <div class="alert" id="alert-custo"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="list-header">
+        <span>Orçamentos cadastrados</span>
+        <span class="badge" id="badge-custos">0</span>
+      </div>
+      <div id="lista-custos">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          Nenhum orçamento cadastrado ainda.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ABA 8: DASHBOARD ═══ -->
+  <div id="tab-dashboard" class="tab-panel">
+    <div class="page-header">
+      <div class="page-eyebrow">Dashboard · 08</div>
+      <h2>Orçado × Realizado por Projeto</h2>
+      <p>Cruzamento de custo orçado com as despesas lançadas, agrupado por proposta.</p>
+    </div>
+
+    <!-- KPI CARDS -->
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px;" id="dash-kpis"></div>
+
+    <!-- FILTRO -->
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:18px;" class="no-print">
+      <div class="form-group" style="flex:0 0 280px;">
+        <label style="font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);">Filtrar por proposta</label>
+        <select id="dash-filtro-prop" onchange="renderDashboard()" style="margin-top:5px;">
+          <option value="">Todas as propostas</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:0 0 200px;">
+        <label style="font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);">Status</label>
+        <select id="dash-filtro-status" onchange="renderDashboard()" style="margin-top:5px;">
+          <option value="">Todos</option>
+          <option value="ok">Dentro do orçamento</option>
+          <option value="over">Acima do orçamento</option>
+          <option value="nobudg">Sem orçamento</option>
+          <option value="noexp">Sem despesas</option>
+        </select>
+      </div>
+      <div style="margin-top:20px;">
+        <button class="btn btn-primary" onclick="document.getElementById('dash-filtro-prop').value='';document.getElementById('dash-filtro-status').value='';renderDashboard();">
+          Limpar filtros
+        </button>
+      </div>
+    </div>
+
+    <!-- PROJECT CARDS -->
+    <div id="dash-projetos"></div>
+  </div>
+
+</main>
+
+<script>
+/* ══════════════ AUTH · LISTA DE E-MAILS AUTORIZADOS ══════════════
+   Adicione ou remova e-mails nesta lista para controlar o acesso.
+   Use letras MINÚSCULAS.
+════════════════════════════════════════════════════════════════════ */
+const EMAILS_AUTORIZADOS = [
+  'angella.focusfranquias@gmail.com',
+  // adicione mais e-mails abaixo:
+  // 'colaborador@empresa.com',
+  // 'financeiro@empresa.com',
+];
+
+/* ID do seu projeto no Google Cloud (necessário para o login Google)
+   Instruções para obter: veja o README no final do arquivo         */
+const GOOGLE_CLIENT_ID = '907316473072-mki9ggn4bk22o2q509nbddqvm68ob8d7.apps.googleusercontent.com';
+
+let usuarioLogado = null;
+
+function onGoogleLogin(response) {
+  // Decodifica o JWT retornado pelo Google
+  const payload = JSON.parse(atob(response.credential.split('.')[1]));
+  const email   = (payload.email || '').toLowerCase();
+  const nome    = payload.name  || email;
+  const foto    = payload.picture || '';
+
+  if (EMAILS_AUTORIZADOS.map(e=>e.toLowerCase()).includes(email)) {
+    // ✅ Autorizado
+    usuarioLogado = { email, nome, foto };
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-root').style.display     = 'block';
+    renderizarUsuario(nome, foto, email);
+    renderClientes(); renderCustos(); renderColaboradores();
+    renderPropostas(); renderDespesas(); renderRelatorio();
+    // Activate manual tab as first
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-manual').classList.add('active');
+    document.querySelectorAll('.tab-btn')[0].classList.add('active');
+  } else {
+    // ❌ Não autorizado
+    const err = document.getElementById('login-erro');
+    err.style.display = 'block';
+    err.innerHTML = `⛔ Acesso negado para <strong>${email}</strong>.<br>Entre em contato com o administrador.`;
+  }
+}
+
+function renderizarUsuario(nome, foto, email) {
+  const el = document.getElementById('usuario-logado');
+  if (!el) return;
+  el.innerHTML = `
+    ${foto ? `<img src="${foto}" style="width:28px;height:28px;border-radius:50%;border:2px solid rgba(168,204,168,0.4);">` : ''}
+    <span style="font-size:12px;color:rgba(255,255,255,0.75);font-weight:500;">${nome}</span>
+    <button onclick="logout()" style="
+      background:none;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);
+      font-family:Montserrat,sans-serif;font-size:10px;font-weight:600;padding:3px 10px;
+      border-radius:999px;cursor:pointer;letter-spacing:0.05em;
+    ">Sair</button>
+  `;
+}
+
+function logout() {
+  usuarioLogado = null;
+  document.getElementById('app-root').style.display    = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-erro').style.display   = 'none';
+  google.accounts.id.disableAutoSelect();
+}
+
+const KEY = { clientes:'gd_clientes', colaboradores:'gd_colaboradores', propostas:'gd_propostas', despesas:'gd_despesas', custos:'gd_custos' };
+const EMAIL_DESTINO = 'contasapagar@electricservice.com.br';
+function load(k) { try { return JSON.parse(localStorage.getItem(k)) || []; } catch { return []; } }
+function save(k, d) { localStorage.setItem(k, JSON.stringify(d)); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function showAlert(id, msg, type) {
+  const el = document.getElementById(id);
+  el.className = 'alert ' + type;
+  el.textContent = (type==='success'?'✓ ':'✗ ') + msg;
+  setTimeout(() => { el.className='alert'; el.textContent=''; }, 3000);
+}
+
+function switchTab(name) {
+  // Password protection for restricted tabs
+  const SENHA_RESTRITA = '31072014';
+  const abasRestritas = ['relatorio','custos','dashboard'];
+  if (abasRestritas.includes(name)) {
+    const senha = prompt('🔒 Esta aba é restrita. Digite a senha para acessar:');
+    if (senha !== SENHA_RESTRITA) {
+      if (senha !== null) alert('Senha incorreta. Acesso negado.');
+      return;
+    }
+  }
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  const map = ['manual','clientes','colaboradores','propostas','despesas','relatorio','custos','dashboard'];
+  const idx = map.indexOf(name);
+  if (idx >= 0) document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+  if (name === 'despesas')  populateSelects();
+  if (name === 'relatorio') renderRelatorio();
+  if (name === 'custos')    renderCustos();
+  if (name === 'dashboard') renderDashboard();
+}
+
+/* ── CNPJ mask ── */
+function maskCNPJ(v) {
+  v = v.replace(/\D/g,'');
+  if (v.length > 14) v = v.slice(0,14);
+  return v.replace(/^(\d{2})(\d)/,'$1.$2')
+          .replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3')
+          .replace(/\.(\d{3})(\d)/,'.$1/$2')
+          .replace(/(\d{4})(\d)/,'$1-$2');
+}
+document.getElementById('cli-cnpj').addEventListener('input', function() { this.value = maskCNPJ(this.value); });
+
+/* ── Calcular dias ── */
+function calcDias() {
+  const ida = document.getElementById('desp-ida').value;
+  const volta = document.getElementById('desp-volta').value;
+  if (ida && volta) { const diff = (new Date(volta)-new Date(ida))/86400000; if(diff>=0) document.getElementById('desp-dias').value = diff; }
+}
+document.getElementById('desp-ida').addEventListener('change', calcDias);
+document.getElementById('desp-volta').addEventListener('change', calcDias);
+
+/* ── Valor mask ── */
+function maskValor(v) {
+  v = v.replace(/\D/g,'');
+  if (!v) return '';
+  return (parseInt(v,10)/100).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+}
+// valor inputs are per-row, handled by maskTipoValor
+
+/* ── Multi-tipo row helpers ── */
+function maskTipoValor(input) {
+  let v = input.value.replace(/\D/g,'');
+  if (!v) { input.value=''; return; }
+  input.value = (parseInt(v,10)/100).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+}
+
+function toggleVeiculoInline(input) {
+  const inline = document.getElementById('veiculo-inline');
+  if (!inline) return;
+  const hasVal = input.value.replace(/[^0-9]/g,'') !== '';
+  inline.classList.toggle('show', hasVal);
+  if (!hasVal) { document.getElementById('desp-placa').value=''; document.getElementById('desp-modelo').value=''; }
+}
+
+function selectTipo(btn) { /* legacy */ }
+function onTipoChange() { /* legacy */ }
+
+/* ── PDF upload ── */
+let pdfBase64 = null, pdfFileName = null;
+function onPdfChange(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (!file.type.match(/^(application\/pdf|image\/.*)$/)) { alert('Selecione um arquivo PDF ou imagem.'); input.value=''; return; }
+  if (file.size > 5*1024*1024) { alert('O arquivo deve ter no máximo 5 MB.'); input.value=''; return; }
+  pdfFileName = file.name;
+  const r = new FileReader();
+  r.onload = e => {
+    pdfBase64 = e.target.result;
+    document.getElementById('pdf-name-text').textContent = file.name;
+    document.getElementById('pdf-name-display').classList.add('show');
+  };
+  r.readAsDataURL(file);
+}
+
+/* ══════════════ CLIENTES ══════════════ */
+function salvarCliente() {
+  const nome = document.getElementById('cli-nome').value.trim();
+  const cnpj = document.getElementById('cli-cnpj').value.trim();
+  if (!nome || !cnpj) return showAlert('alert-cliente','Preencha nome e CNPJ.','danger');
+  const lista = load(KEY.clientes);
+  if (lista.some(c => c.cnpj===cnpj)) return showAlert('alert-cliente','CNPJ já cadastrado.','danger');
+  lista.push({ id:Date.now(), nome, cnpj });
+  save(KEY.clientes, lista);
+  document.getElementById('cli-nome').value = '';
+  document.getElementById('cli-cnpj').value = '';
+  showAlert('alert-cliente','Cliente adicionado com sucesso!','success');
+  renderClientes();
+renderCustos();
+}
+function removerCliente(id) { save(KEY.clientes, load(KEY.clientes).filter(c=>c.id!==id)); renderClientes(); }
+function renderClientes() {
+  const lista = load(KEY.clientes);
+  document.getElementById('badge-clientes').textContent = lista.length;
+  const el = document.getElementById('lista-clientes');
+  if (!lista.length) { el.innerHTML='<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Nenhum cliente cadastrado ainda.</div>'; return; }
+  el.innerHTML = '<table class="data-table"><thead><tr><th>Nome do Cliente</th><th>CNPJ</th><th></th></tr></thead><tbody>' +
+    lista.map(c=>`<tr><td><strong>${esc(c.nome)}</strong></td><td class="muted" style="font-family:'Montserrat',monospace">${esc(c.cnpj)}</td><td style="text-align:right"><button class="btn btn-danger" onclick="removerCliente(${c.id})">✕ Remover</button></td></tr>`).join('') +
+    '</tbody></table>';
+}
+
+/* ══════════════ COLABORADORES ══════════════ */
+function salvarColaborador() {
+  const nome = document.getElementById('col-nome').value.trim();
+  if (!nome) return showAlert('alert-colaborador','Preencha o nome.','danger');
+  const lista = load(KEY.colaboradores);
+  if (lista.some(c=>c.nome.toLowerCase()===nome.toLowerCase())) return showAlert('alert-colaborador','Colaborador já cadastrado.','danger');
+  lista.push({ id:Date.now(), nome });
+  save(KEY.colaboradores, lista);
+  document.getElementById('col-nome').value = '';
+  showAlert('alert-colaborador','Colaborador adicionado!','success');
+  renderColaboradores();
+}
+function removerColaborador(id) { save(KEY.colaboradores, load(KEY.colaboradores).filter(c=>c.id!==id)); renderColaboradores(); }
+function renderColaboradores() {
+  const lista = load(KEY.colaboradores);
+  document.getElementById('badge-colaboradores').textContent = lista.length;
+  const el = document.getElementById('lista-colaboradores');
+  if (!lista.length) { el.innerHTML='<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>Nenhum colaborador cadastrado ainda.</div>'; return; }
+  el.innerHTML = '<table class="data-table"><thead><tr><th>#</th><th>Nome do Colaborador</th><th></th></tr></thead><tbody>' +
+    lista.map((c,i)=>`<tr><td class="muted">${String(i+1).padStart(2,'0')}</td><td>${esc(c.nome)}</td><td style="text-align:right"><button class="btn btn-danger" onclick="removerColaborador(${c.id})">✕ Remover</button></td></tr>`).join('') +
+    '</tbody></table>';
+}
+
+/* ══════════════ PROPOSTAS ══════════════ */
+function salvarProposta() {
+  const num = document.getElementById('prop-num').value.trim();
+  const desc = document.getElementById('prop-desc').value.trim();
+  if (!num) return showAlert('alert-proposta','Preencha o número da proposta.','danger');
+  const lista = load(KEY.propostas);
+  if (lista.some(p=>p.num.toLowerCase()===num.toLowerCase())) return showAlert('alert-proposta','Proposta já cadastrada.','danger');
+  lista.push({ id:Date.now(), num, desc });
+  save(KEY.propostas, lista);
+  document.getElementById('prop-num').value = '';
+  document.getElementById('prop-desc').value = '';
+  showAlert('alert-proposta','Proposta adicionada!','success');
+  renderPropostas();
+}
+function removerProposta(id) { save(KEY.propostas, load(KEY.propostas).filter(p=>p.id!==id)); renderPropostas(); }
+function renderPropostas() {
+  const lista = load(KEY.propostas);
+  document.getElementById('badge-propostas').textContent = lista.length;
+  const el = document.getElementById('lista-propostas');
+  if (!lista.length) { el.innerHTML='<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>Nenhuma proposta cadastrada ainda.</div>'; return; }
+  el.innerHTML = '<table class="data-table"><thead><tr><th>Número</th><th>Descrição</th><th></th></tr></thead><tbody>' +
+    lista.map(p=>`<tr><td class="muted" style="font-family:'Montserrat',monospace;letter-spacing:0.04em">${esc(p.num)}</td><td>${esc(p.desc)||'<span style="color:var(--text-muted)">—</span>'}</td><td style="text-align:right"><button class="btn btn-danger" onclick="removerProposta(${p.id})">✕ Remover</button></td></tr>`).join('') +
+    '</tbody></table>';
+}
+
+/* ══════════════ SELECTS DESPESAS ══════════════ */
+function populateSelects() {
+  const clientes = load(KEY.clientes), colaboradores = load(KEY.colaboradores), propostas = load(KEY.propostas);
+  const sc = document.getElementById('desp-cliente'), sp = document.getElementById('desp-proposta'), sb = document.getElementById('desp-colaborador');
+  const cur = { c:sc.value, p:sp.value, b:sb.value };
+  sc.innerHTML = '<option value="">— Selecione o cliente —</option>' + clientes.map(c=>`<option value="${c.id}" ${cur.c==c.id?'selected':''}>${esc(c.nome)}</option>`).join('');
+  sp.innerHTML = '<option value="">— Selecione a proposta —</option>' + propostas.map(p=>`<option value="${p.id}" ${cur.p==p.id?'selected':''}>${esc(p.num)}${p.desc?' – '+esc(p.desc):''}</option>`).join('');
+  sb.innerHTML = '<option value="">— Selecione o colaborador —</option>' + colaboradores.map(c=>`<option value="${c.id}" ${cur.b==c.id?'selected':''}>${esc(c.nome)}</option>`).join('');
+}
+
+/* ══════════════ SALVAR / EDITAR DESPESA ══════════════ */
+let editingId = null;
+
+function editarDespesa(id) {
+  const lista = load(KEY.despesas);
+  const d = lista.find(x=>x.id===id);
+  if (!d) return;
+  editingId = id;
+  populateSelects();
+  // preenche selects por nome (match)
+  const clientes=load(KEY.clientes), propostas=load(KEY.propostas), colaboradores=load(KEY.colaboradores);
+  const cObj = clientes.find(x=>x.nome===d.cliente);
+  const pObj = propostas.find(x=>x.num===d.proposta);
+  const bObj = colaboradores.find(x=>x.nome===d.colaborador);
+  if(cObj) document.getElementById('desp-cliente').value = cObj.id;
+  if(pObj) document.getElementById('desp-proposta').value = pObj.id;
+  if(bObj) document.getElementById('desp-colaborador').value = bObj.id;
+  document.getElementById('desp-cidade').value = d.cidade||'';
+  document.getElementById('desp-ida').value   = d.ida||'';
+  document.getElementById('desp-volta').value = d.volta||'';
+  document.getElementById('desp-dias').value  = d.dias||'';
+  document.getElementById('desp-cc').value    = d.cc||'';
+  document.getElementById('desp-competencia').value  = d.competencia||'';
+  // fill the tipo row
+  document.querySelectorAll('.tipo-valor-input').forEach(inp=>{
+    if(inp.dataset.tipo===d.tipo) { inp.value=d.valor||''; }
+    else inp.value='';
+  });
+  if(d.tipo==='Combustível' && d.valor) {
+    const vi=document.getElementById('veiculo-inline'); if(vi) vi.classList.add('show');
+  }
+  document.getElementById('desp-valor').value = d.valor||'';
+  document.getElementById('desp-placa').value = d.placa||'';
+  document.getElementById('desp-modelo').value= d.modelo||'';
+  document.getElementById('desp-obs').value = d.obs||'';
+  if(d.pdfBase64){ pdfBase64=d.pdfBase64; pdfFileName=d.pdfFileName; document.getElementById('pdf-name-text').textContent=d.pdfFileName||''; document.getElementById('pdf-name-display').classList.add('show'); }
+  onTipoChange();
+  document.getElementById('edit-banner').classList.add('show');
+  document.getElementById('card-eyebrow-despesa').textContent = 'Editando despesa';
+  switchTab('despesas');
+  document.querySelector('#tab-despesas .card').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function cancelarEdicao() {
+  editingId = null;
+  limparFormDespesa();
+  document.getElementById('edit-banner').classList.remove('show');
+  document.getElementById('card-eyebrow-despesa').textContent = 'Nova despesa';
+}
+
+function limparFormDespesa() {
+  ['desp-cliente','desp-proposta','desp-colaborador','desp-cidade','desp-ida','desp-volta','desp-dias','desp-cc','desp-competencia','desp-obs','desp-pdf'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.querySelectorAll('.tipo-valor-input').forEach(i=>i.value='');
+  const vi = document.getElementById('veiculo-inline'); if(vi) vi.classList.remove('show');
+  document.getElementById('desp-placa').value=''; document.getElementById('desp-modelo').value='';
+  document.getElementById('tipo-required').classList.remove('show');
+  removerAnexo();
+  pdfBase64=null; pdfFileName=null;
+}
+
+function salvarDespesa() {
+  const cid = document.getElementById('desp-cliente').value;
+  const pid = document.getElementById('desp-proposta').value;
+  const bid = document.getElementById('desp-colaborador').value;
+  const cc  = document.getElementById('desp-cc').value;
+  const comp= document.getElementById('desp-competencia').value;
+
+  // Collect all tipo rows with values
+  const tipoRows = [];
+  document.querySelectorAll('.tipo-valor-input').forEach(inp => {
+    const raw = inp.value.replace(/[^0-9]/g,'');
+    if (raw) tipoRows.push({ tipo: inp.dataset.tipo, valor: inp.value });
+  });
+
+  // Validation
+  const tipReq = document.getElementById('tipo-required');
+  if (tipoRows.length === 0) { tipReq.classList.add('show'); }
+  if (!cid||!pid||!bid||!cc||tipoRows.length===0) return showAlert('alert-despesa','Preencha todos os campos obrigatórios (*).','danger');
+  tipReq.classList.remove('show');
+
+  const combustivelRow = tipoRows.find(r=>r.tipo==='Combustível');
+  if (combustivelRow) {
+    const placa = document.getElementById('desp-placa').value.trim();
+    const modelo= document.getElementById('desp-modelo').value.trim();
+    if (!placa||!modelo) return showAlert('alert-despesa','Para Combustível informe placa e modelo.','danger');
+  }
+
+  const clientes=load(KEY.clientes), propostas=load(KEY.propostas), colaboradores=load(KEY.colaboradores);
+  const base = {
+    data: editingId ? (load(KEY.despesas).find(x=>x.id===editingId)?.data||new Date().toLocaleDateString('pt-BR')) : new Date().toLocaleDateString('pt-BR'),
+    cadastradoPor: usuarioLogado ? usuarioLogado.email : '',
+    cliente:     clientes.find(x=>x.id==cid)?.nome||'',
+    proposta:    propostas.find(x=>x.id==pid)?.num||'',
+    colaborador: colaboradores.find(x=>x.id==bid)?.nome||'',
+    cidade:      document.getElementById('desp-cidade').value.trim(),
+    ida:         document.getElementById('desp-ida').value,
+    volta:       document.getElementById('desp-volta').value,
+    dias:        document.getElementById('desp-dias').value,
+    cc, competencia: comp,
+    obs:         document.getElementById('desp-obs').value.trim(),
+    pdfBase64:   pdfBase64||null, pdfFileName: pdfFileName||null
+  };
+
+  let lista = load(KEY.despesas);
+
+  if (editingId) {
+    // Editing: update single record with first tipo row
+    const r = tipoRows[0];
+    const upd = { ...base, id: editingId, tipo: r.tipo, valor: r.valor,
+      placa: r.tipo==='Combustível' ? document.getElementById('desp-placa').value.trim().toUpperCase() : '',
+      modelo: r.tipo==='Combustível' ? document.getElementById('desp-modelo').value.trim() : '',
+    };
+    lista = lista.map(x => x.id===editingId ? upd : x);
+    save(KEY.despesas, lista);
+    enviarParaGoogle(upd);
+    showAlert('alert-despesa','Despesa atualizada com sucesso!','success');
+    editingId = null;
+    document.getElementById('edit-banner').classList.remove('show');
+    document.getElementById('card-eyebrow-despesa').textContent = 'Nova despesa';
+  } else {
+    // New: create one record per tipo row
+    const newIds = [];
+    tipoRows.forEach((r, i) => {
+      const novaDesp = { ...base,
+        id: Date.now() + i,
+        tipo: r.tipo, valor: r.valor,
+        placa:  r.tipo==='Combustível' ? document.getElementById('desp-placa').value.trim().toUpperCase() : '',
+        modelo: r.tipo==='Combustível' ? document.getElementById('desp-modelo').value.trim() : '',
+      };
+      lista.push(novaDesp);
+      newIds.push(novaDesp);
+    });
+    save(KEY.despesas, lista);
+    newIds.forEach(d => enviarParaGoogle(d));
+    showAlert('alert-despesa', tipoRows.length > 1 ? `${tipoRows.length} despesas registradas!` : 'Despesa registrada com sucesso!','success');
+  }
+  limparFormDespesa();
+  renderDespesas();
+}
+function enviarEmail(id) {
+  const d = load(KEY.despesas).find(x=>x.id===id);
+  if (!d) return;
+  const fmtDate = v => v ? v.split('-').reverse().join('/') : '—';
+  const fmtComp = v => v ? v.split('-').reverse().join('/') : '—';
+
+  // ── Auto-download comprovante so user can attach in Gmail ──
+  if (d.pdfBase64 && d.pdfFileName) {
+    const a = document.createElement('a');
+    a.href = d.pdfBase64;
+    a.download = d.pdfFileName;
+    a.click();
+  }
+
+  const assunto = encodeURIComponent(
+    `Lançamento de Despesa – ${d.cliente} | ${d.proposta||'s/proposta'} | ${d.tipo} | ${d.data}`
+  );
+
+  const linhas = [
+    '═══════════════════════════════════',
+    '  LANÇAMENTO DE DESPESA – NORTMONT',
+    '═══════════════════════════════════',
+    '',
+    '📋 IDENTIFICAÇÃO',
+    `   Cliente:       ${d.cliente||'—'}`,
+    `   Proposta:      ${d.proposta||'—'}`,
+    `   Colaborador:   ${d.colaborador||'—'}`,
+    '',
+    '🗺  VIAGEM / PERÍODO',
+    `   Cidade/UF:     ${d.cidade||'—'}`,
+    `   Ida:           ${fmtDate(d.ida)}`,
+    `   Volta:         ${fmtDate(d.volta)}`,
+    `   Dias:          ${d.dias||'—'}`,
+    '',
+    '💼 CLASSIFICAÇÃO',
+    `   Centro de Custo:   ${d.cc||'—'}`,
+    `   Tipo de Despesa:   ${d.tipo||'—'}`,
+    `   Valor:             ${d.valor ? 'R$ '+d.valor : '—'}`,
+    `   Competência:       ${fmtComp(d.competencia)}`,
+  ];
+  if (d.tipo==='Combustível' && d.placa) {
+    linhas.push('','🚗 VEÍCULO',`   Placa:   ${d.placa}`,`   Modelo:  ${d.modelo||'—'}`);
+  }
+  if (d.obs) { linhas.push('','📝 OBSERVAÇÕES',`   ${d.obs}`); }
+  linhas.push(
+    '',
+    `📎 COMPROVANTE: ${d.pdfFileName ? d.pdfFileName+' — arquivo baixado automaticamente, anexe ao e-mail' : 'Não anexado'}`,
+    '',
+    '───────────────────────────────────',
+    `Data do lançamento: ${d.data}`,
+    'Enviado via Sistema de Gestão de Despesas · Nortmont'
+  );
+
+  const corpo = encodeURIComponent(linhas.join('\n'));
+  const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(EMAIL_DESTINO)}&su=${assunto}&body=${corpo}`;
+  window.open(url, '_blank');
+
+  // ── Show inline confirmation banner instead of confirm() ──
+  mostrarConfirmacaoEmail(id, !!d.pdfFileName);
+}
+
+function mostrarConfirmacaoEmail(id, temAnexo) {
+  // Remove banner anterior se houver
+  const anterior = document.getElementById('email-confirm-banner');
+  if (anterior) anterior.remove();
+
+  const banner = document.createElement('div');
+  banner.id = 'email-confirm-banner';
+  banner.style.cssText = `
+    position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+    background:#fff; border:1.5px solid #fde68a; border-radius:14px;
+    box-shadow:0 8px 32px rgba(1,30,60,0.18); padding:18px 24px;
+    display:flex; flex-direction:column; gap:12px; z-index:9999;
+    min-width:340px; max-width:90vw; animation:slideUp 0.25s ease;
+  `;
+  banner.innerHTML = `
+    <div style="font-size:13px;font-weight:600;color:#92400e;display:flex;align-items:center;gap:8px;">
+      <span style="font-size:18px;">📧</span>
+      Gmail aberto — você enviou o e-mail?
+    </div>
+    ${temAnexo ? '<div style="font-size:11px;color:#b07a00;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:7px 10px;">📎 O comprovante foi baixado — lembre-se de anexá-lo antes de enviar.</div>' : ''}
+    <div style="display:flex;gap:10px;">
+      <button onclick="definirStatusEmail(${id},'enviado');document.getElementById('email-confirm-banner').remove();"
+        style="flex:1;background:#0F4245;color:#fff;border:none;border-radius:999px;padding:9px 0;font-family:Montserrat,sans-serif;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.04em;">
+        ✓ Sim, e-mail enviado
+      </button>
+      <button onclick="definirStatusEmail(${id},'nao_enviado');document.getElementById('email-confirm-banner').remove();"
+        style="flex:1;background:none;color:#b33a3a;border:1.5px solid rgba(179,58,58,0.35);border-radius:999px;padding:9px 0;font-family:Montserrat,sans-serif;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.04em;">
+        ✗ Não enviei
+      </button>
+    </div>
+  `;
+
+  // Fecha automaticamente após 30s sem resposta
+  document.body.appendChild(banner);
+  setTimeout(() => { if (document.getElementById('email-confirm-banner')) banner.remove(); }, 30000);
+}
+
+function definirStatusEmail(id, status) {
+  let lista = load(KEY.despesas);
+  lista = lista.map(d => d.id===id ? {...d, emailStatus: status} : d);
+  save(KEY.despesas, lista);
+  renderDespesas();
+}
+
+function confirmarExclusao(id, btn) {
+  const cell = btn.closest('td');
+  const orig = cell.innerHTML;
+  cell.innerHTML = `<div class="confirm-delete">
+    <span>Tem certeza que quer excluir?</span>
+    <button class="btn-confirm-yes" onclick="removerDespesa(${id})">Sim, excluir</button>
+    <button class="btn-confirm-no"  onclick="renderDespesas()">Não</button>
+  </div>`;
+}
+
+function removerDespesa(id) {
+  save(KEY.despesas, load(KEY.despesas).filter(d=>d.id!==id));
+  renderDespesas();
+}
+
+/* ══════════════ RENDER DESPESAS ══════════════ */
+const tipoIcon = { 'Adiantamento':'💰','Táxi/Uber':'🚗','Passagem Aérea':'✈️','Aluguel de Carro':'🚙','Combustível':'⛽','Estacionamento':'🅿️','Pedágio':'🛣️','Hospedagem':'🏨','Alimentação':'🍽️','Outros':'📋','Hora Extra':'⏰' };
+
+function renderDespesas() {
+  const lista = load(KEY.despesas);
+  document.getElementById('badge-despesas').textContent = lista.length;
+  const el = document.getElementById('lista-despesas');
+  if (!lista.length) { el.innerHTML='<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Nenhuma despesa registrada ainda.</div>'; return; }
+  const fmtDate = v => v ? v.split('-').reverse().join('/') : '—';
+  el.innerHTML = '<table class="data-table" style="min-width:1060px"><thead><tr>' +
+    '<th>Data</th><th>Cadastrado Por</th><th>Cliente</th><th>Proposta</th><th>Colaborador</th><th>Cidade/UF</th><th>Ida</th><th>Volta</th><th>Dias</th><th>Centro Custo</th><th>Tipo</th><th>Valor</th><th>Competência</th><th>Veículo</th><th>Comprovante</th><th>Obs</th><th>Status E-mail</th><th></th>' +
+    '</tr></thead><tbody>' +
+    [...lista].reverse().map(d => {
+      const ccPill = d.cc==='Engenharia'
+        ? `<span class="cc-pill cc-eng">Engenharia</span>`
+        : `<span class="cc-pill cc-gest">Gestão</span>`;
+      const veiculo = d.tipo==='Combustível' && d.placa
+        ? `<span style="font-family:'Montserrat',monospace;font-size:11px;font-weight:600;letter-spacing:0.04em">${esc(d.placa)}</span><br><span style="font-size:10px;color:var(--text-muted)">${esc(d.modelo)}</span>`
+        : '<span style="color:var(--text-muted)">—</span>';
+      const pdf = d.pdfBase64
+        ? `<a href="${esc(d.pdfBase64)}" download="${esc(d.pdfFileName)}" style="color:var(--teal);font-size:11px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>${esc(d.pdfFileName).slice(0,16)}${d.pdfFileName.length>16?'…':''}</a>`
+        : '<span style="color:var(--text-muted)">—</span>';
+      const valor = d.valor
+        ? `<span style="font-family:'Montserrat',monospace;font-size:12px;font-weight:600;color:var(--teal)">R$ ${esc(d.valor)}</span>`
+        : '<span style="color:var(--text-muted)">—</span>';
+      return `<tr>
+        <td class="muted">${d.data}</td>
+        <td class="muted" style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(d.cadastradoPor||'')}">${esc(d.cadastradoPor||'—')}</td>
+        <td style="font-weight:600;font-size:12px">${esc(d.cliente)}</td>
+        <td class="muted" style="font-family:'Montserrat',monospace;letter-spacing:0.03em">${esc(d.proposta)}</td>
+        <td>${esc(d.colaborador)}</td>
+        <td>${esc(d.cidade)||'—'}</td>
+        <td class="muted">${fmtDate(d.ida)}</td>
+        <td class="muted">${fmtDate(d.volta)}</td>
+        <td class="muted" style="text-align:center">${d.dias||'—'}</td>
+        <td>${ccPill}</td>
+        <td style="white-space:nowrap;font-size:12px">${tipoIcon[d.tipo]||''} ${esc(d.tipo)}</td>
+        <td>${valor}</td>
+        <td class="muted">${d.competencia ? d.competencia.split('-').reverse().join('/') : '—'}</td>
+        <td>${veiculo}</td>
+        <td>${pdf}</td>
+        <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted);font-size:11px">${esc(d.obs)||'—'}</td>
+        <td style="white-space:nowrap;">
+          ${d.emailStatus==='enviado'
+            ? '<span class="badge-email-ok">✓ E-mail enviado</span>'
+            : d.emailStatus==='nao_enviado'
+            ? '<span class="badge-email-no">✗ Não enviado</span>'
+            : '<span style="color:var(--text-muted);font-size:11px;">—</span>'}
+        </td>
+        <td style="padding:8px 6px;">
+          <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;">
+            <button class="btn btn-edit" onclick="editarDespesa(${d.id})" title="Editar"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar</button>
+            <button class="btn btn-email" onclick="enviarEmail(${d.id})" title="Enviar por Gmail"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Gmail</button>
+            <button class="btn btn-danger" onclick="confirmarExclusao(${d.id}, this)">🗑 Excluir</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('') + '</tbody></table>';
+}
+
+/* ══════════════ RELATÓRIO ══════════════ */
+
+const GRUPOS = [
+  { key:'viagem',      label:'Viagem',      tipos:['Táxi/Uber','Passagem Aérea','Aluguel de Carro','Combustível','Estacionamento','Pedágio'],  bg:'#fef9ec', border:'#d4a017', txt:'#7c5200' },
+  { key:'hospedagem',  label:'Hospedagem',  tipos:['Hospedagem'],                                                                              bg:'#fef9ec', border:'#c8960e', txt:'#6b4500' },
+  { key:'alimentacao', label:'Alimentação', tipos:['Alimentação'],                                                                             bg:'#fff0f0', border:'#e07070', txt:'#8b2020' },
+  { key:'adiantamento',label:'Adiantamento',tipos:['Adiantamento'],                                                                           bg:'#fff0f0', border:'#c85050', txt:'#7a1a1a' },
+  { key:'outros',      label:'H. Extra / Outros', tipos:['Hora Extra','Outros'],                                                              bg:'#fff0f0', border:'#b83030', txt:'#6e1010' },
+];
+
+function parseBRL(v) { if(!v) return 0; return parseFloat(String(v).replace(/\./g,'').replace(',','.'))||0; }
+
+function fmtBRL(v) {
+  return 'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+}
+
+function getFiltrados() {
+  let lista = load(KEY.despesas);
+  const fC  = (document.getElementById('rel-cliente-txt')?.value||'').toLowerCase().trim();
+  const fB  = document.getElementById('rel-colaborador')?.value||'';
+  const fCC = document.getElementById('rel-cc')?.value||'';
+  const fT  = document.getElementById('rel-tipo')?.value||'';
+  const fDe = document.getElementById('rel-de')?.value||'';
+  const fAte= document.getElementById('rel-ate')?.value||'';
+  const fComp = document.getElementById('rel-competencia')?.value||'';
+  if (fC)    lista = lista.filter(d=>d.cliente.toLowerCase().includes(fC));
+  if (fB)    lista = lista.filter(d=>d.colaborador===fB);
+  if (fCC)   lista = lista.filter(d=>d.cc===fCC);
+  if (fT)    lista = lista.filter(d=>d.tipo===fT);
+  if (fDe)   lista = lista.filter(d=>d.ida&&d.ida>=fDe);
+  if (fAte)  lista = lista.filter(d=>d.ida&&d.ida<=fAte);
+  if (fComp) lista = lista.filter(d=>d.competencia&&d.competencia.startsWith(fComp));
+  return lista;
+}
+
+function getGrupo(tipo) {
+  for (const g of GRUPOS) { if (g.tipos.includes(tipo)) return g; }
+  return GRUPOS[4];
+}
+
+function renderRelatorio() {
+  const all    = load(KEY.despesas);
+  // populate colaborador select
+  const colabs = load(KEY.colaboradores);
+  const selColRel = document.getElementById('rel-colaborador');
+  if (selColRel) {
+    const cur = selColRel.value;
+    selColRel.innerHTML = '<option value="">Todos</option>' + colabs.map(c=>`<option value="${esc(c.nome)}" ${cur===c.nome?'selected':''}>${esc(c.nome)}</option>`).join('');
+  }
+  const lista  = getFiltrados();
+  const totalAll = all.length;
+  const totalAllVal = all.reduce((s,d)=>s+parseBRL(d.valor),0);
+
+  // header totals (all records)
+  const hc = document.getElementById('rel-header-count');
+  const ht = document.getElementById('rel-header-total');
+  if(hc) hc.textContent = totalAll+' LANÇAMENTO'+(totalAll!==1?'S':'')+' · TOTAL';
+  if(ht) ht.textContent = fmtBRL(totalAllVal);
+
+  // ── FAIXA CARDS (agrupados por grupo de tipo) ──
+  const cardsEl = document.getElementById('rel-faixa-cards');
+  if (cardsEl) {
+    cardsEl.innerHTML = GRUPOS.map((g,i) => {
+      const itens = all.filter(d=>g.tipos.includes(d.tipo));
+      const val   = itens.reduce((s,d)=>s+parseBRL(d.valor),0);
+      const clientes = [...new Set(itens.map(d=>d.cliente))].length;
+      const pct   = totalAllVal>0 ? (val/totalAllVal*100).toFixed(1) : '0,0';
+      const border = i<GRUPOS.length-1 ? 'border-right:1px solid #e5e7eb;' : '';
+      return `<div style="padding:18px 16px;background:${g.bg};${border}cursor:pointer;transition:filter 0.15s;" onclick="filtrarGrupo('${g.key}')" title="Filtrar por ${g.label}">
+        <div style="font-size:9px;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:${g.txt};margin-bottom:8px;border-left:3px solid ${g.border};padding-left:7px;">${g.label}</div>
+        <div style="font-size:28px;font-weight:700;color:${g.txt};line-height:1;">${itens.length}</div>
+        <div style="font-size:11px;color:${g.txt};opacity:0.75;margin-top:3px;margin-bottom:10px;">lançamentos · ${clientes} cliente${clientes!==1?'s':''}</div>
+        <div style="font-size:13px;font-weight:700;color:${g.txt};">${fmtBRL(val)}</div>
+        <div style="font-size:11px;color:${g.txt};opacity:0.7;margin-top:2px;">${pct.replace('.',',')}% do total</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── COUNT BAR ──
+  const totalFil = lista.length;
+  const totalFilVal = lista.reduce((s,d)=>s+parseBRL(d.valor),0);
+  const cl = document.getElementById('rel-count-label');
+  if (cl) cl.textContent = `${totalFil} registro${totalFil!==1?'s':''} · ${fmtBRL(totalFilVal)}`;
+
+  // ── TABLE ──
+  const el = document.getElementById('rel-table');
+  if (!el) return;
+  if (!lista.length) {
+    el.innerHTML='<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Nenhum lançamento encontrado.</div>';
+    return;
+  }
+  const fmtDate = v => v ? v.split('-').reverse().join('/') : '—';
+  const sorted = [...lista].sort((a,b)=>{ if(a.tipo<b.tipo) return -1; if(a.tipo>b.tipo) return 1; return 0; });
+
+  el.innerHTML = `<table class="data-table" style="min-width:900px">
+    <thead><tr>
+      <th style="width:140px">Categoria</th>
+      <th>Cliente</th>
+      <th>Proposta</th>
+      <th>Colaborador</th>
+      <th>Cidade/UF</th>
+      <th>Ida</th>
+      <th>Dias</th>
+      <th style="text-align:right">Valor</th>
+      <th>C. Custo</th>
+      <th>Competência</th>
+      <th>Veículo</th>
+      <th class="no-print"></th>
+    </tr></thead>
+    <tbody>`+
+    sorted.map(d=>{
+      const g = getGrupo(d.tipo);
+      const pill = `<span style="display:inline-flex;align-items:center;gap:5px;background:${g.bg};color:${g.txt};border:1px solid ${g.border};font-size:10px;font-weight:700;letter-spacing:0.08em;padding:3px 8px;border-radius:var(--r-pill);white-space:nowrap;">
+        <span style="width:7px;height:7px;border-radius:50%;background:${g.border};display:inline-block;flex-shrink:0;"></span>
+        ${esc(d.tipo)}</span>`;
+      const ccPill = d.cc==='Engenharia'
+        ? `<span class="cc-pill cc-eng">Eng.</span>`
+        : `<span class="cc-pill cc-gest">Gest.</span>`;
+      const veiculo = d.tipo==='Combustível' && d.placa
+        ? `<span style="font-size:11px;font-weight:600;letter-spacing:0.04em">${esc(d.placa)}</span>`
+        : '—';
+      const valorNum = parseBRL(d.valor);
+      const valorHtml = d.valor
+        ? `<span style="font-weight:700;color:${valorNum>500?'#b83030':'var(--teal)'};">${fmtBRL(valorNum)}</span>`
+        : '<span style="color:var(--text-muted)">—</span>';
+      return `<tr>
+        <td>${pill}</td>
+        <td style="font-weight:600;font-size:12px">${esc(d.cliente)}</td>
+        <td class="muted">${esc(d.proposta)||'—'}</td>
+        <td style="font-size:12px">${esc(d.colaborador)}</td>
+        <td style="font-size:12px">${esc(d.cidade)||'—'}</td>
+        <td class="muted">${fmtDate(d.ida)}</td>
+        <td class="muted" style="text-align:center">${d.dias||'—'}</td>
+        <td style="text-align:right">${valorHtml}</td>
+        <td>${ccPill}</td>
+        <td class="muted" style="font-size:11px">${d.competencia ? d.competencia.split('-').reverse().join('/') : '—'}</td>
+        <td style="font-size:11px">${veiculo}</td>
+        <td class="no-print" style="white-space:nowrap;display:flex;gap:4px;padding:7px 6px;">
+          <button class="btn btn-edit" onclick="editarDespesa(${d.id})" title="Editar">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="btn btn-danger" onclick="confirmarExclusaoRel(${d.id}, this)">🗑</button>
+        </td>
+      </tr>`;
+    }).join('') +
+    `<tr style="border-top:2px solid var(--border);background:var(--surface-2)">
+      <td colspan="7" style="padding:10px 12px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);text-align:right">Total filtrado</td>
+      <td style="padding:10px 12px;font-size:14px;font-weight:700;color:var(--navy);text-align:right">${fmtBRL(totalFilVal)}</td>
+      <td colspan="3" class="no-print"></td>
+    </tr>`+
+    '</tbody></table>';
+}
+
+function filtrarGrupo(key) {
+  const g = GRUPOS.find(x=>x.key===key);
+  if (!g) return;
+  // set tipo filter to first tipo of the group (or clear if multiple)
+  const sel = document.getElementById('rel-tipo');
+  if (sel) { sel.value = g.tipos.length===1 ? g.tipos[0] : ''; }
+  // clear others
+  const tc = document.getElementById('rel-cliente-txt'); if(tc) tc.value='';
+  const cc = document.getElementById('rel-cc'); if(cc) cc.value='';
+  renderRelatorio();
+}
+
+function confirmarExclusaoRel(id, btn) {
+  const cell = btn.closest('td');
+  cell.innerHTML = `<div class="confirm-delete"><span>Tem certeza?</span><button class="btn-confirm-yes" onclick="removerDespesaRel(${id})">Sim</button><button class="btn-confirm-no" onclick="renderRelatorio()">Não</button></div>`;
+}
+
+function removerDespesaRel(id) {
+  save(KEY.despesas, load(KEY.despesas).filter(d=>d.id!==id));
+  renderDespesas();
+  renderRelatorio();
+}
+
+function limparFiltros() {
+  const ids = ['rel-cliente-txt','rel-colaborador','rel-cc','rel-tipo','rel-de','rel-ate','rel-competencia'];
+  ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  renderRelatorio();
+}
+
+function imprimirRelatorio() {
+  const lista = getFiltrados();
+  const partes = [];
+  const fc   = document.getElementById('rel-cliente-txt')?.value;
+  const fb   = document.getElementById('rel-colaborador')?.value;
+  const fcc  = document.getElementById('rel-cc')?.value;
+  const ft   = document.getElementById('rel-tipo')?.value;
+  const fde  = document.getElementById('rel-de')?.value;
+  const fat  = document.getElementById('rel-ate')?.value;
+  const fcomp= document.getElementById('rel-competencia')?.value;
+  if(fc)   partes.push('Cliente: '+fc);
+  if(fb)   partes.push('Colaborador: '+fb);
+  if(fcc)  partes.push('CC: '+fcc);
+  if(ft)   partes.push('Tipo: '+ft);
+  if(fde||fat) partes.push('Período: '+(fde?fde.split('-').reverse().join('/'):'—')+' → '+(fat?fat.split('-').reverse().join('/'):'—'));
+  if(fcomp) partes.push('Competência: '+fcomp.split('-').reverse().join('/'));
+  const totalVal = fmtBRL(lista.reduce((s,d)=>s+parseBRL(d.valor),0));
+  const subtitulo = partes.join(' · ') || 'Todos os lançamentos';
+  const fmtDate = v => v ? v.split('-').reverse().join('/') : '—';
+
+  const rows = lista.map(d => {
+    const g = getGrupo(d.tipo);
+    const cc = d.cc||'—';
+    const veiculo = d.tipo==='Combustível'&&d.placa ? d.placa : '—';
+    return `<tr>
+      <td>${esc(d.tipo)}</td>
+      <td>${esc(d.cliente)}</td>
+      <td>${esc(d.proposta)||'—'}</td>
+      <td>${esc(d.colaborador)}</td>
+      <td>${esc(d.cidade)||'—'}</td>
+      <td>${fmtDate(d.ida)}</td>
+      <td>${d.dias||'—'}</td>
+      <td style="text-align:right">${d.valor?'R$ '+esc(d.valor):'—'}</td>
+      <td>${cc}</td>
+      <td>${d.competencia?d.competencia.split('-').reverse().join('/'):'—'}</td>
+      <td>${veiculo}</td>
+      <td>${esc(d.obs||'')}</td>
+    </tr>`;
+  }).join('');
+  const totalFilVal = lista.reduce((s,d)=>s+parseBRL(d.valor),0);
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Relatório de Despesas · Nortmont</title>
+    <style>
+      * { box-sizing:border-box; margin:0; padding:0; }
+      body { font-family: 'Segoe UI', Arial, sans-serif; font-size:11px; color:#111; padding:20px; }
+      .hdr { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; padding-bottom:10px; border-bottom:2px solid #011E3C; }
+      .hdr-left h1 { font-size:16px; font-weight:700; color:#011E3C; }
+      .hdr-left p  { font-size:10px; color:#555; margin-top:3px; }
+      .hdr-right   { text-align:right; font-size:11px; color:#333; }
+      .hdr-right strong { font-size:14px; color:#0F4245; display:block; }
+      table { width:100%; border-collapse:collapse; margin-top:10px; }
+      th { font-size:8px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#555; background:#f4f8f5; padding:6px 8px; border-bottom:1.5px solid #ccc; text-align:left; }
+      td { padding:6px 8px; border-bottom:1px solid #e5e5e5; vertical-align:middle; }
+      tr:hover td { background:#f9fcfa; }
+      .foot td { font-weight:700; color:#011E3C; background:#e0eee7; border-top:2px solid #011E3C; }
+      @media print { body { padding:10px; } }
+    </style>
+  </head><body>
+    <div class="hdr">
+      <div class="hdr-left">
+        <h1>Nortmont · Relatório de Despesas</h1>
+        <p>${subtitulo}</p>
+      </div>
+      <div class="hdr-right">
+        ${lista.length} lançamento(s)<br>
+        <strong>${totalVal}</strong>
+      </div>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Tipo</th><th>Cliente</th><th>Proposta</th><th>Colaborador</th>
+        <th>Cidade/UF</th><th>Ida</th><th>Dias</th><th>Valor</th>
+        <th>C. Custo</th><th>Competência</th><th>Veículo</th><th>Obs</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr class="foot">
+        <td colspan="7" style="text-align:right">Total</td>
+        <td>R$ ${totalFilVal.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.')}</td>
+        <td colspan="4"></td>
+      </tr></tfoot>
+    </table>
+  </body></html>`;
+
+  const w = window.open('','_blank','width=1100,height=750');
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(()=>{ w.print(); }, 400);
+}
+
+/* ══════════════ CUSTOS ORÇADOS ══════════════ */
+function maskCustoOrcado(input) {
+  let v = input.value.replace(/\D/g,'');
+  if (!v) { input.value=''; return; }
+  input.value = (parseInt(v,10)/100).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+}
+
+function populateCustoPropostaSelect() {
+  const props = load(KEY.propostas);
+  const custos = load(KEY.custos);
+  const sel = document.getElementById('custo-proposta');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Selecione a proposta —</option>' +
+    props.map(p => `<option value="${p.id}" ${cur==p.id?'selected':''}>${esc(p.num)}${p.desc?' – '+esc(p.desc):''}</option>`).join('');
+}
+
+function salvarCusto() {
+  const propId = document.getElementById('custo-proposta').value;
+  const valRaw = document.getElementById('custo-orcado').value;
+  if (!propId || !valRaw) return showAlert('alert-custo','Preencha proposta e valor orçado.','danger');
+  const props = load(KEY.propostas);
+  const prop  = props.find(p=>p.id==propId);
+  if (!prop) return;
+  let lista = load(KEY.custos);
+  const existing = lista.find(c=>c.propostaId==propId);
+  if (existing) {
+    lista = lista.map(c => c.propostaId==propId ? {...c, orcado:valRaw} : c);
+    showAlert('alert-custo','Orçamento atualizado com sucesso!','success');
+  } else {
+    lista.push({ id:Date.now(), propostaId:propId, proposta:prop.num, descricao:prop.desc||'', orcado:valRaw });
+    showAlert('alert-custo','Orçamento salvo com sucesso!','success');
+  }
+  save(KEY.custos, lista);
+  document.getElementById('custo-proposta').value = '';
+  document.getElementById('custo-orcado').value   = '';
+  renderCustos();
+}
+
+function removerCusto(id) {
+  save(KEY.custos, load(KEY.custos).filter(c=>c.id!==id));
+  renderCustos();
+}
+
+function renderCustos() {
+  populateCustoPropostaSelect();
+  const lista = load(KEY.custos);
+  document.getElementById('badge-custos').textContent = lista.length;
+  const el = document.getElementById('lista-custos');
+  if (!lista.length) {
+    el.innerHTML='<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Nenhum orçamento cadastrado ainda.</div>';
+    return;
+  }
+  el.innerHTML = '<table class="data-table"><thead><tr><th>Proposta</th><th>Descrição</th><th style="text-align:right">Custo Orçado</th><th></th></tr></thead><tbody>' +
+    lista.map(c=>`<tr>
+      <td style="font-family:'Montserrat',monospace;font-weight:600;letter-spacing:0.04em">${esc(c.proposta)}</td>
+      <td style="color:var(--text-muted)">${esc(c.descricao)||'—'}</td>
+      <td style="text-align:right;font-family:'Montserrat',monospace;font-weight:700;color:var(--teal)">R$ ${esc(c.orcado)}</td>
+      <td style="text-align:right"><button class="btn btn-danger" onclick="removerCusto(${c.id})">✕ Remover</button></td>
+    </tr>`).join('') + '</tbody></table>';
+}
+
+/* ══════════════ DASHBOARD ══════════════ */
+function parseBRLd(v) { if(!v) return 0; return parseFloat(String(v).replace(/\./g,'').replace(',','.'))||0; }
+function fmtBRLd(v) { return 'R$ '+Math.abs(v).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
+
+function renderDashboard() {
+  const custos   = load(KEY.custos);
+  const despesas = load(KEY.despesas);
+  const propostas= load(KEY.propostas);
+  const filtProp  = document.getElementById('dash-filtro-prop')?.value||'';
+  const filtStatus= document.getElementById('dash-filtro-status')?.value||'';
+
+  // Populate filtro select
+  const sel = document.getElementById('dash-filtro-prop');
+  if (sel) {
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">Todas as propostas</option>' +
+      propostas.map(p=>`<option value="${esc(p.num)}" ${cur===p.num?'selected':''}>${esc(p.num)}${p.desc?' – '+esc(p.desc):''}</option>`).join('');
+  }
+
+  // Build project map: all proposals that have either a budget or expenses
+  const projMap = {};
+
+  propostas.forEach(p => {
+    projMap[p.num] = { num:p.num, desc:p.desc||'', orcado:0, realizado:0, tipos:{}, hasOrç:false, hasExp:false };
+  });
+
+  // Apply budgets
+  custos.forEach(c => {
+    if (!projMap[c.proposta]) projMap[c.proposta] = { num:c.proposta, desc:c.descricao||'', orcado:0, realizado:0, tipos:{}, hasOrç:false, hasExp:false };
+    projMap[c.proposta].orcado = parseBRLd(c.orcado);
+    projMap[c.proposta].hasOrç = true;
+  });
+
+  // Apply expenses
+  despesas.forEach(d => {
+    if (!d.proposta) return;
+    if (!projMap[d.proposta]) projMap[d.proposta] = { num:d.proposta, desc:'', orcado:0, realizado:0, tipos:{}, hasOrç:false, hasExp:false };
+    const val = parseBRLd(d.valor);
+    projMap[d.proposta].realizado += val;
+    projMap[d.proposta].hasExp = true;
+    if (val > 0) {
+      projMap[d.proposta].tipos[d.tipo] = (projMap[d.proposta].tipos[d.tipo]||0) + val;
+    }
+  });
+
+  let projs = Object.values(projMap);
+
+  // Determine status
+  projs.forEach(p => {
+    if (!p.hasOrç && !p.hasExp) { p.status='nobudg'; return; }
+    if (!p.hasOrç) { p.status='nobudg'; return; }
+    if (!p.hasExp) { p.status='noexp'; return; }
+    p.status = p.realizado <= p.orcado ? 'ok' : 'over';
+  });
+
+  // Filter
+  if (filtProp)   projs = projs.filter(p=>p.num===filtProp);
+  if (filtStatus) projs = projs.filter(p=>p.status===filtStatus);
+
+  // KPIs
+  const allProjs = Object.values(projMap);
+  const totalOrc  = allProjs.reduce((s,p)=>s+p.orcado,0);
+  const totalReal = allProjs.reduce((s,p)=>s+p.realizado,0);
+  const variacao  = totalOrc - totalReal;
+  const nOver     = allProjs.filter(p=>p.status==='over').length;
+  const nOk       = allProjs.filter(p=>p.status==='ok').length;
+
+  document.getElementById('dash-kpis').innerHTML = `
+    <div class="dash-kpi"><div class="kpi-label">Projetos</div><div class="kpi-val">${allProjs.length}</div><div class="kpi-sub">${nOk} dentro · ${nOver} acima</div></div>
+    <div class="dash-kpi teal"><div class="kpi-label">Total Orçado</div><div class="kpi-val" style="font-size:16px">${fmtBRLd(totalOrc)}</div><div class="kpi-sub">${custos.length} projetos com orçamento</div></div>
+    <div class="dash-kpi" style="background:#1a5c60"><div class="kpi-label">Total Realizado</div><div class="kpi-val" style="font-size:16px">${fmtBRLd(totalReal)}</div><div class="kpi-sub">${despesas.length} lançamentos</div></div>`;
+
+  // Project cards
+  const el = document.getElementById('dash-projetos');
+  if (!projs.length) {
+    el.innerHTML='<div class="empty-state" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Nenhum projeto encontrado com os filtros aplicados.</div>';
+    return;
+  }
+
+  // Sort: over first, then ok, then others
+  const order = {over:0,ok:1,nobudg:2,noexp:3};
+  projs.sort((a,b)=>(order[a.status]||9)-(order[b.status]||9));
+
+  el.innerHTML = projs.map(p => {
+    const pct     = p.orcado>0 ? Math.min(p.realizado/p.orcado*100,100) : 0;
+    const pctReal = p.orcado>0 ? (p.realizado/p.orcado*100).toFixed(1) : null;
+    const variacao = p.orcado - p.realizado;
+    const barClass = p.status==='over' ? 'bar-over' : p.realizado===0 ? 'bar-zero' : 'bar-ok';
+    const badges = { ok:'status-ok', over:'status-over', nobudg:'status-nobudg', noexp:'status-noexp' };
+    const labels = { ok:'✓ Dentro do orçamento', over:'⚠ Acima do orçamento', nobudg:'— Sem orçamento', noexp:'● Sem despesas' };
+
+    const tiposList = Object.entries(p.tipos).sort((a,b)=>b[1]-a[1])
+      .map(([tipo,val])=>`<span class="tipo-chip">${tipoIcon[tipo]||''} ${tipo}: ${fmtBRLd(val)}</span>`).join('');
+
+    return `<div class="proj-card">
+      <div class="proj-card-header">
+        <div>
+          <div class="proj-num">Proposta</div>
+          <div class="proj-title">${esc(p.num)}${p.desc?' <span style="font-weight:400;font-size:13px;color:var(--text-muted)">· '+esc(p.desc)+'</span>':''}</div>
+        </div>
+        <span class="proj-status-badge ${badges[p.status]}">${labels[p.status]}</span>
+      </div>
+
+      <div class="bar-wrap">
+        <div class="bar-fill ${barClass}" style="width:${pct}%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-bottom:14px;">
+        <span>R$ 0</span>
+        <span style="font-weight:600;color:var(--text-secondary)">${pctReal!==null ? pctReal+'% consumido' : '—'}</span>
+        <span>${p.orcado>0?fmtBRLd(p.orcado):'Sem orçamento'}</span>
+      </div>
+
+      <div class="proj-values">
+        <div class="proj-val-item">
+          <div class="pvl">Orçado</div>
+          <div class="pvv">${p.orcado>0?fmtBRLd(p.orcado):'—'}</div>
+        </div>
+        <div class="proj-val-item">
+          <div class="pvl">Realizado</div>
+          <div class="pvv ${p.realizado>0&&p.status==='over'?'red':''}">${p.realizado>0?fmtBRLd(p.realizado):'—'}</div>
+        </div>
+        <div class="proj-val-item">
+          <div class="pvl">Variação</div>
+          <div class="pvv ${p.orcado>0?(variacao>=0?'green':'red'):''}">
+            ${p.orcado>0 ? (variacao>=0?'+':'-')+' '+fmtBRLd(Math.abs(variacao)) : '—'}
+          </div>
+        </div>
+        <div class="proj-val-item">
+          <div class="pvl">Lançamentos</div>
+          <div class="pvv">${despesas.filter(d=>d.proposta===p.num).length}</div>
+        </div>
+      </div>
+
+      ${tiposList ? `<div class="proj-tipos"><div class="proj-tipos-title">Despesas por categoria</div><div class="tipo-breakdown">${tiposList}</div></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+renderClientes();
+renderCustos();
+renderColaboradores();
+renderPropostas();
+renderDespesas();
+renderRelatorio();
+
+/* ══════════════ GOOGLE SHEETS + DRIVE INTEGRATION ══════════════ */
+// Cole aqui a URL gerada após publicar o Apps Script como Web App:
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFf3t_iSkx-PKbGHSUp6n402VCZHaMN3iKETaavSAq0Ebngm9KWCCTirXvxYWV3VM/exec';
+
+async function enviarParaGoogle(despesa) {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'COLE_AQUI_A_URL_DO_WEB_APP') return;
+  try {
+    const payload = { ...despesa };
+    if (payload.pdfBase64 && payload.pdfBase64.includes(',')) {
+      const parts = payload.pdfBase64.split(',');
+      payload.anexoBase64 = parts[1];
+      payload.anexoTipo   = payload.pdfBase64.match(/data:(.*?);/)?.[1] || 'application/pdf';
+      payload.anexoNome   = payload.pdfFileName || 'anexo.pdf';
+    }
+    delete payload.pdfBase64;
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+    console.log('Enviado para Google com sucesso.');
+  } catch(e) {
+    console.warn('Falha ao enviar para Google:', e.message);
+  }
+}
+
+</script>
+</div><!-- /app-root -->
+</body>
+</html>
+
+<!--
+════════════════════════════════════════════════════════════════════
+  COMO CONFIGURAR O LOGIN GOOGLE — PASSO A PASSO
+════════════════════════════════════════════════════════════════════
+
+PASSO 1 — Obter o Google Client ID (gratuito)
+──────────────────────────────────────────────
+1. Acesse: https://console.cloud.google.com/
+2. Crie um projeto (ou selecione um existente)
+3. Menu lateral → "APIs e Serviços" → "Credenciais"
+4. Clique em "+ CRIAR CREDENCIAIS" → "ID do cliente OAuth 2.0"
+5. Tipo de aplicativo: "Aplicativo da Web"
+6. Nome: "Nortmont Dashboard"
+7. Em "Origens JavaScript autorizadas", adicione:
+   - http://localhost  (para testes locais)
+   - file://           (se abrir o arquivo direto)
+8. Clique em "Criar"
+9. Copie o "ID do cliente" gerado (termina em .apps.googleusercontent.com)
+
+PASSO 2 — Colar o Client ID no HTML
+──────────────────────────────────────────────
+Abra o HTML e localize as duas linhas:
+  const GOOGLE_CLIENT_ID = '907316473072-mki9ggn4bk22o2q509nbddqvm68ob8d7.apps.googleusercontent.com';
+  data-client_id="907316473072-mki9ggn4bk22o2q509nbddqvm68ob8d7.apps.googleusercontent.com"
+Substitua 907316473072-mki9ggn4bk22o2q509nbddqvm68ob8d7.apps.googleusercontent.com pelo ID copiado no passo anterior.
+
+PASSO 3 — Adicionar e-mails autorizados
+──────────────────────────────────────────────
+Localize no HTML:
+  const EMAILS_AUTORIZADOS = [
+    'seuemail@gmail.com',
+  ];
+Adicione os e-mails das pessoas que podem acessar.
+
+PASSO 4 — Pronto!
+──────────────────────────────────────────────
+Abra o arquivo no navegador. A tela de login aparecerá.
+Somente os e-mails da lista terão acesso ao painel.
+════════════════════════════════════════════════════════════════════
+-->
