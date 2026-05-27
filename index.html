@@ -1967,6 +1967,7 @@ function enviarEmail(id) {
   linhas.push(
     '',
     `📎 COMPROVANTE: ${d.pdfFileName ? d.pdfFileName+' — arquivo baixado automaticamente, anexe ao e-mail' : 'Não anexado'}`,
+    `🔗 LINK NO DRIVE: ${d.linkDrive ? d.linkDrive : 'Aguardando upload para o Drive...'}`,
     '',
     '───────────────────────────────────',
     `Data do lançamento: ${d.data}`,
@@ -2597,11 +2598,19 @@ async function enviarParaGoogle(despesa) {
     delete payload.pdfBase64;
     const res = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      mode: 'no-cors',
+      mode: 'cors',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(payload)
     });
-    console.log('Enviado para Google com sucesso.');
+    const json = await res.json();
+    console.log('Enviado para Google com sucesso.', json);
+    // Se retornou link do Drive, salva na despesa para usar no e-mail
+    if (json && json.linkAnexo && despesa.id) {
+      let lista = load(KEY.despesas);
+      lista = lista.map(d => d.id === despesa.id ? { ...d, linkDrive: json.linkAnexo } : d);
+      save(KEY.despesas, lista);
+      renderDespesas();
+    }
   } catch(e) {
     console.warn('Falha ao enviar para Google:', e.message);
   }
