@@ -1091,7 +1091,18 @@ body {
     <div class="card">
       <div class="list-header">
         <span>Despesas lançadas</span>
-        <span class="badge" id="badge-despesas">0</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="badge" id="badge-despesas">0</span>
+          <button onclick="renderDespesas()" style="
+            background:none; border:1.5px solid rgba(15,66,69,0.3);
+            border-radius:999px; padding:4px 12px; font-family:Montserrat,sans-serif;
+            font-size:11px; font-weight:600; color:var(--teal); cursor:pointer;
+            display:inline-flex; align-items:center; gap:5px; transition:all 0.15s;
+          " onmouseover="this.style.background='var(--teal-light)'" onmouseout="this.style.background='none'">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Atualizar
+          </button>
+        </div>
       </div>
       <div style="overflow-x:auto;">
         <div id="lista-despesas">
@@ -1887,7 +1898,6 @@ function salvarDespesa() {
   let lista = load(KEY.despesas);
 
   if (editingId) {
-    // Editing: update single record with first tipo row
     const r = tipoRows[0];
     const upd = { ...base, id: editingId, tipo: r.tipo, valor: r.valor,
       placa: r.tipo==='Combustível' ? document.getElementById('desp-placa').value.trim().toUpperCase() : '',
@@ -1895,13 +1905,15 @@ function salvarDespesa() {
     };
     lista = lista.map(x => x.id===editingId ? upd : x);
     save(KEY.despesas, lista);
-    enviarParaGoogle(upd);
+    // Renderiza imediatamente, envia ao Google em background
+    limparFormDespesa();
+    renderDespesas();
     showAlert('alert-despesa','Despesa atualizada com sucesso!','success');
     editingId = null;
     document.getElementById('edit-banner').classList.remove('show');
     document.getElementById('card-eyebrow-despesa').textContent = 'Nova despesa';
+    enviarParaGoogle(upd); // background, não bloqueia
   } else {
-    // New: create one record per tipo row
     const newIds = [];
     tipoRows.forEach((r, i) => {
       const novaDesp = { ...base,
@@ -1914,25 +1926,98 @@ function salvarDespesa() {
       newIds.push(novaDesp);
     });
     save(KEY.despesas, lista);
-    newIds.forEach(d => enviarParaGoogle(d));
+    // Renderiza imediatamente, envia ao Google em background
+    limparFormDespesa();
+    renderDespesas();
     showAlert('alert-despesa', tipoRows.length > 1 ? `${tipoRows.length} despesas registradas!` : 'Despesa registrada com sucesso!','success');
+    newIds.forEach(d => enviarParaGoogle(d)); // background, não bloqueia
   }
-  limparFormDespesa();
-  renderDespesas();
 }
-function enviarEmail(id) {
+async function enviarEmail(id) {
   const d = load(KEY.despesas).find(x=>x.id===id);
   if (!d) return;
+
+  // Se já tem link do Drive, abre o e-mail direto
+  if (d.linkDrive) {
+    abrirGmail(d);
+    return;
+  }
+
+  // Se tem anexo mas ainda não tem link, faz upload agora e aguarda
+  if (d.pdfBase64 && d.pdfFileName) {
+    // Mostra aviso de aguardo
+    const aviso = document.createElement('div');
+    aviso.id = 'aviso-upload';
+    aviso.style.cssText = `
+      position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+      background:#011E3C; color:#A8CCA8; border-radius:14px;
+      box-shadow:0 8px 32px rgba(1,30,60,0.25); padding:16px 28px;
+      font-family:Montserrat,sans-serif; font-size:13px; font-weight:600;
+      z-index:9999; display:flex; align-items:center; gap:10px;
+      animation:slideUp 0.25s ease;
+    `;
+    aviso.innerHTML = `
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+      </svg>
+      Enviando comprovante para o Drive, aguarde...
+    `;
+    // Adiciona animação de spin
+    if (!document.getElementById('spin-style')) {
+      const s = document.createElement('style');
+      s.id = 'spin-style';
+      s.textContent = '@keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }';
+      document.head.appendChild(s);
+    }
+    document.body.appendChild(aviso);
+
+    try {
+      const payload = { ...d };
+      if (payload.pdfBase64 && payload.pdfBase64.includes(',')) {
+        const parts = payload.pdfBase64.split(',');
+        payload.anexoBase64 = parts[1];
+        payload.anexoTipo   = payload.pdfBase64.match(/data:(.*?);/)?.[1] || 'application/pdf';
+        payload.anexoNome   = payload.pdfFileName || 'anexo.pdf';
+      }
+      delete payload.pdfBase64;
+
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json();
+
+      if (json && json.linkAnexo) {
+        // Salva o link no registro
+        let lista = load(KEY.despesas);
+        lista = lista.map(x => x.id === id ? { ...x, linkDrive: json.linkAnexo } : x);
+        save(KEY.despesas, lista);
+        renderDespesas();
+        // Pega a despesa atualizada com o link
+        const dAtualizada = lista.find(x => x.id === id);
+        aviso.remove();
+        abrirGmail(dAtualizada);
+      } else {
+        aviso.remove();
+        // Abre mesmo assim, sem link
+        abrirGmail(d);
+      }
+    } catch(err) {
+      aviso.remove();
+      console.warn('Erro ao obter link do Drive:', err);
+      abrirGmail(d);
+    }
+  } else {
+    // Sem anexo, abre direto
+    abrirGmail(d);
+  }
+}
+
+function abrirGmail(d) {
   const fmtDate = v => v ? v.split('-').reverse().join('/') : '—';
   const fmtComp = v => v ? v.split('-').reverse().join('/') : '—';
-
-  // ── Auto-download comprovante so user can attach in Gmail ──
-  if (d.pdfBase64 && d.pdfFileName) {
-    const a = document.createElement('a');
-    a.href = d.pdfBase64;
-    a.download = d.pdfFileName;
-    a.click();
-  }
 
   const assunto = encodeURIComponent(
     `Lançamento de Despesa – ${d.cliente} | ${d.proposta||'s/proposta'} | ${d.tipo} | ${d.data}`
@@ -1966,20 +2051,19 @@ function enviarEmail(id) {
   if (d.obs) { linhas.push('','📝 OBSERVAÇÕES',`   ${d.obs}`); }
   linhas.push(
     '',
-    `📎 COMPROVANTE: ${d.pdfFileName ? d.pdfFileName+' — arquivo baixado automaticamente, anexe ao e-mail' : 'Não anexado'}`,
-    `🔗 LINK NO DRIVE: ${d.linkDrive ? d.linkDrive : 'Aguardando upload para o Drive...'}`,
+    `📎 COMPROVANTE: ${d.pdfFileName || 'Não anexado'}`,
+    `🔗 LINK NO DRIVE: ${d.linkDrive || 'Não disponível'}`,
     '',
     '───────────────────────────────────',
     `Data do lançamento: ${d.data}`,
-    'Enviado via Sistema de Gestão de Despesas · Nortmont'
+    'Enviado via Sistema de Gestão de Despesas – Electric · Nortmont'
   );
 
   const corpo = encodeURIComponent(linhas.join('\n'));
   const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(EMAIL_DESTINO)}&su=${assunto}&body=${corpo}`;
   window.open(url, '_blank');
 
-  // ── Show inline confirmation banner instead of confirm() ──
-  mostrarConfirmacaoEmail(id, !!d.pdfFileName);
+  mostrarConfirmacaoEmail(d.id, !!d.pdfFileName);
 }
 
 function mostrarConfirmacaoEmail(id, temAnexo) {
