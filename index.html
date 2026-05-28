@@ -1601,13 +1601,12 @@ function onGoogleLogin(response) {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-root').style.display     = 'block';
     renderizarUsuario(nome, foto, email);
-    renderClientes(); renderCustos(); renderColaboradores();
-    renderPropostas(); renderDespesas(); renderRelatorio();
     // Activate manual tab as first
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-manual').classList.add('active');
     document.querySelectorAll('.tab-btn')[0].classList.add('active');
+    carregarDoSheets();
   } else {
     // ❌ Não autorizado
     const err = document.getElementById('login-erro');
@@ -1651,12 +1650,11 @@ function loginSenha() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-root').style.display     = 'block';
     renderizarUsuario('Nortmont', '', 'acesso-senha');
-    renderClientes(); renderCustos(); renderColaboradores();
-    renderPropostas(); renderDespesas(); renderRelatorio();
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-manual').classList.add('active');
     document.querySelectorAll('.tab-btn')[0].classList.add('active');
+    carregarDoSheets();
   } else {
     err.style.display = 'block';
     err.innerHTML = '⛔ Senha incorreta. Tente novamente.';
@@ -1667,9 +1665,67 @@ function loginSenha() {
 
 const KEY = { clientes:'gd_clientes', colaboradores:'gd_colaboradores', propostas:'gd_propostas', despesas:'gd_despesas', custos:'gd_custos' };
 const EMAIL_DESTINO = 'contasapagar@electricservice.com.br';
+
+/* ══════════════ BANCO DE DADOS · SHEETS + CACHE LOCAL ══════════════ */
 function load(k) { try { return JSON.parse(localStorage.getItem(k)) || []; } catch { return []; } }
 function save(k, d) { localStorage.setItem(k, JSON.stringify(d)); }
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// Carrega todos os dados do Sheets e atualiza o cache local
+async function carregarDoSheets() {
+  mostrarLoadingApp(true);
+  try {
+    const res = await fetch(APPS_SCRIPT_URL + '?action=carregar', { method: 'GET', mode: 'cors' });
+    const json = await res.json();
+    if (json.ok) {
+      if (json.clientes)       save(KEY.clientes,       json.clientes);
+      if (json.colaboradores)  save(KEY.colaboradores,  json.colaboradores);
+      if (json.propostas)      save(KEY.propostas,      json.propostas);
+      if (json.custos)         save(KEY.custos,         json.custos);
+      if (json.despesas)       save(KEY.despesas,       json.despesas);
+    }
+  } catch(e) {
+    console.warn('Falha ao carregar do Sheets, usando cache local:', e.message);
+  }
+  mostrarLoadingApp(false);
+  renderClientes(); renderCustos(); renderColaboradores();
+  renderPropostas(); renderDespesas(); renderRelatorio();
+}
+
+function mostrarLoadingApp(show) {
+  let el = document.getElementById('loading-app');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'loading-app';
+    el.style.cssText = `
+      position:fixed;inset:0;background:rgba(1,30,60,0.55);z-index:9998;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      font-family:Montserrat,sans-serif;color:#A8CCA8;gap:14px;
+    `;
+    el.innerHTML = `
+      <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+      <div style="font-size:14px;font-weight:600;letter-spacing:0.06em;">Carregando dados...</div>
+    `;
+    document.body.appendChild(el);
+  }
+  el.style.display = show ? 'flex' : 'none';
+}
+
+// Envia operação ao Sheets (inserir, deletar, atualizar)
+async function sheetsOp(acao, aba, dados) {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'COLE_AQUI_A_URL_DO_WEB_APP') return null;
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST', mode: 'cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ acao, aba, ...dados })
+    });
+    return await res.json();
+  } catch(e) {
+    console.warn('Falha Sheets:', e.message);
+    return null;
+  }
+}
 
 function showAlert(id, msg, type) {
   const el = document.getElementById(id);
@@ -1771,17 +1827,21 @@ function salvarCliente() {
   if (!nome || !cnpj) return showAlert('alert-cliente','Preencha nome e CNPJ.','danger');
   const lista = load(KEY.clientes);
   if (lista.some(c => c.cnpj===cnpj)) return showAlert('alert-cliente','CNPJ já cadastrado.','danger');
-  lista.push({ id:Date.now(), nome, cnpj });
+  const novo = { id:Date.now(), nome, cnpj };
+  lista.push(novo);
   save(KEY.clientes, lista);
   document.getElementById('cli-nome').value = '';
   document.getElementById('cli-cnpj').value = '';
   showAlert('alert-cliente','Cliente adicionado com sucesso!','success');
-  renderClientes();
-  renderCustos();
-  // Envia para Google Sheets em background
-  enviarRegistroParaGoogle('clientes', { nome, cnpj });
+  renderClientes(); renderCustos();
+  sheetsOp('inserir', 'clientes', novo);
 }
-function removerCliente(id) { save(KEY.clientes, load(KEY.clientes).filter(c=>c.id!==id)); renderClientes(); }
+function removerCliente(id) {
+  const lista = load(KEY.clientes).filter(c=>c.id!==id);
+  save(KEY.clientes, lista);
+  renderClientes();
+  sheetsOp('deletar', 'clientes', { id });
+}
 function renderClientes() {
   const lista = load(KEY.clientes);
   document.getElementById('badge-clientes').textContent = lista.length;
@@ -1798,15 +1858,19 @@ function salvarColaborador() {
   if (!nome) return showAlert('alert-colaborador','Preencha o nome.','danger');
   const lista = load(KEY.colaboradores);
   if (lista.some(c=>c.nome.toLowerCase()===nome.toLowerCase())) return showAlert('alert-colaborador','Colaborador já cadastrado.','danger');
-  lista.push({ id:Date.now(), nome });
+  const novo = { id:Date.now(), nome };
+  lista.push(novo);
   save(KEY.colaboradores, lista);
   document.getElementById('col-nome').value = '';
   showAlert('alert-colaborador','Colaborador adicionado!','success');
   renderColaboradores();
-  // Envia para Google Sheets em background
-  enviarRegistroParaGoogle('colaboradores', { nome });
+  sheetsOp('inserir', 'colaboradores', novo);
 }
-function removerColaborador(id) { save(KEY.colaboradores, load(KEY.colaboradores).filter(c=>c.id!==id)); renderColaboradores(); }
+function removerColaborador(id) {
+  save(KEY.colaboradores, load(KEY.colaboradores).filter(c=>c.id!==id));
+  renderColaboradores();
+  sheetsOp('deletar', 'colaboradores', { id });
+}
 function renderColaboradores() {
   const lista = load(KEY.colaboradores);
   document.getElementById('badge-colaboradores').textContent = lista.length;
@@ -1824,16 +1888,20 @@ function salvarProposta() {
   if (!num) return showAlert('alert-proposta','Preencha o número da proposta.','danger');
   const lista = load(KEY.propostas);
   if (lista.some(p=>p.num.toLowerCase()===num.toLowerCase())) return showAlert('alert-proposta','Proposta já cadastrada.','danger');
-  lista.push({ id:Date.now(), num, desc });
+  const novo = { id:Date.now(), num, desc };
+  lista.push(novo);
   save(KEY.propostas, lista);
   document.getElementById('prop-num').value = '';
   document.getElementById('prop-desc').value = '';
   showAlert('alert-proposta','Proposta adicionada!','success');
   renderPropostas();
-  // Envia para Google Sheets em background
-  enviarRegistroParaGoogle('propostas', { num, desc });
+  sheetsOp('inserir', 'propostas', novo);
 }
-function removerProposta(id) { save(KEY.propostas, load(KEY.propostas).filter(p=>p.id!==id)); renderPropostas(); }
+function removerProposta(id) {
+  save(KEY.propostas, load(KEY.propostas).filter(p=>p.id!==id));
+  renderPropostas();
+  sheetsOp('deletar', 'propostas', { id });
+}
 function renderPropostas() {
   const lista = load(KEY.propostas);
   document.getElementById('badge-propostas').textContent = lista.length;
@@ -1993,7 +2061,7 @@ function salvarDespesa() {
     renderDespesas();
     showAlert('alert-despesa', tipoRows.length > 1 ? `${tipoRows.length} despesas registradas!` : 'Despesa registrada com sucesso!','success');
     mostrarToastDespesa(tipoRows.length > 1 ? `${tipoRows.length} despesas registradas` : 'Despesa registrada');
-    newIds.forEach(d => enviarParaGoogle(d)); // background, não bloqueia
+    newIds.forEach(d => enviarParaGoogle(d));
   }
 }
 async function enviarEmail(id) {
@@ -2208,11 +2276,11 @@ function definirStatusEmail(id, status) {
   lista = lista.map(d => d.id===id ? {...d, emailStatus: status} : d);
   save(KEY.despesas, lista);
   renderDespesas();
+  sheetsOp('atualizar', 'despesas', { id, emailStatus: status });
 }
 
 function confirmarExclusao(id, btn) {
   const cell = btn.closest('td');
-  const orig = cell.innerHTML;
   cell.innerHTML = `<div class="confirm-delete">
     <span>Tem certeza que quer excluir?</span>
     <button class="btn-confirm-yes" onclick="removerDespesa(${id})">Sim, excluir</button>
@@ -2223,6 +2291,7 @@ function confirmarExclusao(id, btn) {
 function removerDespesa(id) {
   save(KEY.despesas, load(KEY.despesas).filter(d=>d.id!==id));
   renderDespesas();
+  sheetsOp('deletar', 'despesas', { id });
 }
 
 /* ══════════════ RENDER DESPESAS ══════════════ */
@@ -2595,37 +2664,25 @@ function salvarCusto() {
   const existing = lista.find(c=>c.propostaId==propId);
   if (existing) {
     lista = lista.map(c => c.propostaId==propId ? {...c, orcado:valRaw} : c);
+    save(KEY.custos, lista);
     showAlert('alert-custo','Orçamento atualizado com sucesso!','success');
+    sheetsOp('atualizar', 'custos', { id: existing.id, orcado: valRaw });
   } else {
-    lista.push({ id:Date.now(), propostaId:propId, proposta:prop.num, descricao:prop.desc||'', orcado:valRaw });
+    const novo = { id:Date.now(), propostaId:propId, proposta:prop.num, descricao:prop.desc||'', orcado:valRaw };
+    lista.push(novo);
+    save(KEY.custos, lista);
     showAlert('alert-custo','Orçamento salvo com sucesso!','success');
+    sheetsOp('inserir', 'custos', novo);
   }
-  save(KEY.custos, lista);
   document.getElementById('custo-proposta').value = '';
   document.getElementById('custo-orcado').value   = '';
   renderCustos();
-  // Envia para Google Sheets em background
-  enviarRegistroParaGoogle('custos', { proposta: prop.num, descricao: prop.desc||'', orcado: valRaw });
-}
-
-async function enviarRegistroParaGoogle(aba, dados) {
-  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'COLE_AQUI_A_URL_DO_WEB_APP') return;
-  try {
-    const payload = { aba, ...dados, timestamp: new Date().toLocaleString('pt-BR') };
-    await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload)
-    });
-  } catch(e) {
-    console.warn('Falha ao enviar para Google Sheets:', e.message);
-  }
 }
 
 function removerCusto(id) {
   save(KEY.custos, load(KEY.custos).filter(c=>c.id!==id));
   renderCustos();
+  sheetsOp('deletar', 'custos', { id });
 }
 
 function renderCustos() {
@@ -2798,7 +2855,7 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFf3t_iSkx-PKb
 async function enviarParaGoogle(despesa) {
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'COLE_AQUI_A_URL_DO_WEB_APP') return;
   try {
-    const payload = { ...despesa };
+    const payload = { acao: 'inserir', ...despesa };
     if (payload.pdfBase64 && payload.pdfBase64.includes(',')) {
       const parts = payload.pdfBase64.split(',');
       payload.anexoBase64 = parts[1];
@@ -2813,8 +2870,6 @@ async function enviarParaGoogle(despesa) {
       body: JSON.stringify(payload)
     });
     const json = await res.json();
-    console.log('Enviado para Google com sucesso.', json);
-    // Se retornou link do Drive, salva na despesa para usar no e-mail
     if (json && json.linkAnexo && despesa.id) {
       let lista = load(KEY.despesas);
       lista = lista.map(d => d.id === despesa.id ? { ...d, linkDrive: json.linkAnexo } : d);
