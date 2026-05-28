@@ -2092,11 +2092,6 @@ function mostrarConfirmacaoEmail(id, temAnexo) {
   const anterior = document.getElementById('email-confirm-banner');
   if (anterior) anterior.remove();
 
-function mostrarConfirmacaoEmail(id, temAnexo) {
-  // Remove banner anterior se houver
-  const anterior = document.getElementById('email-confirm-banner');
-  if (anterior) anterior.remove();
-
   // Persiste o estado para restaurar se o usuário sair e voltar
   sessionStorage.setItem('emailConfirmPending', JSON.stringify({ id, temAnexo }));
 
