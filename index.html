@@ -823,7 +823,7 @@ body {
   <!-- ═══ ABA 4: DESPESAS ═══ -->
   <div id="tab-despesas" class="tab-panel">
     <div class="page-header">
-      <div class="page-eyebrow">Operacional · 04</div>
+      <div class="page-eyebrow">Cadastro Despesa</div>
       <h2>Lançamento de Despesas</h2>
       <p>Registre despesas vinculadas a clientes, propostas e colaboradores.</p>
     </div>
@@ -1118,7 +1118,7 @@ body {
   <!-- ═══ ABA 5: MANUAL ═══ -->
   <div id="tab-manual" class="tab-panel active">
     <div class="page-header">
-      <div class="page-eyebrow">Referência · 05</div>
+      
       <h2>Manual de Centro de Custo</h2>
       <p>Orientações para classificação de despesas, pagamentos e categorização financeira — Maio 2026.</p>
     </div>
@@ -1378,17 +1378,17 @@ body {
 
     <!-- FILTROS -->
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:6px;box-shadow:var(--elev1);" class="no-print">
-      <div style="font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 1.41 13.45"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-        O filtro de data refere-se à DATA DE IDA
-      </div>
-      <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr 1fr 1fr;gap:12px;align-items:end;">
+      <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;gap:12px;align-items:end;">
         <div class="form-group">
           <label>Cliente</label>
           <div style="position:relative;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="rel-cliente-txt" placeholder="Buscar cliente..." oninput="renderRelatorio()" style="padding-left:32px;">
           </div>
+        </div>
+        <div class="form-group">
+          <label>Proposta</label>
+          <select id="rel-proposta" onchange="renderRelatorio()"><option value="">Todas</option></select>
         </div>
         <div class="form-group">
           <label>Colaborador</label>
@@ -1455,7 +1455,7 @@ body {
   <!-- ═══ ABA 7: CUSTOS ORÇADOS ═══ -->
   <div id="tab-custos" class="tab-panel">
     <div class="page-header">
-      <div class="page-eyebrow">Cadastro · 07</div>
+      <div class="page-eyebrow">Cadastro Custos</div>
       <h2>Custos Orçados por Projeto</h2>
       <p>Defina o valor orçado para cada proposta para acompanhar o realizado no Dashboard.</p>
     </div>
@@ -1502,7 +1502,7 @@ body {
   <!-- ═══ ABA 8: DASHBOARD ═══ -->
   <div id="tab-dashboard" class="tab-panel">
     <div class="page-header">
-      <div class="page-eyebrow">Dashboard · 08</div>
+      
       <h2>Orçado × Realizado por Projeto</h2>
       <p>Cruzamento de custo orçado com as despesas lançadas, agrupado por proposta.</p>
     </div>
@@ -1721,7 +1721,9 @@ function salvarCliente() {
   document.getElementById('cli-cnpj').value = '';
   showAlert('alert-cliente','Cliente adicionado com sucesso!','success');
   renderClientes();
-renderCustos();
+  renderCustos();
+  // Envia para Google Sheets em background
+  enviarRegistroParaGoogle('clientes', { nome, cnpj });
 }
 function removerCliente(id) { save(KEY.clientes, load(KEY.clientes).filter(c=>c.id!==id)); renderClientes(); }
 function renderClientes() {
@@ -1745,6 +1747,8 @@ function salvarColaborador() {
   document.getElementById('col-nome').value = '';
   showAlert('alert-colaborador','Colaborador adicionado!','success');
   renderColaboradores();
+  // Envia para Google Sheets em background
+  enviarRegistroParaGoogle('colaboradores', { nome });
 }
 function removerColaborador(id) { save(KEY.colaboradores, load(KEY.colaboradores).filter(c=>c.id!==id)); renderColaboradores(); }
 function renderColaboradores() {
@@ -1770,6 +1774,8 @@ function salvarProposta() {
   document.getElementById('prop-desc').value = '';
   showAlert('alert-proposta','Proposta adicionada!','success');
   renderPropostas();
+  // Envia para Google Sheets em background
+  enviarRegistroParaGoogle('propostas', { num, desc });
 }
 function removerProposta(id) { save(KEY.propostas, load(KEY.propostas).filter(p=>p.id!==id)); renderPropostas(); }
 function renderPropostas() {
@@ -1930,6 +1936,7 @@ function salvarDespesa() {
     limparFormDespesa();
     renderDespesas();
     showAlert('alert-despesa', tipoRows.length > 1 ? `${tipoRows.length} despesas registradas!` : 'Despesa registrada com sucesso!','success');
+    mostrarToastDespesa(tipoRows.length > 1 ? `${tipoRows.length} despesas registradas` : 'Despesa registrada');
     newIds.forEach(d => enviarParaGoogle(d)); // background, não bloqueia
   }
 }
@@ -2052,7 +2059,6 @@ function abrirGmail(d) {
   linhas.push(
     '',
     `📎 COMPROVANTE: ${d.pdfFileName || 'Não anexado'}`,
-    `🔗 LINK NO DRIVE: ${d.linkDrive || 'Não disponível'}`,
     '',
     '───────────────────────────────────',
     `Data do lançamento: ${d.data}`,
@@ -2066,7 +2072,38 @@ function abrirGmail(d) {
   mostrarConfirmacaoEmail(d.id, !!d.pdfFileName);
 }
 
+function mostrarToastDespesa(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = `
+    position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+    background:#0F4245; color:#A8CCA8; border-radius:14px;
+    box-shadow:0 8px 32px rgba(1,30,60,0.25); padding:14px 28px;
+    font-family:Montserrat,sans-serif; font-size:13px; font-weight:600;
+    z-index:9999; display:flex; align-items:center; gap:10px;
+    animation:slideUp 0.25s ease;
+  `;
+  t.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>${msg}`;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 3000);
+}
+
 function mostrarConfirmacaoEmail(id, temAnexo) {
+  // Remove banner anterior se houver
+  const anterior = document.getElementById('email-confirm-banner');
+  if (anterior) anterior.remove();
+
+function mostrarConfirmacaoEmail(id, temAnexo) {
+  // Remove banner anterior se houver
+  const anterior = document.getElementById('email-confirm-banner');
+  if (anterior) anterior.remove();
+
+  // Persiste o estado para restaurar se o usuário sair e voltar
+  sessionStorage.setItem('emailConfirmPending', JSON.stringify({ id, temAnexo }));
+
+  criarBannerConfirmacaoEmail(id, temAnexo);
+}
+
+function criarBannerConfirmacaoEmail(id, temAnexo) {
   // Remove banner anterior se houver
   const anterior = document.getElementById('email-confirm-banner');
   if (anterior) anterior.remove();
@@ -2087,21 +2124,33 @@ function mostrarConfirmacaoEmail(id, temAnexo) {
     </div>
     ${temAnexo ? '<div style="font-size:11px;color:#b07a00;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:7px 10px;">📎 O comprovante foi baixado — lembre-se de anexá-lo antes de enviar.</div>' : ''}
     <div style="display:flex;gap:10px;">
-      <button onclick="definirStatusEmail(${id},'enviado');document.getElementById('email-confirm-banner').remove();"
+      <button onclick="definirStatusEmail(${id},'enviado');document.getElementById('email-confirm-banner').remove();sessionStorage.removeItem('emailConfirmPending');"
         style="flex:1;background:#0F4245;color:#fff;border:none;border-radius:999px;padding:9px 0;font-family:Montserrat,sans-serif;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.04em;">
         ✓ Sim, e-mail enviado
       </button>
-      <button onclick="definirStatusEmail(${id},'nao_enviado');document.getElementById('email-confirm-banner').remove();"
+      <button onclick="definirStatusEmail(${id},'nao_enviado');document.getElementById('email-confirm-banner').remove();sessionStorage.removeItem('emailConfirmPending');"
         style="flex:1;background:none;color:#b33a3a;border:1.5px solid rgba(179,58,58,0.35);border-radius:999px;padding:9px 0;font-family:Montserrat,sans-serif;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.04em;">
         ✗ Não enviei
       </button>
     </div>
   `;
 
-  // Fecha automaticamente após 30s sem resposta
   document.body.appendChild(banner);
-  setTimeout(() => { if (document.getElementById('email-confirm-banner')) banner.remove(); }, 30000);
+  setTimeout(() => { if (document.getElementById('email-confirm-banner')) { banner.remove(); sessionStorage.removeItem('emailConfirmPending'); } }, 30000);
 }
+
+// Restaura o banner de confirmação ao voltar à página (fix do bug)
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible') {
+    const pending = sessionStorage.getItem('emailConfirmPending');
+    if (pending && !document.getElementById('email-confirm-banner')) {
+      try {
+        const { id, temAnexo } = JSON.parse(pending);
+        criarBannerConfirmacaoEmail(id, temAnexo);
+      } catch(e) { sessionStorage.removeItem('emailConfirmPending'); }
+    }
+  }
+});
 
 function definirStatusEmail(id, status) {
   let lista = load(KEY.despesas);
@@ -2210,6 +2259,7 @@ function getFiltrados() {
   const fDe = document.getElementById('rel-de')?.value||'';
   const fAte= document.getElementById('rel-ate')?.value||'';
   const fComp = document.getElementById('rel-competencia')?.value||'';
+  const fProp = document.getElementById('rel-proposta')?.value||'';
   if (fC)    lista = lista.filter(d=>d.cliente.toLowerCase().includes(fC));
   if (fB)    lista = lista.filter(d=>d.colaborador===fB);
   if (fCC)   lista = lista.filter(d=>d.cc===fCC);
@@ -2217,6 +2267,7 @@ function getFiltrados() {
   if (fDe)   lista = lista.filter(d=>d.ida&&d.ida>=fDe);
   if (fAte)  lista = lista.filter(d=>d.ida&&d.ida<=fAte);
   if (fComp) lista = lista.filter(d=>d.competencia&&d.competencia.startsWith(fComp));
+  if (fProp) lista = lista.filter(d=>d.proposta===fProp);
   return lista;
 }
 
@@ -2233,6 +2284,13 @@ function renderRelatorio() {
   if (selColRel) {
     const cur = selColRel.value;
     selColRel.innerHTML = '<option value="">Todos</option>' + colabs.map(c=>`<option value="${esc(c.nome)}" ${cur===c.nome?'selected':''}>${esc(c.nome)}</option>`).join('');
+  }
+  // populate proposta select
+  const propostas = load(KEY.propostas);
+  const selPropRel = document.getElementById('rel-proposta');
+  if (selPropRel) {
+    const cur = selPropRel.value;
+    selPropRel.innerHTML = '<option value="">Todas</option>' + propostas.map(p=>`<option value="${esc(p.num)}" ${cur===p.num?'selected':''}>${esc(p.num)}${p.desc?' – '+esc(p.desc):''}</option>`).join('');
   }
   const lista  = getFiltrados();
   const totalAll = all.length;
@@ -2362,7 +2420,7 @@ function removerDespesaRel(id) {
 }
 
 function limparFiltros() {
-  const ids = ['rel-cliente-txt','rel-colaborador','rel-cc','rel-tipo','rel-de','rel-ate','rel-competencia'];
+  const ids = ['rel-cliente-txt','rel-proposta','rel-colaborador','rel-cc','rel-tipo','rel-de','rel-ate','rel-competencia'];
   ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   renderRelatorio();
 }
@@ -2495,6 +2553,23 @@ function salvarCusto() {
   document.getElementById('custo-proposta').value = '';
   document.getElementById('custo-orcado').value   = '';
   renderCustos();
+  // Envia para Google Sheets em background
+  enviarRegistroParaGoogle('custos', { proposta: prop.num, descricao: prop.desc||'', orcado: valRaw });
+}
+
+async function enviarRegistroParaGoogle(aba, dados) {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'COLE_AQUI_A_URL_DO_WEB_APP') return;
+  try {
+    const payload = { aba, ...dados, timestamp: new Date().toLocaleString('pt-BR') };
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+  } catch(e) {
+    console.warn('Falha ao enviar para Google Sheets:', e.message);
+  }
 }
 
 function removerCusto(id) {
