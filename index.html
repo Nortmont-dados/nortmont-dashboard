@@ -1108,10 +1108,19 @@ body {
       </div>
 
       <div class="form-actions">
-        <button class="btn btn-teal" onclick="salvarDespesa()">
+        <button class="btn btn-teal" onclick="salvarDespesa()" id="btn-registrar">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
           Registrar Despesa
         </button>
+        <span id="msg-despesa-ok" style="
+          display:none; align-items:center; gap:6px;
+          font-family:'Montserrat',sans-serif; font-size:13px; font-weight:700;
+          color:#0F4245; background:#e8f5e9; border:1.5px solid #A8CCA8;
+          border-radius:999px; padding:8px 18px; animation:fadeIn 0.3s ease;
+        ">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Despesa adicionada!
+        </span>
         <div class="alert" id="alert-despesa"></div>
       </div>
     </div>
@@ -1815,9 +1824,39 @@ function onPdfChange(input) {
   r.onload = e => {
     pdfBase64 = e.target.result;
     document.getElementById('pdf-name-text').textContent = file.name;
-    document.getElementById('pdf-name-display').classList.add('show');
+    document.getElementById('anexo-preview').classList.add('show');
+
+    // Visual: muda o botão de upload para mostrar que está anexado
+    const btn = document.querySelector('.file-upload-btn');
+    if (btn) {
+      btn.style.background = '#e8f5e9';
+      btn.style.borderColor = '#A8CCA8';
+      btn.style.color = '#0F4245';
+      btn.innerHTML = `
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0F4245" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        ${file.name.length > 30 ? file.name.substring(0,28)+'…' : file.name}
+      `;
+    }
   };
   r.readAsDataURL(file);
+}
+
+function removerAnexo() {
+  pdfBase64 = null; pdfFileName = null;
+  const input = document.getElementById('desp-pdf');
+  if (input) input.value = '';
+  document.getElementById('anexo-preview')?.classList.remove('show');
+  // Restaura o botão de upload ao estado original
+  const btn = document.querySelector('.file-upload-btn');
+  if (btn) {
+    btn.style.background = '';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    btn.innerHTML = `
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Clique para anexar PDF ou Imagem
+    `;
+  }
 }
 
 /* ══════════════ CLIENTES ══════════════ */
@@ -1957,7 +1996,7 @@ function editarDespesa(id) {
   document.getElementById('desp-placa').value = d.placa||'';
   document.getElementById('desp-modelo').value= d.modelo||'';
   document.getElementById('desp-obs').value = d.obs||'';
-  if(d.pdfBase64){ pdfBase64=d.pdfBase64; pdfFileName=d.pdfFileName; document.getElementById('pdf-name-text').textContent=d.pdfFileName||''; document.getElementById('pdf-name-display').classList.add('show'); }
+  if(d.pdfBase64){ pdfBase64=d.pdfBase64; pdfFileName=d.pdfFileName; document.getElementById('pdf-name-text').textContent=d.pdfFileName||''; document.getElementById('anexo-preview').classList.add('show'); }
   onTipoChange();
   document.getElementById('edit-banner').classList.add('show');
   document.getElementById('card-eyebrow-despesa').textContent = 'Editando despesa';
@@ -2056,11 +2095,15 @@ function salvarDespesa() {
       newIds.push(novaDesp);
     });
     save(KEY.despesas, lista);
-    // Renderiza imediatamente, envia ao Google em background
     limparFormDespesa();
     renderDespesas();
     showAlert('alert-despesa', tipoRows.length > 1 ? `${tipoRows.length} despesas registradas!` : 'Despesa registrada com sucesso!','success');
-    mostrarToastDespesa(tipoRows.length > 1 ? `${tipoRows.length} despesas registradas` : 'Despesa registrada');
+    // Mostra mensagem inline ao lado do botão
+    const msgOk = document.getElementById('msg-despesa-ok');
+    if (msgOk) {
+      msgOk.style.display = 'flex';
+      setTimeout(() => { msgOk.style.display = 'none'; }, 3500);
+    }
     newIds.forEach(d => enviarParaGoogle(d));
   }
 }
@@ -2174,7 +2217,7 @@ function abrirGmail(d) {
   if (d.obs) { linhas.push('','📝 OBSERVAÇÕES',`   ${d.obs}`); }
   linhas.push(
     '',
-    `📎 COMPROVANTE: ${d.pdfFileName || 'Não anexado'}`,
+    '📎 COMPROVANTE: Anexar aqui neste e-mail o comprovante',
     '',
     '───────────────────────────────────',
     `Data do lançamento: ${d.data}`,
