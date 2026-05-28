@@ -2065,18 +2065,18 @@ function salvarDespesa() {
   }
 }
 async function enviarEmail(id) {
-  const d = load(KEY.despesas).find(x=>x.id===id);
-  if (!d) return;
+  // Garante comparação correta de id (string vs number)
+  const d = load(KEY.despesas).find(x => String(x.id) === String(id));
+  if (!d) { alert('Despesa não encontrada.'); return; }
 
-  // Se já tem link do Drive, abre o e-mail direto
+  // Se já tem link do Drive salvo, abre o Gmail direto
   if (d.linkDrive) {
     abrirGmail(d);
     return;
   }
 
-  // Se tem anexo mas ainda não tem link, faz upload agora e aguarda
+  // Se tem comprovante anexado mas ainda sem link no Drive, faz upload agora
   if (d.pdfBase64 && d.pdfFileName) {
-    // Mostra aviso de aguardo
     const aviso = document.createElement('div');
     aviso.id = 'aviso-upload';
     aviso.style.cssText = `
@@ -2087,61 +2087,53 @@ async function enviarEmail(id) {
       z-index:9999; display:flex; align-items:center; gap:10px;
       animation:slideUp 0.25s ease;
     `;
-    aviso.innerHTML = `
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite">
-        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-      </svg>
-      Enviando comprovante para o Drive, aguarde...
-    `;
-    // Adiciona animação de spin
     if (!document.getElementById('spin-style')) {
       const s = document.createElement('style');
       s.id = 'spin-style';
       s.textContent = '@keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }';
       document.head.appendChild(s);
     }
+    aviso.innerHTML = `
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+      </svg>
+      Enviando comprovante para o Drive, aguarde...
+    `;
     document.body.appendChild(aviso);
 
     try {
-      const payload = { ...d };
+      const payload = { acao: 'inserir', ...d };
       if (payload.pdfBase64 && payload.pdfBase64.includes(',')) {
         const parts = payload.pdfBase64.split(',');
         payload.anexoBase64 = parts[1];
         payload.anexoTipo   = payload.pdfBase64.match(/data:(.*?);/)?.[1] || 'application/pdf';
-        payload.anexoNome   = payload.pdfFileName || 'anexo.pdf';
+        payload.anexoNome   = payload.pdfFileName || 'comprovante.pdf';
       }
       delete payload.pdfBase64;
 
       const res = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'cors',
+        method: 'POST', mode: 'cors',
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(payload)
       });
       const json = await res.json();
+      aviso.remove();
 
       if (json && json.linkAnexo) {
-        // Salva o link no registro
         let lista = load(KEY.despesas);
-        lista = lista.map(x => x.id === id ? { ...x, linkDrive: json.linkAnexo } : x);
+        lista = lista.map(x => String(x.id) === String(id) ? { ...x, linkDrive: json.linkAnexo } : x);
         save(KEY.despesas, lista);
         renderDespesas();
-        // Pega a despesa atualizada com o link
-        const dAtualizada = lista.find(x => x.id === id);
-        aviso.remove();
-        abrirGmail(dAtualizada);
+        abrirGmail(lista.find(x => String(x.id) === String(id)));
       } else {
-        aviso.remove();
-        // Abre mesmo assim, sem link
         abrirGmail(d);
       }
     } catch(err) {
-      aviso.remove();
-      console.warn('Erro ao obter link do Drive:', err);
+      document.getElementById('aviso-upload')?.remove();
       abrirGmail(d);
     }
   } else {
-    // Sem anexo, abre direto
+    // Sem comprovante, abre Gmail direto
     abrirGmail(d);
   }
 }
@@ -2197,18 +2189,30 @@ function abrirGmail(d) {
 }
 
 function mostrarToastDespesa(msg) {
+  // Remove toast anterior se houver
+  const anterior = document.getElementById('toast-despesa');
+  if (anterior) anterior.remove();
+
   const t = document.createElement('div');
+  t.id = 'toast-despesa';
   t.style.cssText = `
-    position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
-    background:#0F4245; color:#A8CCA8; border-radius:14px;
-    box-shadow:0 8px 32px rgba(1,30,60,0.25); padding:14px 28px;
-    font-family:Montserrat,sans-serif; font-size:13px; font-weight:600;
-    z-index:9999; display:flex; align-items:center; gap:10px;
-    animation:slideUp 0.25s ease;
+    position:fixed; top:80px; left:50%; transform:translateX(-50%);
+    background:#0F4245; color:#fff; border-radius:14px;
+    box-shadow:0 8px 32px rgba(1,30,60,0.35); padding:16px 32px;
+    font-family:Montserrat,sans-serif; font-size:14px; font-weight:700;
+    z-index:9999; display:flex; align-items:center; gap:12px;
+    animation:slideDown 0.3s ease; letter-spacing:0.03em;
+    border:2px solid #A8CCA8;
   `;
-  t.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>${msg}`;
+  if (!document.getElementById('toast-style')) {
+    const s = document.createElement('style');
+    s.id = 'toast-style';
+    s.textContent = '@keyframes slideDown { from { opacity:0; transform:translateX(-50%) translateY(-20px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }';
+    document.head.appendChild(s);
+  }
+  t.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A8CCA8" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>${msg}`;
   document.body.appendChild(t);
-  setTimeout(()=>t.remove(), 3000);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.4s'; setTimeout(()=>t.remove(),400); }, 3000);
 }
 
 function mostrarConfirmacaoEmail(id, temAnexo) {
@@ -2258,7 +2262,17 @@ function criarBannerConfirmacaoEmail(id, temAnexo) {
   setTimeout(() => { if (document.getElementById('email-confirm-banner')) { banner.remove(); sessionStorage.removeItem('emailConfirmPending'); } }, 30000);
 }
 
-// Restaura o banner de confirmação ao voltar à página (fix do bug)
+// Restaura o banner ao voltar para a aba (fix do bug no GitHub Pages)
+window.addEventListener('focus', function() {
+  const pending = sessionStorage.getItem('emailConfirmPending');
+  if (pending && !document.getElementById('email-confirm-banner')) {
+    try {
+      const { id, temAnexo } = JSON.parse(pending);
+      criarBannerConfirmacaoEmail(id, temAnexo);
+    } catch(e) { sessionStorage.removeItem('emailConfirmPending'); }
+  }
+});
+
 document.addEventListener('visibilitychange', function() {
   if (document.visibilityState === 'visible') {
     const pending = sessionStorage.getItem('emailConfirmPending');
