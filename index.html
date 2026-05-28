@@ -634,8 +634,8 @@ body {
     </div>
 
     <div style="font-size:15px;font-weight:600;color:#130F10;margin-bottom:6px;">Acesso Restrito</div>
-    <div style="font-size:12px;color:#6b8299;margin-bottom:32px;line-height:1.6;">
-      Entre com sua conta Google autorizada para acessar o painel.
+    <div style="font-size:12px;color:#6b8299;margin-bottom:24px;line-height:1.6;">
+      Entre com sua conta Google ou use a senha de acesso.
     </div>
 
     <!-- Google Sign-In button -->
@@ -654,13 +654,42 @@ body {
       data-width="280">
     </div>
 
+    <!-- Divisor -->
+    <div style="display:flex;align-items:center;gap:10px;margin:20px 0;">
+      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
+      <span style="font-size:11px;color:#9ca3af;font-weight:500;">ou acesse com senha</span>
+      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
+    </div>
+
+    <!-- Login por senha -->
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <input id="login-senha" type="password" placeholder="Digite a senha de acesso"
+        onkeydown="if(event.key==='Enter') loginSenha()"
+        style="
+          font-family:'Montserrat',sans-serif; font-size:13px; font-weight:400;
+          border:1.5px solid #d1d5db; border-radius:10px; padding:11px 14px;
+          outline:none; transition:border-color 0.15s; width:100%; text-align:center;
+        "
+        onfocus="this.style.borderColor='#0F4245'"
+        onblur="this.style.borderColor='#d1d5db'"
+      >
+      <button onclick="loginSenha()" style="
+        background:#011E3C; color:#A8CCA8; border:none; border-radius:999px;
+        padding:11px 0; font-family:'Montserrat',sans-serif; font-size:13px;
+        font-weight:600; cursor:pointer; letter-spacing:0.04em; width:100%;
+        transition:background 0.15s;
+      " onmouseover="this.style.background='#0a2d56'" onmouseout="this.style.background='#011E3C'">
+        Entrar
+      </button>
+    </div>
+
     <div id="login-erro" style="
-      display:none; margin-top:20px; background:#fde8e8; color:#b33a3a;
+      display:none; margin-top:16px; background:#fde8e8; color:#b33a3a;
       border:1px solid #f5b8b8; border-radius:10px; padding:12px 16px;
       font-size:12px; font-weight:600;
     "></div>
 
-    <div style="margin-top:28px;padding-top:20px;border-top:1px solid #e5e7eb;font-size:10px;color:#9ca3af;">
+    <div style="margin-top:24px;padding-top:20px;border-top:1px solid #e5e7eb;font-size:10px;color:#9ca3af;">
       Apenas usuários autorizados têm acesso.<br>Contate o administrador para solicitar acesso.
     </div>
   </div>
@@ -1606,7 +1635,34 @@ function logout() {
   document.getElementById('app-root').style.display    = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-erro').style.display   = 'none';
-  google.accounts.id.disableAutoSelect();
+  try { google.accounts.id.disableAutoSelect(); } catch(e) {}
+}
+
+/* ── LOGIN POR SENHA (fallback quando Google OAuth não funciona via file://) ── */
+const SENHA_ACESSO = 'Nortmont2024'; // altere aqui se quiser mudar a senha
+
+function loginSenha() {
+  const inp = document.getElementById('login-senha');
+  const err = document.getElementById('login-erro');
+  const senha = inp ? inp.value : '';
+
+  if (senha === SENHA_ACESSO) {
+    usuarioLogado = { email: 'acesso-senha', nome: 'Usuário', foto: '' };
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-root').style.display     = 'block';
+    renderizarUsuario('Nortmont', '', 'acesso-senha');
+    renderClientes(); renderCustos(); renderColaboradores();
+    renderPropostas(); renderDespesas(); renderRelatorio();
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-manual').classList.add('active');
+    document.querySelectorAll('.tab-btn')[0].classList.add('active');
+  } else {
+    err.style.display = 'block';
+    err.innerHTML = '⛔ Senha incorreta. Tente novamente.';
+    if (inp) { inp.value = ''; inp.focus(); }
+    setTimeout(() => { err.style.display = 'none'; }, 3000);
+  }
 }
 
 const KEY = { clientes:'gd_clientes', colaboradores:'gd_colaboradores', propostas:'gd_propostas', despesas:'gd_despesas', custos:'gd_custos' };
