@@ -634,8 +634,8 @@ body {
     </div>
 
     <div style="font-size:15px;font-weight:600;color:#130F10;margin-bottom:6px;">Acesso Restrito</div>
-    <div style="font-size:12px;color:#6b8299;margin-bottom:24px;line-height:1.6;">
-      Entre com sua conta Google ou use a senha de acesso.
+    <div style="font-size:12px;color:#6b8299;margin-bottom:32px;line-height:1.6;">
+      Entre com sua conta Google autorizada para acessar o painel.
     </div>
 
     <!-- Google Sign-In button -->
@@ -654,42 +654,13 @@ body {
       data-width="280">
     </div>
 
-    <!-- Divisor -->
-    <div style="display:flex;align-items:center;gap:10px;margin:20px 0;">
-      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
-      <span style="font-size:11px;color:#9ca3af;font-weight:500;">ou acesse com senha</span>
-      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
-    </div>
-
-    <!-- Login por senha -->
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      <input id="login-senha" type="password" placeholder="Digite a senha de acesso"
-        onkeydown="if(event.key==='Enter') loginSenha()"
-        style="
-          font-family:'Montserrat',sans-serif; font-size:13px; font-weight:400;
-          border:1.5px solid #d1d5db; border-radius:10px; padding:11px 14px;
-          outline:none; transition:border-color 0.15s; width:100%; text-align:center;
-        "
-        onfocus="this.style.borderColor='#0F4245'"
-        onblur="this.style.borderColor='#d1d5db'"
-      >
-      <button onclick="loginSenha()" style="
-        background:#011E3C; color:#A8CCA8; border:none; border-radius:999px;
-        padding:11px 0; font-family:'Montserrat',sans-serif; font-size:13px;
-        font-weight:600; cursor:pointer; letter-spacing:0.04em; width:100%;
-        transition:background 0.15s;
-      " onmouseover="this.style.background='#0a2d56'" onmouseout="this.style.background='#011E3C'">
-        Entrar
-      </button>
-    </div>
-
     <div id="login-erro" style="
-      display:none; margin-top:16px; background:#fde8e8; color:#b33a3a;
+      display:none; margin-top:20px; background:#fde8e8; color:#b33a3a;
       border:1px solid #f5b8b8; border-radius:10px; padding:12px 16px;
       font-size:12px; font-weight:600;
     "></div>
 
-    <div style="margin-top:24px;padding-top:20px;border-top:1px solid #e5e7eb;font-size:10px;color:#9ca3af;">
+    <div style="margin-top:28px;padding-top:20px;border-top:1px solid #e5e7eb;font-size:10px;color:#9ca3af;">
       Apenas usuários autorizados têm acesso.<br>Contate o administrador para solicitar acesso.
     </div>
   </div>
@@ -852,7 +823,7 @@ body {
   <!-- ═══ ABA 4: DESPESAS ═══ -->
   <div id="tab-despesas" class="tab-panel">
     <div class="page-header">
-      <div class="page-eyebrow">Cadastro Despesa</div>
+      <div class="page-eyebrow">Operacional · 04</div>
       <h2>Lançamento de Despesas</h2>
       <p>Registre despesas vinculadas a clientes, propostas e colaboradores.</p>
     </div>
@@ -1108,19 +1079,10 @@ body {
       </div>
 
       <div class="form-actions">
-        <button class="btn btn-teal" onclick="salvarDespesa()" id="btn-registrar">
+        <button class="btn btn-teal" onclick="salvarDespesa()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
           Registrar Despesa
         </button>
-        <span id="msg-despesa-ok" style="
-          display:none; align-items:center; gap:6px;
-          font-family:'Montserrat',sans-serif; font-size:13px; font-weight:700;
-          color:#0F4245; background:#e8f5e9; border:1.5px solid #A8CCA8;
-          border-radius:999px; padding:8px 18px; animation:fadeIn 0.3s ease;
-        ">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          Despesa adicionada!
-        </span>
         <div class="alert" id="alert-despesa"></div>
       </div>
     </div>
@@ -1156,7 +1118,7 @@ body {
   <!-- ═══ ABA 5: MANUAL ═══ -->
   <div id="tab-manual" class="tab-panel active">
     <div class="page-header">
-      
+      <div class="page-eyebrow">Referência · 05</div>
       <h2>Manual de Centro de Custo</h2>
       <p>Orientações para classificação de despesas, pagamentos e categorização financeira — Maio 2026.</p>
     </div>
@@ -1416,17 +1378,17 @@ body {
 
     <!-- FILTROS -->
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:6px;box-shadow:var(--elev1);" class="no-print">
-      <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;gap:12px;align-items:end;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 1.41 13.45"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+        O filtro de data refere-se à DATA DE IDA
+      </div>
+      <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr 1fr 1fr;gap:12px;align-items:end;">
         <div class="form-group">
           <label>Cliente</label>
           <div style="position:relative;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="rel-cliente-txt" placeholder="Buscar cliente..." oninput="renderRelatorio()" style="padding-left:32px;">
           </div>
-        </div>
-        <div class="form-group">
-          <label>Proposta</label>
-          <select id="rel-proposta" onchange="renderRelatorio()"><option value="">Todas</option></select>
         </div>
         <div class="form-group">
           <label>Colaborador</label>
@@ -1493,7 +1455,7 @@ body {
   <!-- ═══ ABA 7: CUSTOS ORÇADOS ═══ -->
   <div id="tab-custos" class="tab-panel">
     <div class="page-header">
-      <div class="page-eyebrow">Cadastro Custos</div>
+      <div class="page-eyebrow">Cadastro · 07</div>
       <h2>Custos Orçados por Projeto</h2>
       <p>Defina o valor orçado para cada proposta para acompanhar o realizado no Dashboard.</p>
     </div>
@@ -1540,7 +1502,7 @@ body {
   <!-- ═══ ABA 8: DASHBOARD ═══ -->
   <div id="tab-dashboard" class="tab-panel">
     <div class="page-header">
-      
+      <div class="page-eyebrow">Dashboard · 08</div>
       <h2>Orçado × Realizado por Projeto</h2>
       <p>Cruzamento de custo orçado com as despesas lançadas, agrupado por proposta.</p>
     </div>
@@ -1610,12 +1572,13 @@ function onGoogleLogin(response) {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-root').style.display     = 'block';
     renderizarUsuario(nome, foto, email);
+    renderClientes(); renderCustos(); renderColaboradores();
+    renderPropostas(); renderDespesas(); renderRelatorio();
     // Activate manual tab as first
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-manual').classList.add('active');
     document.querySelectorAll('.tab-btn')[0].classList.add('active');
-    carregarDoSheets();
   } else {
     // ❌ Não autorizado
     const err = document.getElementById('login-erro');
@@ -1643,98 +1606,14 @@ function logout() {
   document.getElementById('app-root').style.display    = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-erro').style.display   = 'none';
-  try { google.accounts.id.disableAutoSelect(); } catch(e) {}
-}
-
-/* ── LOGIN POR SENHA (fallback quando Google OAuth não funciona via file://) ── */
-const SENHA_ACESSO = 'Nortmont2024'; // altere aqui se quiser mudar a senha
-
-function loginSenha() {
-  const inp = document.getElementById('login-senha');
-  const err = document.getElementById('login-erro');
-  const senha = inp ? inp.value : '';
-
-  if (senha === SENHA_ACESSO) {
-    usuarioLogado = { email: 'acesso-senha', nome: 'Usuário', foto: '' };
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app-root').style.display     = 'block';
-    renderizarUsuario('Nortmont', '', 'acesso-senha');
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('tab-manual').classList.add('active');
-    document.querySelectorAll('.tab-btn')[0].classList.add('active');
-    carregarDoSheets();
-  } else {
-    err.style.display = 'block';
-    err.innerHTML = '⛔ Senha incorreta. Tente novamente.';
-    if (inp) { inp.value = ''; inp.focus(); }
-    setTimeout(() => { err.style.display = 'none'; }, 3000);
-  }
+  google.accounts.id.disableAutoSelect();
 }
 
 const KEY = { clientes:'gd_clientes', colaboradores:'gd_colaboradores', propostas:'gd_propostas', despesas:'gd_despesas', custos:'gd_custos' };
 const EMAIL_DESTINO = 'contasapagar@electricservice.com.br';
-
-/* ══════════════ BANCO DE DADOS · SHEETS + CACHE LOCAL ══════════════ */
 function load(k) { try { return JSON.parse(localStorage.getItem(k)) || []; } catch { return []; } }
 function save(k, d) { localStorage.setItem(k, JSON.stringify(d)); }
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-// Carrega todos os dados do Sheets e atualiza o cache local
-async function carregarDoSheets() {
-  mostrarLoadingApp(true);
-  try {
-    const res = await fetch(APPS_SCRIPT_URL + '?action=carregar', { method: 'GET', mode: 'cors' });
-    const json = await res.json();
-    if (json.ok) {
-      if (json.clientes)       save(KEY.clientes,       json.clientes);
-      if (json.colaboradores)  save(KEY.colaboradores,  json.colaboradores);
-      if (json.propostas)      save(KEY.propostas,      json.propostas);
-      if (json.custos)         save(KEY.custos,         json.custos);
-      if (json.despesas)       save(KEY.despesas,       json.despesas);
-    }
-  } catch(e) {
-    console.warn('Falha ao carregar do Sheets, usando cache local:', e.message);
-  }
-  mostrarLoadingApp(false);
-  renderClientes(); renderCustos(); renderColaboradores();
-  renderPropostas(); renderDespesas(); renderRelatorio();
-}
-
-function mostrarLoadingApp(show) {
-  let el = document.getElementById('loading-app');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'loading-app';
-    el.style.cssText = `
-      position:fixed;inset:0;background:rgba(1,30,60,0.55);z-index:9998;
-      display:flex;flex-direction:column;align-items:center;justify-content:center;
-      font-family:Montserrat,sans-serif;color:#A8CCA8;gap:14px;
-    `;
-    el.innerHTML = `
-      <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-      <div style="font-size:14px;font-weight:600;letter-spacing:0.06em;">Carregando dados...</div>
-    `;
-    document.body.appendChild(el);
-  }
-  el.style.display = show ? 'flex' : 'none';
-}
-
-// Envia operação ao Sheets (inserir, deletar, atualizar)
-async function sheetsOp(acao, aba, dados) {
-  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'COLE_AQUI_A_URL_DO_WEB_APP') return null;
-  try {
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST', mode: 'cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ acao, aba, ...dados })
-    });
-    return await res.json();
-  } catch(e) {
-    console.warn('Falha Sheets:', e.message);
-    return null;
-  }
-}
 
 function showAlert(id, msg, type) {
   const el = document.getElementById(id);
@@ -1824,39 +1703,9 @@ function onPdfChange(input) {
   r.onload = e => {
     pdfBase64 = e.target.result;
     document.getElementById('pdf-name-text').textContent = file.name;
-    document.getElementById('anexo-preview').classList.add('show');
-
-    // Visual: muda o botão de upload para mostrar que está anexado
-    const btn = document.querySelector('.file-upload-btn');
-    if (btn) {
-      btn.style.background = '#e8f5e9';
-      btn.style.borderColor = '#A8CCA8';
-      btn.style.color = '#0F4245';
-      btn.innerHTML = `
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0F4245" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        ${file.name.length > 30 ? file.name.substring(0,28)+'…' : file.name}
-      `;
-    }
+    document.getElementById('pdf-name-display').classList.add('show');
   };
   r.readAsDataURL(file);
-}
-
-function removerAnexo() {
-  pdfBase64 = null; pdfFileName = null;
-  const input = document.getElementById('desp-pdf');
-  if (input) input.value = '';
-  document.getElementById('anexo-preview')?.classList.remove('show');
-  // Restaura o botão de upload ao estado original
-  const btn = document.querySelector('.file-upload-btn');
-  if (btn) {
-    btn.style.background = '';
-    btn.style.borderColor = '';
-    btn.style.color = '';
-    btn.innerHTML = `
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      Clique para anexar PDF ou Imagem
-    `;
-  }
 }
 
 /* ══════════════ CLIENTES ══════════════ */
@@ -1866,21 +1715,15 @@ function salvarCliente() {
   if (!nome || !cnpj) return showAlert('alert-cliente','Preencha nome e CNPJ.','danger');
   const lista = load(KEY.clientes);
   if (lista.some(c => c.cnpj===cnpj)) return showAlert('alert-cliente','CNPJ já cadastrado.','danger');
-  const novo = { id:Date.now(), nome, cnpj };
-  lista.push(novo);
+  lista.push({ id:Date.now(), nome, cnpj });
   save(KEY.clientes, lista);
   document.getElementById('cli-nome').value = '';
   document.getElementById('cli-cnpj').value = '';
   showAlert('alert-cliente','Cliente adicionado com sucesso!','success');
-  renderClientes(); renderCustos();
-  sheetsOp('inserir', 'clientes', novo);
-}
-function removerCliente(id) {
-  const lista = load(KEY.clientes).filter(c=>c.id!==id);
-  save(KEY.clientes, lista);
   renderClientes();
-  sheetsOp('deletar', 'clientes', { id });
+renderCustos();
 }
+function removerCliente(id) { save(KEY.clientes, load(KEY.clientes).filter(c=>c.id!==id)); renderClientes(); }
 function renderClientes() {
   const lista = load(KEY.clientes);
   document.getElementById('badge-clientes').textContent = lista.length;
@@ -1897,19 +1740,13 @@ function salvarColaborador() {
   if (!nome) return showAlert('alert-colaborador','Preencha o nome.','danger');
   const lista = load(KEY.colaboradores);
   if (lista.some(c=>c.nome.toLowerCase()===nome.toLowerCase())) return showAlert('alert-colaborador','Colaborador já cadastrado.','danger');
-  const novo = { id:Date.now(), nome };
-  lista.push(novo);
+  lista.push({ id:Date.now(), nome });
   save(KEY.colaboradores, lista);
   document.getElementById('col-nome').value = '';
   showAlert('alert-colaborador','Colaborador adicionado!','success');
   renderColaboradores();
-  sheetsOp('inserir', 'colaboradores', novo);
 }
-function removerColaborador(id) {
-  save(KEY.colaboradores, load(KEY.colaboradores).filter(c=>c.id!==id));
-  renderColaboradores();
-  sheetsOp('deletar', 'colaboradores', { id });
-}
+function removerColaborador(id) { save(KEY.colaboradores, load(KEY.colaboradores).filter(c=>c.id!==id)); renderColaboradores(); }
 function renderColaboradores() {
   const lista = load(KEY.colaboradores);
   document.getElementById('badge-colaboradores').textContent = lista.length;
@@ -1927,20 +1764,14 @@ function salvarProposta() {
   if (!num) return showAlert('alert-proposta','Preencha o número da proposta.','danger');
   const lista = load(KEY.propostas);
   if (lista.some(p=>p.num.toLowerCase()===num.toLowerCase())) return showAlert('alert-proposta','Proposta já cadastrada.','danger');
-  const novo = { id:Date.now(), num, desc };
-  lista.push(novo);
+  lista.push({ id:Date.now(), num, desc });
   save(KEY.propostas, lista);
   document.getElementById('prop-num').value = '';
   document.getElementById('prop-desc').value = '';
   showAlert('alert-proposta','Proposta adicionada!','success');
   renderPropostas();
-  sheetsOp('inserir', 'propostas', novo);
 }
-function removerProposta(id) {
-  save(KEY.propostas, load(KEY.propostas).filter(p=>p.id!==id));
-  renderPropostas();
-  sheetsOp('deletar', 'propostas', { id });
-}
+function removerProposta(id) { save(KEY.propostas, load(KEY.propostas).filter(p=>p.id!==id)); renderPropostas(); }
 function renderPropostas() {
   const lista = load(KEY.propostas);
   document.getElementById('badge-propostas').textContent = lista.length;
@@ -1996,7 +1827,7 @@ function editarDespesa(id) {
   document.getElementById('desp-placa').value = d.placa||'';
   document.getElementById('desp-modelo').value= d.modelo||'';
   document.getElementById('desp-obs').value = d.obs||'';
-  if(d.pdfBase64){ pdfBase64=d.pdfBase64; pdfFileName=d.pdfFileName; document.getElementById('pdf-name-text').textContent=d.pdfFileName||''; document.getElementById('anexo-preview').classList.add('show'); }
+  if(d.pdfBase64){ pdfBase64=d.pdfBase64; pdfFileName=d.pdfFileName; document.getElementById('pdf-name-text').textContent=d.pdfFileName||''; document.getElementById('pdf-name-display').classList.add('show'); }
   onTipoChange();
   document.getElementById('edit-banner').classList.add('show');
   document.getElementById('card-eyebrow-despesa').textContent = 'Editando despesa';
@@ -2095,31 +1926,26 @@ function salvarDespesa() {
       newIds.push(novaDesp);
     });
     save(KEY.despesas, lista);
+    // Renderiza imediatamente, envia ao Google em background
     limparFormDespesa();
     renderDespesas();
     showAlert('alert-despesa', tipoRows.length > 1 ? `${tipoRows.length} despesas registradas!` : 'Despesa registrada com sucesso!','success');
-    // Mostra mensagem inline ao lado do botão
-    const msgOk = document.getElementById('msg-despesa-ok');
-    if (msgOk) {
-      msgOk.style.display = 'flex';
-      setTimeout(() => { msgOk.style.display = 'none'; }, 3500);
-    }
-    newIds.forEach(d => enviarParaGoogle(d));
+    newIds.forEach(d => enviarParaGoogle(d)); // background, não bloqueia
   }
 }
 async function enviarEmail(id) {
-  // Garante comparação correta de id (string vs number)
-  const d = load(KEY.despesas).find(x => String(x.id) === String(id));
-  if (!d) { alert('Despesa não encontrada.'); return; }
+  const d = load(KEY.despesas).find(x=>x.id===id);
+  if (!d) return;
 
-  // Se já tem link do Drive salvo, abre o Gmail direto
+  // Se já tem link do Drive, abre o e-mail direto
   if (d.linkDrive) {
     abrirGmail(d);
     return;
   }
 
-  // Se tem comprovante anexado mas ainda sem link no Drive, faz upload agora
+  // Se tem anexo mas ainda não tem link, faz upload agora e aguarda
   if (d.pdfBase64 && d.pdfFileName) {
+    // Mostra aviso de aguardo
     const aviso = document.createElement('div');
     aviso.id = 'aviso-upload';
     aviso.style.cssText = `
@@ -2130,53 +1956,61 @@ async function enviarEmail(id) {
       z-index:9999; display:flex; align-items:center; gap:10px;
       animation:slideUp 0.25s ease;
     `;
-    if (!document.getElementById('spin-style')) {
-      const s = document.createElement('style');
-      s.id = 'spin-style';
-      s.textContent = '@keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }';
-      document.head.appendChild(s);
-    }
     aviso.innerHTML = `
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite">
         <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
       </svg>
       Enviando comprovante para o Drive, aguarde...
     `;
+    // Adiciona animação de spin
+    if (!document.getElementById('spin-style')) {
+      const s = document.createElement('style');
+      s.id = 'spin-style';
+      s.textContent = '@keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }';
+      document.head.appendChild(s);
+    }
     document.body.appendChild(aviso);
 
     try {
-      const payload = { acao: 'inserir', ...d };
+      const payload = { ...d };
       if (payload.pdfBase64 && payload.pdfBase64.includes(',')) {
         const parts = payload.pdfBase64.split(',');
         payload.anexoBase64 = parts[1];
         payload.anexoTipo   = payload.pdfBase64.match(/data:(.*?);/)?.[1] || 'application/pdf';
-        payload.anexoNome   = payload.pdfFileName || 'comprovante.pdf';
+        payload.anexoNome   = payload.pdfFileName || 'anexo.pdf';
       }
       delete payload.pdfBase64;
 
       const res = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST', mode: 'cors',
+        method: 'POST',
+        mode: 'cors',
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(payload)
       });
       const json = await res.json();
-      aviso.remove();
 
       if (json && json.linkAnexo) {
+        // Salva o link no registro
         let lista = load(KEY.despesas);
-        lista = lista.map(x => String(x.id) === String(id) ? { ...x, linkDrive: json.linkAnexo } : x);
+        lista = lista.map(x => x.id === id ? { ...x, linkDrive: json.linkAnexo } : x);
         save(KEY.despesas, lista);
         renderDespesas();
-        abrirGmail(lista.find(x => String(x.id) === String(id)));
+        // Pega a despesa atualizada com o link
+        const dAtualizada = lista.find(x => x.id === id);
+        aviso.remove();
+        abrirGmail(dAtualizada);
       } else {
+        aviso.remove();
+        // Abre mesmo assim, sem link
         abrirGmail(d);
       }
     } catch(err) {
-      document.getElementById('aviso-upload')?.remove();
+      aviso.remove();
+      console.warn('Erro ao obter link do Drive:', err);
       abrirGmail(d);
     }
   } else {
-    // Sem comprovante, abre Gmail direto
+    // Sem anexo, abre direto
     abrirGmail(d);
   }
 }
@@ -2217,7 +2051,8 @@ function abrirGmail(d) {
   if (d.obs) { linhas.push('','📝 OBSERVAÇÕES',`   ${d.obs}`); }
   linhas.push(
     '',
-    '📎 COMPROVANTE: Anexar aqui neste e-mail o comprovante',
+    `📎 COMPROVANTE: ${d.pdfFileName || 'Não anexado'}`,
+    `🔗 LINK NO DRIVE: ${d.linkDrive || 'Não disponível'}`,
     '',
     '───────────────────────────────────',
     `Data do lançamento: ${d.data}`,
@@ -2231,45 +2066,7 @@ function abrirGmail(d) {
   mostrarConfirmacaoEmail(d.id, !!d.pdfFileName);
 }
 
-function mostrarToastDespesa(msg) {
-  // Remove toast anterior se houver
-  const anterior = document.getElementById('toast-despesa');
-  if (anterior) anterior.remove();
-
-  const t = document.createElement('div');
-  t.id = 'toast-despesa';
-  t.style.cssText = `
-    position:fixed; top:80px; left:50%; transform:translateX(-50%);
-    background:#0F4245; color:#fff; border-radius:14px;
-    box-shadow:0 8px 32px rgba(1,30,60,0.35); padding:16px 32px;
-    font-family:Montserrat,sans-serif; font-size:14px; font-weight:700;
-    z-index:9999; display:flex; align-items:center; gap:12px;
-    animation:slideDown 0.3s ease; letter-spacing:0.03em;
-    border:2px solid #A8CCA8;
-  `;
-  if (!document.getElementById('toast-style')) {
-    const s = document.createElement('style');
-    s.id = 'toast-style';
-    s.textContent = '@keyframes slideDown { from { opacity:0; transform:translateX(-50%) translateY(-20px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }';
-    document.head.appendChild(s);
-  }
-  t.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A8CCA8" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>${msg}`;
-  document.body.appendChild(t);
-  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.4s'; setTimeout(()=>t.remove(),400); }, 3000);
-}
-
 function mostrarConfirmacaoEmail(id, temAnexo) {
-  // Remove banner anterior se houver
-  const anterior = document.getElementById('email-confirm-banner');
-  if (anterior) anterior.remove();
-
-  // Persiste o estado para restaurar se o usuário sair e voltar
-  sessionStorage.setItem('emailConfirmPending', JSON.stringify({ id, temAnexo }));
-
-  criarBannerConfirmacaoEmail(id, temAnexo);
-}
-
-function criarBannerConfirmacaoEmail(id, temAnexo) {
   // Remove banner anterior se houver
   const anterior = document.getElementById('email-confirm-banner');
   if (anterior) anterior.remove();
@@ -2290,54 +2087,32 @@ function criarBannerConfirmacaoEmail(id, temAnexo) {
     </div>
     ${temAnexo ? '<div style="font-size:11px;color:#b07a00;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:7px 10px;">📎 O comprovante foi baixado — lembre-se de anexá-lo antes de enviar.</div>' : ''}
     <div style="display:flex;gap:10px;">
-      <button onclick="definirStatusEmail(${id},'enviado');document.getElementById('email-confirm-banner').remove();sessionStorage.removeItem('emailConfirmPending');"
+      <button onclick="definirStatusEmail(${id},'enviado');document.getElementById('email-confirm-banner').remove();"
         style="flex:1;background:#0F4245;color:#fff;border:none;border-radius:999px;padding:9px 0;font-family:Montserrat,sans-serif;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.04em;">
         ✓ Sim, e-mail enviado
       </button>
-      <button onclick="definirStatusEmail(${id},'nao_enviado');document.getElementById('email-confirm-banner').remove();sessionStorage.removeItem('emailConfirmPending');"
+      <button onclick="definirStatusEmail(${id},'nao_enviado');document.getElementById('email-confirm-banner').remove();"
         style="flex:1;background:none;color:#b33a3a;border:1.5px solid rgba(179,58,58,0.35);border-radius:999px;padding:9px 0;font-family:Montserrat,sans-serif;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.04em;">
         ✗ Não enviei
       </button>
     </div>
   `;
 
+  // Fecha automaticamente após 30s sem resposta
   document.body.appendChild(banner);
-  setTimeout(() => { if (document.getElementById('email-confirm-banner')) { banner.remove(); sessionStorage.removeItem('emailConfirmPending'); } }, 30000);
+  setTimeout(() => { if (document.getElementById('email-confirm-banner')) banner.remove(); }, 30000);
 }
-
-// Restaura o banner ao voltar para a aba (fix do bug no GitHub Pages)
-window.addEventListener('focus', function() {
-  const pending = sessionStorage.getItem('emailConfirmPending');
-  if (pending && !document.getElementById('email-confirm-banner')) {
-    try {
-      const { id, temAnexo } = JSON.parse(pending);
-      criarBannerConfirmacaoEmail(id, temAnexo);
-    } catch(e) { sessionStorage.removeItem('emailConfirmPending'); }
-  }
-});
-
-document.addEventListener('visibilitychange', function() {
-  if (document.visibilityState === 'visible') {
-    const pending = sessionStorage.getItem('emailConfirmPending');
-    if (pending && !document.getElementById('email-confirm-banner')) {
-      try {
-        const { id, temAnexo } = JSON.parse(pending);
-        criarBannerConfirmacaoEmail(id, temAnexo);
-      } catch(e) { sessionStorage.removeItem('emailConfirmPending'); }
-    }
-  }
-});
 
 function definirStatusEmail(id, status) {
   let lista = load(KEY.despesas);
   lista = lista.map(d => d.id===id ? {...d, emailStatus: status} : d);
   save(KEY.despesas, lista);
   renderDespesas();
-  sheetsOp('atualizar', 'despesas', { id, emailStatus: status });
 }
 
 function confirmarExclusao(id, btn) {
   const cell = btn.closest('td');
+  const orig = cell.innerHTML;
   cell.innerHTML = `<div class="confirm-delete">
     <span>Tem certeza que quer excluir?</span>
     <button class="btn-confirm-yes" onclick="removerDespesa(${id})">Sim, excluir</button>
@@ -2348,7 +2123,6 @@ function confirmarExclusao(id, btn) {
 function removerDespesa(id) {
   save(KEY.despesas, load(KEY.despesas).filter(d=>d.id!==id));
   renderDespesas();
-  sheetsOp('deletar', 'despesas', { id });
 }
 
 /* ══════════════ RENDER DESPESAS ══════════════ */
@@ -2436,7 +2210,6 @@ function getFiltrados() {
   const fDe = document.getElementById('rel-de')?.value||'';
   const fAte= document.getElementById('rel-ate')?.value||'';
   const fComp = document.getElementById('rel-competencia')?.value||'';
-  const fProp = document.getElementById('rel-proposta')?.value||'';
   if (fC)    lista = lista.filter(d=>d.cliente.toLowerCase().includes(fC));
   if (fB)    lista = lista.filter(d=>d.colaborador===fB);
   if (fCC)   lista = lista.filter(d=>d.cc===fCC);
@@ -2444,7 +2217,6 @@ function getFiltrados() {
   if (fDe)   lista = lista.filter(d=>d.ida&&d.ida>=fDe);
   if (fAte)  lista = lista.filter(d=>d.ida&&d.ida<=fAte);
   if (fComp) lista = lista.filter(d=>d.competencia&&d.competencia.startsWith(fComp));
-  if (fProp) lista = lista.filter(d=>d.proposta===fProp);
   return lista;
 }
 
@@ -2461,13 +2233,6 @@ function renderRelatorio() {
   if (selColRel) {
     const cur = selColRel.value;
     selColRel.innerHTML = '<option value="">Todos</option>' + colabs.map(c=>`<option value="${esc(c.nome)}" ${cur===c.nome?'selected':''}>${esc(c.nome)}</option>`).join('');
-  }
-  // populate proposta select
-  const propostas = load(KEY.propostas);
-  const selPropRel = document.getElementById('rel-proposta');
-  if (selPropRel) {
-    const cur = selPropRel.value;
-    selPropRel.innerHTML = '<option value="">Todas</option>' + propostas.map(p=>`<option value="${esc(p.num)}" ${cur===p.num?'selected':''}>${esc(p.num)}${p.desc?' – '+esc(p.desc):''}</option>`).join('');
   }
   const lista  = getFiltrados();
   const totalAll = all.length;
@@ -2597,7 +2362,7 @@ function removerDespesaRel(id) {
 }
 
 function limparFiltros() {
-  const ids = ['rel-cliente-txt','rel-proposta','rel-colaborador','rel-cc','rel-tipo','rel-de','rel-ate','rel-competencia'];
+  const ids = ['rel-cliente-txt','rel-colaborador','rel-cc','rel-tipo','rel-de','rel-ate','rel-competencia'];
   ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   renderRelatorio();
 }
@@ -2721,16 +2486,12 @@ function salvarCusto() {
   const existing = lista.find(c=>c.propostaId==propId);
   if (existing) {
     lista = lista.map(c => c.propostaId==propId ? {...c, orcado:valRaw} : c);
-    save(KEY.custos, lista);
     showAlert('alert-custo','Orçamento atualizado com sucesso!','success');
-    sheetsOp('atualizar', 'custos', { id: existing.id, orcado: valRaw });
   } else {
-    const novo = { id:Date.now(), propostaId:propId, proposta:prop.num, descricao:prop.desc||'', orcado:valRaw };
-    lista.push(novo);
-    save(KEY.custos, lista);
+    lista.push({ id:Date.now(), propostaId:propId, proposta:prop.num, descricao:prop.desc||'', orcado:valRaw });
     showAlert('alert-custo','Orçamento salvo com sucesso!','success');
-    sheetsOp('inserir', 'custos', novo);
   }
+  save(KEY.custos, lista);
   document.getElementById('custo-proposta').value = '';
   document.getElementById('custo-orcado').value   = '';
   renderCustos();
@@ -2739,7 +2500,6 @@ function salvarCusto() {
 function removerCusto(id) {
   save(KEY.custos, load(KEY.custos).filter(c=>c.id!==id));
   renderCustos();
-  sheetsOp('deletar', 'custos', { id });
 }
 
 function renderCustos() {
@@ -2912,7 +2672,7 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFf3t_iSkx-PKb
 async function enviarParaGoogle(despesa) {
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'COLE_AQUI_A_URL_DO_WEB_APP') return;
   try {
-    const payload = { acao: 'inserir', ...despesa };
+    const payload = { ...despesa };
     if (payload.pdfBase64 && payload.pdfBase64.includes(',')) {
       const parts = payload.pdfBase64.split(',');
       payload.anexoBase64 = parts[1];
@@ -2927,6 +2687,8 @@ async function enviarParaGoogle(despesa) {
       body: JSON.stringify(payload)
     });
     const json = await res.json();
+    console.log('Enviado para Google com sucesso.', json);
+    // Se retornou link do Drive, salva na despesa para usar no e-mail
     if (json && json.linkAnexo && despesa.id) {
       let lista = load(KEY.despesas);
       lista = lista.map(d => d.id === despesa.id ? { ...d, linkDrive: json.linkAnexo } : d);
