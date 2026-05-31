@@ -2217,8 +2217,11 @@ function salvarDespesa() {
     limparFormDespesa();
     renderDespesas();
     showAlert('alert-despesa','Despesa registrada com sucesso!','success');
+    // Log de diagnóstico antes de enviar
+    console.log('[salvarDespesa] anexos para Drive:', novaDesp.anexos.length,
+      novaDesp.anexos.map(a => a.name + ' base64:' + (a.base64 ? a.base64.length + 'chars' : 'VAZIO')));
     // Envia ao Drive com a versão completa (com base64) em background
-    enviarParaGoogle(novaDesp).catch(()=>{});
+    enviarParaGoogle(novaDesp).catch(e => console.error('[Drive] catch externo:', e));
   }
 }
 async function enviarEmail(id) {
@@ -3107,7 +3110,39 @@ async function diagnosticarDrive() {
     } catch(pe) { log('JSON inválido: ' + t.slice(0,100), '#B33A3A'); }
   } catch(e) { log('POST+arquivo ERRO: ' + e.message, '#B33A3A'); }
 
-  // 4. Teste POST batch com 2 arquivos pequenos
+  // 4. Teste POST batch com imagem JPEG real (simula compressao do canvas)
+  try {
+    log('Testando POST batch com imagem JPEG real (canvas)…');
+    // Gera uma imagem JPEG real de 100x100px via canvas
+    const cv = document.createElement('canvas');
+    cv.width = 100; cv.height = 100;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#0F4245'; ctx.fillRect(0, 0, 100, 100);
+    ctx.fillStyle = '#A8CCA8'; ctx.fillText('Nortmont', 10, 50);
+    const imgDataUrl = cv.toDataURL('image/jpeg', 0.72);
+    const imgBase64 = imgDataUrl.split(',')[1];
+    const imgTipo = 'image/jpeg';
+    const sizeKB = Math.round(imgBase64.length * 0.75 / 1024);
+    log('Imagem gerada: ' + sizeKB + 'KB');
+    const payload = {
+      id: 'DIAG4_' + Date.now(), data: new Date().toLocaleDateString('pt-BR'),
+      cliente: 'DIAGNOSTICO', colaborador: 'DIAGNOSTICO', cc: 'Gestão',
+      tipos: [], valorTotal: '0,00',
+      anexos: [{ nome: 'teste_imagem.jpg', base64: imgBase64, tipo: imgTipo }]
+    };
+    const totalKB = Math.round(JSON.stringify(payload).length / 1024);
+    log('Payload total: ' + totalKB + 'KB');
+    const r = await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'cors', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) });
+    const t = await r.text();
+    log('JPEG status: ' + r.status + ' | resp: ' + t.slice(0,200), r.ok ? '#2F8F6E' : '#B33A3A');
+    try {
+      const j = JSON.parse(t);
+      if (j.linksAnexos && j.linksAnexos[0]) log('✅ JPEG OK: ' + j.linksAnexos[0], '#2F8F6E');
+      else log('⚠ Sem link JPEG: ' + JSON.stringify(j), '#B33A3A');
+    } catch(pe) { log('JSON inválido: ' + t.slice(0,150), '#B33A3A'); }
+  } catch(e) { log('JPEG ERRO: ' + e.message, '#B33A3A'); }
+
+  // 5. Teste POST batch com 2 arquivos pequenos (texto)
   try {
     log('Testando POST batch (2 arquivos)…');
     const fakeB64a = btoa('Arquivo A de teste ' + new Date().toISOString());
