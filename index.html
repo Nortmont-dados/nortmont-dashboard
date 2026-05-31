@@ -2006,60 +2006,95 @@ function salvarDespesa() {
     anexosMultiplos: anexosMultiplos.length > 1 ? anexosMultiplos.map(a=>a.name) : [],
   };
 
+  // Monta array de tipos enriquecido
+  const tipoVeic2  = document.getElementById('desp-tipo-veiculo').value.trim();
+  const placa2     = document.getElementById('desp-placa').value.trim().toUpperCase();
+  const modelo2    = document.getElementById('desp-modelo').value.trim();
+  const finalidade2= (document.getElementById('desp-finalidade')?.value||'').trim();
+
+  const tiposDetalhados = tipoRows.map(r => ({
+    tipo: r.tipo, valor: r.valor,
+    tipoVeiculo: r.tipo==='Combustível' ? tipoVeic2 : '',
+    placa:        r.tipo==='Combustível' ? placa2    : '',
+    modelo:       r.tipo==='Combustível' ? modelo2   : '',
+    finalidade:   r.tipo==='Outros'      ? finalidade2 : '',
+  }));
+
+  // Valor total
+  const valorTotal = tipoRows.reduce((s,r) => s + (parseFloat(String(r.valor).replace(/\./g,'').replace(',','.'))||0), 0);
+  const valorTotalFmt = valorTotal.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+
+  // Comprovantes: array de {name, base64}
+  const anexosArr = anexosMultiplos.length > 0
+    ? anexosMultiplos
+    : (pdfBase64 ? [{ base64: pdfBase64, name: pdfFileName }] : []);
+
   let lista = load(KEY.despesas);
 
   if (editingId) {
-    const r = tipoRows[0];
-    const upd = { ...base, id: editingId, tipo: r.tipo, valor: r.valor,
-      tipoVeiculo: r.tipo==='Combustível' ? document.getElementById('desp-tipo-veiculo').value.trim() : '',
-      placa: r.tipo==='Combustível' ? document.getElementById('desp-placa').value.trim().toUpperCase() : '',
-      modelo: r.tipo==='Combustível' ? document.getElementById('desp-modelo').value.trim() : '',
-      finalidade: r.tipo==='Outros' ? document.getElementById('desp-finalidade').value.trim() : '',
+    const existente = lista.find(x=>x.id===editingId)||{};
+    const upd = { ...base, id: editingId,
+      tipos: tiposDetalhados,
+      tipo:  tiposDetalhados[0]?.tipo  || '',
+      valor: tiposDetalhados[0]?.valor || '',
+      tipoVeiculo: tiposDetalhados[0]?.tipoVeiculo || '',
+      placa:       tiposDetalhados[0]?.placa || '',
+      modelo:      tiposDetalhados[0]?.modelo || '',
+      finalidade:  tiposDetalhados[0]?.finalidade || '',
+      valorTotal: valorTotalFmt,
+      anexos: anexosArr.map(a=>({name:a.name, base64:a.base64})),
+      pdfBase64:   anexosArr[0]?.base64 || null,
+      pdfFileName: anexosArr[0]?.name   || null,
+      linksDrive:  existente.linksDrive || [],
     };
     lista = lista.map(x => x.id===editingId ? upd : x);
     save(KEY.despesas, lista);
-    // Renderiza imediatamente, envia ao Google em background
     limparFormDespesa();
     renderDespesas();
     showAlert('alert-despesa','Despesa atualizada com sucesso!','success');
     editingId = null;
     document.getElementById('edit-banner').classList.remove('show');
     document.getElementById('card-eyebrow-despesa').textContent = 'Nova despesa';
-    enviarParaGoogle(upd); // background, não bloqueia
+    enviarParaGoogle(upd);
   } else {
-    const newIds = [];
-    tipoRows.forEach((r, i) => {
-      const novaDesp = { ...base,
-        id: Date.now() + i,
-        tipo: r.tipo, valor: r.valor,
-        tipoVeiculo: r.tipo==='Combustível' ? document.getElementById('desp-tipo-veiculo').value.trim() : '',
-        placa:  r.tipo==='Combustível' ? document.getElementById('desp-placa').value.trim().toUpperCase() : '',
-        modelo: r.tipo==='Combustível' ? document.getElementById('desp-modelo').value.trim() : '',
-        finalidade: r.tipo==='Outros' ? document.getElementById('desp-finalidade').value.trim() : '',
-      };
-      lista.push(novaDesp);
-      newIds.push(novaDesp);
-    });
+    const novaDesp = { ...base, id: Date.now(),
+      tipos: tiposDetalhados,
+      tipo:  tiposDetalhados[0]?.tipo  || '',
+      valor: tiposDetalhados[0]?.valor || '',
+      tipoVeiculo: tiposDetalhados[0]?.tipoVeiculo || '',
+      placa:       tiposDetalhados[0]?.placa || '',
+      modelo:      tiposDetalhados[0]?.modelo || '',
+      finalidade:  tiposDetalhados[0]?.finalidade || '',
+      valorTotal: valorTotalFmt,
+      anexos: anexosArr.map(a=>({name:a.name, base64:a.base64})),
+      pdfBase64:   anexosArr[0]?.base64 || null,
+      pdfFileName: anexosArr[0]?.name   || null,
+      linksDrive: [],
+    };
+    lista.push(novaDesp);
     save(KEY.despesas, lista);
-    // Renderiza imediatamente, envia ao Google em background
     limparFormDespesa();
     renderDespesas();
-    showAlert('alert-despesa', tipoRows.length > 1 ? `${tipoRows.length} despesas registradas!` : 'Despesa registrada com sucesso!','success');
-    newIds.forEach(d => enviarParaGoogle(d)); // background, não bloqueia
+    showAlert('alert-despesa','Despesa registrada com sucesso!','success');
+    enviarParaGoogle(novaDesp);
   }
 }
 async function enviarEmail(id) {
   const d = load(KEY.despesas).find(x=>x.id===id);
   if (!d) return;
 
-  // Se já tem link do Drive, abre o e-mail direto
-  if (d.linkDrive) {
+  // Se já tem links do Drive, abre o e-mail direto
+  const jaTemLinks = (d.linksDrive && d.linksDrive.length) || d.linkDrive;
+  if (jaTemLinks) {
     abrirGmail(d);
     return;
   }
 
+  // Verifica se tem algum anexo para enviar
+  const temAnexos = (d.anexos && d.anexos.length) || (d.pdfBase64 && d.pdfFileName);
+
   // Se tem anexo mas ainda não tem link, faz upload agora e aguarda
-  if (d.pdfBase64 && d.pdfFileName) {
+  if (temAnexos) {
     // Mostra aviso de aguardo
     const aviso = document.createElement('div');
     aviso.id = 'aviso-upload';
@@ -2087,38 +2122,12 @@ async function enviarEmail(id) {
     document.body.appendChild(aviso);
 
     try {
-      const payload = { ...d };
-      if (payload.pdfBase64 && payload.pdfBase64.includes(',')) {
-        const parts = payload.pdfBase64.split(',');
-        payload.anexoBase64 = parts[1];
-        payload.anexoTipo   = payload.pdfBase64.match(/data:(.*?);/)?.[1] || 'application/pdf';
-        payload.anexoNome   = payload.pdfFileName || 'anexo.pdf';
-      }
-      delete payload.pdfBase64;
-
-      const res = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'cors',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(payload)
-      });
-      const json = await res.json();
-
-      if (json && json.linkAnexo) {
-        // Salva o link no registro
-        let lista = load(KEY.despesas);
-        lista = lista.map(x => x.id === id ? { ...x, linkDrive: json.linkAnexo } : x);
-        save(KEY.despesas, lista);
-        renderDespesas();
-        // Pega a despesa atualizada com o link
-        const dAtualizada = lista.find(x => x.id === id);
-        aviso.remove();
-        abrirGmail(dAtualizada);
-      } else {
-        aviso.remove();
-        // Abre mesmo assim, sem link
-        abrirGmail(d);
-      }
+      await enviarParaGoogle(d);
+      // Recarrega despesa atualizada com linksDrive
+      const listaAtual = load(KEY.despesas);
+      const dAtualizada = listaAtual.find(x => x.id === id) || d;
+      aviso.remove();
+      abrirGmail(dAtualizada);
     } catch(err) {
       aviso.remove();
       console.warn('Erro ao obter link do Drive:', err);
@@ -2134,8 +2143,13 @@ function abrirGmail(d) {
   const fmtDate = v => v ? v.split('-').reverse().join('/') : '—';
   const fmtComp = v => v ? v.split('-').reverse().join('/') : '—';
 
+  // Suporte a multi-tipo e legado
+  const tipos = d.tipos && d.tipos.length
+    ? d.tipos
+    : [{ tipo: d.tipo, valor: d.valor, placa: d.placa, modelo: d.modelo, tipoVeiculo: d.tipoVeiculo, finalidade: d.finalidade }];
+
   const assunto = encodeURIComponent(
-    `Lançamento de Despesa – ${d.cliente} | ${d.proposta||d.categoria||'s/proposta'} | ${d.tipo} | ${d.data}`
+    `Lançamento de Despesa – ${d.cliente} | ${d.proposta||d.categoria||'s/proposta'} | ${tipos.map(t=>t.tipo).join('+')} | ${d.data}`
   );
 
   const linhas = [
@@ -2157,31 +2171,51 @@ function abrirGmail(d) {
     `   Dias:          ${d.dias||'—'}`,
     '',
     '💼 CLASSIFICAÇÃO',
-    `   Centro de Custo:   ${d.cc||'—'}`,
-    `   Tipo de Despesa:   ${d.tipo||'—'}`,
-    `   Valor:             ${d.valor ? 'R$ '+d.valor : '—'}`,
-    `   Competência:       ${fmtComp(d.competencia)}`,
+    `   Centro de Custo: ${d.cc||'—'}`,
+    `   Competência:     ${fmtComp(d.competencia)}`,
+    `   Valor Total:     ${d.valorTotal ? 'R$ '+d.valorTotal : (d.valor ? 'R$ '+d.valor : '—')}`,
+    '',
+    '💰 DESPESAS DETALHADAS',
   ];
-  if (d.tipo==='Combustível' && d.placa) {
-    linhas.push('','🚗 VEÍCULO',`   Tipo:    ${d.tipoVeiculo||'—'}`,`   Placa:   ${d.placa}`,`   Modelo:  ${d.modelo||'—'}`);
-  }
-  if (d.tipo==='Outros' && d.finalidade) {
-    linhas.push('','📌 FINALIDADE',`   ${d.finalidade}`);
-  }
-  if (d.obs) { linhas.push('','📝 OBSERVAÇÕES',`   ${d.obs}`); }
 
-  // Comprovante e link Drive
-  const nomeAnexos = d.anexosMultiplos && d.anexosMultiplos.length > 1
-    ? d.anexosMultiplos.join(', ')
-    : (d.pdfFileName || 'Não anexado');
+  tipos.forEach((t, i) => {
+    linhas.push(`   ${i+1}. ${t.tipo} — R$ ${t.valor||'—'}`);
+    if (t.tipo==='Combustível' && t.placa) {
+      linhas.push(`      Veículo: ${t.tipoVeiculo||'—'} | Placa: ${t.placa} | Modelo: ${t.modelo||'—'}`);
+    }
+    if (t.tipo==='Outros' && t.finalidade) {
+      linhas.push(`      Finalidade: ${t.finalidade}`);
+    }
+  });
+
+  if (d.obs) { linhas.push('', '📝 OBSERVAÇÕES', `   ${d.obs}`); }
+
+  // Comprovantes
+  const anexosList = d.anexos && d.anexos.length
+    ? d.anexos
+    : (d.pdfFileName ? [{ name: d.pdfFileName }] : []);
+  const nomeAnexos = anexosList.length
+    ? anexosList.map((a,i)=>`   ${i+1}. ${a.name}`).join('\n')
+    : '   Não anexado';
+
+  linhas.push('', `📎 COMPROVANTE(S):`, nomeAnexos);
+
+  // Links do Drive — clicáveis
+  const links = d.linksDrive && d.linksDrive.length
+    ? d.linksDrive
+    : (d.linkDrive ? [d.linkDrive] : []);
+
+  if (links.length) {
+    linhas.push('', '🔗 LINK(S) NO DRIVE (clique para abrir):');
+    links.forEach((lnk, i) => {
+      const nome = anexosList[i]?.name || `Comprovante ${i+1}`;
+      linhas.push(`   ${nome}: ${lnk}`);
+    });
+  } else {
+    linhas.push('', '🔗 LINK NO DRIVE: Não disponível (comprovante ainda não enviado ao Drive)');
+  }
 
   linhas.push(
-    '',
-    `📎 COMPROVANTE(S): ${nomeAnexos}`,
-    '',
-    d.linkDrive
-      ? `🔗 LINK DO DRIVE (comprovantes): ${d.linkDrive}`
-      : '🔗 LINK DO DRIVE: Não disponível',
     '',
     '───────────────────────────────────',
     `Data do lançamento: ${d.data}`,
@@ -2192,7 +2226,7 @@ function abrirGmail(d) {
   const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(EMAIL_DESTINO)}&su=${assunto}&body=${corpo}`;
   window.open(url, '_blank');
 
-  mostrarConfirmacaoEmail(d.id, !!d.pdfFileName);
+  mostrarConfirmacaoEmail(d.id, anexosList.length > 0);
 }
 
 function mostrarConfirmacaoEmail(id, temAnexo) {
@@ -2270,31 +2304,53 @@ function renderDespesas() {
       const ccPill = d.cc==='Engenharia'
         ? `<span class="cc-pill cc-eng">Engenharia</span>`
         : `<span class="cc-pill cc-gest">Gestão</span>`;
-      const veiculo = d.tipo==='Combustível' && d.placa
-        ? `<span style="font-family:'Montserrat',monospace;font-size:11px;font-weight:600;letter-spacing:0.04em">${esc(d.placa)}</span><br><span style="font-size:10px;color:var(--text-muted)">${esc(d.modelo)}</span>`
+
+      // Tipos: suporta array (novo) e legado (string)
+      const tipos = d.tipos && d.tipos.length
+        ? d.tipos
+        : [{ tipo: d.tipo, valor: d.valor, placa: d.placa, modelo: d.modelo, tipoVeiculo: d.tipoVeiculo, finalidade: d.finalidade }];
+
+      const tiposCell = tipos.map(t => {
+        let extra = '';
+        if (t.tipo==='Combustível' && t.placa) extra = `<div style="font-size:10px;color:var(--text-muted)">${esc(t.tipoVeiculo||'')} · ${esc(t.placa)}</div>`;
+        if (t.tipo==='Outros' && t.finalidade) extra = `<div style="font-size:10px;color:var(--text-muted)">${esc(t.finalidade)}</div>`;
+        return `<div style="padding:2px 0;border-bottom:1px dashed var(--border);last-child:border:none">${tipoIcon[t.tipo]||''} <span style="font-size:12px">${esc(t.tipo)}</span> <span style="font-family:Montserrat,monospace;font-size:12px;font-weight:600;color:var(--teal)">R$ ${esc(t.valor)}</span>${extra}</div>`;
+      }).join('');
+
+      const valorExib = d.valorTotal
+        ? `<span style="font-family:'Montserrat',monospace;font-size:12px;font-weight:700;color:var(--teal)">R$ ${esc(d.valorTotal)}</span>`
+        : (d.valor ? `<span style="font-family:'Montserrat',monospace;font-size:12px;font-weight:600;color:var(--teal)">R$ ${esc(d.valor)}</span>` : '<span style="color:var(--text-muted)">—</span>');
+
+      // Comprovantes: suporta array (novo) e legado (único)
+      const anexosList = d.anexos && d.anexos.length
+        ? d.anexos
+        : (d.pdfBase64 ? [{ name: d.pdfFileName, base64: d.pdfBase64 }] : []);
+      const pdfCell = anexosList.length
+        ? anexosList.map(a => `<a href="${esc(a.base64)}" download="${esc(a.name)}" style="color:var(--teal);font-size:11px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:4px;margin-bottom:3px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>${esc(a.name).slice(0,18)}${a.name.length>18?'…':''}</a>`).join('')
         : '<span style="color:var(--text-muted)">—</span>';
-      const pdf = d.pdfBase64
-        ? `<a href="${esc(d.pdfBase64)}" download="${esc(d.pdfFileName)}" style="color:var(--teal);font-size:11px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>${esc(d.pdfFileName).slice(0,16)}${d.pdfFileName.length>16?'…':''}</a>`
+
+      // Veículo (primeiro combustível encontrado para exibição rápida)
+      const combRow = tipos.find(t=>t.tipo==='Combustível');
+      const veiculo = combRow && combRow.placa
+        ? `<span style="font-family:'Montserrat',monospace;font-size:11px;font-weight:600">${esc(combRow.placa)}</span><br><span style="font-size:10px;color:var(--text-muted)">${esc(combRow.modelo||'')}</span>`
         : '<span style="color:var(--text-muted)">—</span>';
-      const valor = d.valor
-        ? `<span style="font-family:'Montserrat',monospace;font-size:12px;font-weight:600;color:var(--teal)">R$ ${esc(d.valor)}</span>`
-        : '<span style="color:var(--text-muted)">—</span>';
+
       return `<tr>
         <td class="muted">${d.data}</td>
         <td class="muted" style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(d.cadastradoPor||'')}">${esc(d.cadastradoPor||'—')}</td>
         <td style="font-weight:600;font-size:12px">${esc(d.cliente)}</td>
-        <td class="muted" style="font-family:'Montserrat',monospace;letter-spacing:0.03em">${esc(d.proposta)}</td>
+        <td class="muted" style="font-family:'Montserrat',monospace;letter-spacing:0.03em">${esc(d.proposta||'—')}</td>
         <td>${esc(d.colaborador)}</td>
         <td>${esc(d.cidade)||'—'}</td>
         <td class="muted">${fmtDate(d.ida)}</td>
         <td class="muted">${fmtDate(d.volta)}</td>
         <td class="muted" style="text-align:center">${d.dias||'—'}</td>
         <td>${ccPill}</td>
-        <td style="white-space:nowrap;font-size:12px">${tipoIcon[d.tipo]||''} ${esc(d.tipo)}</td>
-        <td>${valor}</td>
+        <td style="min-width:180px">${tiposCell}</td>
+        <td>${valorExib}</td>
         <td class="muted">${d.competencia ? d.competencia.split('-').reverse().join('/') : '—'}</td>
         <td>${veiculo}</td>
-        <td>${pdf}</td>
+        <td style="min-width:140px">${pdfCell}</td>
         <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted);font-size:11px">${esc(d.obs)||'—'}</td>
         <td style="white-space:nowrap;">
           ${d.emailStatus==='enviado'
@@ -2801,26 +2857,46 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFf3t_iSkx-PKb
 async function enviarParaGoogle(despesa) {
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'COLE_AQUI_A_URL_DO_WEB_APP') return;
   try {
-    const payload = { ...despesa };
-    if (payload.pdfBase64 && payload.pdfBase64.includes(',')) {
-      const parts = payload.pdfBase64.split(',');
-      payload.anexoBase64 = parts[1];
-      payload.anexoTipo   = payload.pdfBase64.match(/data:(.*?);/)?.[1] || 'application/pdf';
-      payload.anexoNome   = payload.pdfFileName || 'anexo.pdf';
+    // Envia cada anexo separadamente e coleta os links do Drive
+    const anexosList = despesa.anexos && despesa.anexos.length
+      ? despesa.anexos
+      : (despesa.pdfBase64 ? [{ name: despesa.pdfFileName, base64: despesa.pdfBase64 }] : []);
+
+    const linksDrive = [];
+
+    for (const anexo of anexosList) {
+      const payload = {
+        ...despesa,
+        tipos: despesa.tipos || [],
+      };
+      // Remove base64 dos outros anexos para não sobrecarregar
+      delete payload.pdfBase64;
+      delete payload.anexos;
+
+      if (anexo.base64 && anexo.base64.includes(',')) {
+        const parts = anexo.base64.split(',');
+        payload.anexoBase64 = parts[1];
+        payload.anexoTipo   = anexo.base64.match(/data:(.*?);/)?.[1] || 'application/pdf';
+        payload.anexoNome   = anexo.name || 'anexo.pdf';
+      }
+
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json();
+      console.log('Enviado para Google:', json);
+      if (json && json.linkAnexo) linksDrive.push(json.linkAnexo);
     }
-    delete payload.pdfBase64;
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload)
-    });
-    const json = await res.json();
-    console.log('Enviado para Google com sucesso.', json);
-    // Se retornou link do Drive, salva na despesa para usar no e-mail
-    if (json && json.linkAnexo && despesa.id) {
+
+    // Salva todos os links no registro
+    if (linksDrive.length && despesa.id) {
       let lista = load(KEY.despesas);
-      lista = lista.map(d => d.id === despesa.id ? { ...d, linkDrive: json.linkAnexo } : d);
+      lista = lista.map(d => d.id === despesa.id
+        ? { ...d, linksDrive, linkDrive: linksDrive[0] }
+        : d);
       save(KEY.despesas, lista);
       renderDespesas();
     }
