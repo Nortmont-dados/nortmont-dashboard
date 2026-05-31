@@ -605,6 +605,73 @@ body {
   .form-grid.cols-3,
   .form-grid.cols-4 { grid-template-columns: 1fr; }
 }
+
+/* ─── EMAIL MODAL ─── */
+.email-modal-overlay {
+  display:none; position:fixed; inset:0; z-index:10000;
+  background:rgba(1,30,60,0.55); backdrop-filter:blur(3px);
+  align-items:center; justify-content:center;
+}
+.email-modal-overlay.open { display:flex; }
+.email-modal {
+  background:#fff; border-radius:20px; box-shadow:0 24px 64px rgba(1,30,60,0.28);
+  width:min(640px,95vw); max-height:90vh; display:flex; flex-direction:column;
+  overflow:hidden; animation:fadeIn 0.22s ease;
+}
+.email-modal-header {
+  background:var(--navy); color:#fff; padding:18px 24px;
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  flex-shrink:0;
+}
+.email-modal-header h3 { font-size:15px; font-weight:700; letter-spacing:-0.01em; }
+.email-modal-header p  { font-size:11px; color:rgba(168,204,168,0.7); margin-top:2px; }
+.email-modal-close {
+  background:rgba(255,255,255,0.1); border:none; color:#fff; width:30px; height:30px;
+  border-radius:50%; cursor:pointer; font-size:16px; display:flex;
+  align-items:center; justify-content:center; flex-shrink:0;
+  transition:background 0.15s;
+}
+.email-modal-close:hover { background:rgba(255,255,255,0.2); }
+.email-modal-body { padding:22px 24px; overflow-y:auto; flex:1; }
+.email-modal-section {
+  margin-bottom:18px; padding-bottom:16px; border-bottom:1px solid var(--border);
+}
+.email-modal-section:last-child { border-bottom:none; margin-bottom:0; }
+.email-modal-label {
+  font-size:9px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;
+  color:var(--text-muted); margin-bottom:10px;
+}
+.drive-link-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 14px; border-radius:10px; margin-bottom:6px;
+  background:#f0f6ff; border:1.5px solid #bfdbfe;
+  text-decoration:none; color:#1a56db; font-size:13px; font-weight:600;
+  transition:all 0.15s; cursor:pointer;
+}
+.drive-link-item:hover { background:#dbeafe; border-color:#93c5fd; }
+.drive-link-item svg { flex-shrink:0; }
+.drive-link-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.drive-link-pending {
+  display:flex; align-items:center; gap:8px;
+  padding:10px 14px; border-radius:10px; margin-bottom:6px;
+  background:#fffbeb; border:1.5px solid #fde68a; color:#92400e; font-size:12px;
+}
+.email-modal-footer {
+  padding:16px 24px; border-top:1px solid var(--border); flex-shrink:0;
+  display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+  background:var(--surface-2);
+}
+.email-modal-info {
+  font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:5px;
+  padding:8px 12px; background:var(--mint); border-radius:var(--r-pill);
+  border:1px solid var(--mint-dark);
+}
+.despesa-info-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+.despesa-info-chip {
+  font-size:11px; font-weight:600; padding:3px 10px;
+  border-radius:var(--r-pill); background:var(--surface-2); border:1px solid var(--border);
+  color:var(--text-secondary);
+}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
@@ -2140,14 +2207,109 @@ async function enviarEmail(id) {
   }
 }
 
+// Guarda estado do modal para uso no confirmar
+let _emailModalData = null;
+
 function abrirGmail(d) {
+  _emailModalData = d;
   const fmtDate = v => v ? v.split('-').reverse().join('/') : '—';
   const fmtComp = v => v ? v.split('-').reverse().join('/') : '—';
 
-  // Suporte a multi-tipo e legado
   const tipos = d.tipos && d.tipos.length
     ? d.tipos
     : [{ tipo: d.tipo, valor: d.valor, placa: d.placa, modelo: d.modelo, tipoVeiculo: d.tipoVeiculo, finalidade: d.finalidade }];
+
+  const anexosList = d.anexos && d.anexos.length
+    ? d.anexos
+    : (d.pdfFileName ? [{ name: d.pdfFileName }] : []);
+
+  const links = d.linksDrive && d.linksDrive.length
+    ? d.linksDrive
+    : (d.linkDrive ? [d.linkDrive] : []);
+
+  // ── Monta HTML do modal body ──────────────────────────────────────────
+  let html = '';
+
+  // Info chips
+  html += `<div class="despesa-info-row">
+    <span class="despesa-info-chip">📅 ${d.data}</span>
+    <span class="despesa-info-chip">👤 ${esc(d.cliente)}</span>
+    ${d.colaborador ? `<span class="despesa-info-chip">🧑‍💼 ${esc(d.colaborador)}</span>` : ''}
+    ${d.proposta    ? `<span class="despesa-info-chip">📁 ${esc(d.proposta)}</span>`   : ''}
+    <span class="despesa-info-chip">💰 R$ ${esc(d.valorTotal||d.valor||'—')}</span>
+  </div>`;
+
+  // Despesas detalhadas
+  html += `<div class="email-modal-section">
+    <div class="email-modal-label">💼 Despesas</div>`;
+  tipos.forEach(t => {
+    html += `<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;border-bottom:1px dashed var(--border)">
+      <span>${tipoIcon[t.tipo]||''} ${esc(t.tipo)}</span>
+      <strong style="color:var(--teal)">R$ ${esc(t.valor)}</strong>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // Links do Drive — clicáveis de verdade
+  html += `<div class="email-modal-section">
+    <div class="email-modal-label">🔗 Links dos Comprovantes no Drive</div>`;
+
+  if (links.length) {
+    links.forEach((lnk, i) => {
+      const nome = anexosList[i]?.name || `Comprovante ${i+1}`;
+      html += `<a href="${esc(lnk)}" target="_blank" rel="noopener" class="drive-link-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        <span class="drive-link-name">${esc(nome)}</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>`;
+    });
+  } else if (anexosList.length) {
+    html += `<div class="drive-link-pending">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;flex-shrink:0"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+      Upload ao Drive em andamento — tente novamente em instantes
+    </div>`;
+  } else {
+    html += `<div style="color:var(--text-muted);font-size:12px;padding:8px 0">Nenhum comprovante anexado</div>`;
+  }
+  html += `</div>`;
+
+  if (d.obs) {
+    html += `<div class="email-modal-section">
+      <div class="email-modal-label">📝 Observações</div>
+      <div style="font-size:12px;color:var(--text-secondary)">${esc(d.obs)}</div>
+    </div>`;
+  }
+
+  // Injeta no modal e abre
+  document.getElementById('email-modal-subtitle').textContent =
+    `Para: ${EMAIL_DESTINO}`;
+  document.getElementById('email-modal-body').innerHTML = html;
+  document.getElementById('email-modal-overlay').classList.add('open');
+}
+
+function fecharEmailModal() {
+  document.getElementById('email-modal-overlay').classList.remove('open');
+  _emailModalData = null;
+}
+
+function confirmarEnvioEmail() {
+  const d = _emailModalData;
+  if (!d) return;
+
+  const fmtDate = v => v ? v.split('-').reverse().join('/') : '—';
+  const fmtComp = v => v ? v.split('-').reverse().join('/') : '—';
+
+  const tipos = d.tipos && d.tipos.length
+    ? d.tipos
+    : [{ tipo: d.tipo, valor: d.valor, placa: d.placa, modelo: d.modelo, tipoVeiculo: d.tipoVeiculo, finalidade: d.finalidade }];
+
+  const anexosList = d.anexos && d.anexos.length
+    ? d.anexos
+    : (d.pdfFileName ? [{ name: d.pdfFileName }] : []);
+
+  const links = d.linksDrive && d.linksDrive.length
+    ? d.linksDrive
+    : (d.linkDrive ? [d.linkDrive] : []);
 
   const assunto = encodeURIComponent(
     `Lançamento de Despesa – ${d.cliente} | ${d.proposta||d.categoria||'s/proposta'} | ${tipos.map(t=>t.tipo).join('+')} | ${d.data}`
@@ -2166,62 +2328,49 @@ function abrirGmail(d) {
     `   Colaborador:     ${d.colaborador||'—'}`,
     '',
     '🗺  VIAGEM / PERÍODO',
-    `   Cidade/UF:     ${d.cidade||'—'}`,
-    `   Ida:           ${fmtDate(d.ida)}`,
-    `   Volta:         ${fmtDate(d.volta)}`,
-    `   Dias:          ${d.dias||'—'}`,
+    `   Cidade/UF:   ${d.cidade||'—'}`,
+    `   Ida:         ${fmtDate(d.ida)}`,
+    `   Volta:       ${fmtDate(d.volta)}`,
+    `   Dias:        ${d.dias||'—'}`,
     '',
     '💼 CLASSIFICAÇÃO',
     `   Centro de Custo: ${d.cc||'—'}`,
     `   Competência:     ${fmtComp(d.competencia)}`,
-    `   Valor Total:     ${d.valorTotal ? 'R$ '+d.valorTotal : (d.valor ? 'R$ '+d.valor : '—')}`,
+    `   Valor Total:     R$ ${d.valorTotal||d.valor||'—'}`,
     '',
     '💰 DESPESAS DETALHADAS',
   ];
 
   tipos.forEach((t, i) => {
     linhas.push(`   ${i+1}. ${t.tipo} — R$ ${t.valor||'—'}`);
-    if (t.tipo==='Combustível' && t.placa) {
+    if (t.tipo==='Combustível' && t.placa)
       linhas.push(`      Veículo: ${t.tipoVeiculo||'—'} | Placa: ${t.placa} | Modelo: ${t.modelo||'—'}`);
-    }
-    if (t.tipo==='Outros' && t.finalidade) {
+    if (t.tipo==='Outros' && t.finalidade)
       linhas.push(`      Finalidade: ${t.finalidade}`);
-    }
   });
 
-  if (d.obs) { linhas.push('', '📝 OBSERVAÇÕES', `   ${d.obs}`); }
+  if (d.obs) linhas.push('', '📝 OBSERVAÇÕES', `   ${d.obs}`);
 
-  // Comprovantes
-  const anexosList = d.anexos && d.anexos.length
-    ? d.anexos
-    : (d.pdfFileName ? [{ name: d.pdfFileName }] : []);
+  // Comprovantes — nomes
   const nomeAnexos = anexosList.length
     ? anexosList.map((a,i)=>`   ${i+1}. ${a.name}`).join('\n')
     : '   Não anexado';
+  linhas.push('', '📎 COMPROVANTE(S):', nomeAnexos);
 
-  linhas.push('', `📎 COMPROVANTE(S):`, nomeAnexos);
-
-  // Links do Drive — clicáveis
-  const links = d.linksDrive && d.linksDrive.length
-    ? d.linksDrive
-    : (d.linkDrive ? [d.linkDrive] : []);
-
+  // Links do Drive — cada URL numa linha própria para auto-link do cliente de e-mail
   if (links.length) {
-    linhas.push('', '🔗 LINKS DOS COMPROVANTES NO DRIVE (clique para abrir):');
+    linhas.push('', '🔗 LINKS NO DRIVE:');
     links.forEach((lnk, i) => {
       const nome = anexosList[i]?.name || `Comprovante ${i+1}`;
-      // Coloca o nome na linha de cima e o link sozinho na linha de baixo
-      // para o Gmail auto-detectar e tornar clicável
-      linhas.push(`   📄 ${nome}`);
-      linhas.push(`   ${lnk}`);
+      linhas.push(`   ${nome}:`);
+      linhas.push(lnk);
       linhas.push('');
     });
   } else {
-    linhas.push('', '🔗 LINK NO DRIVE: Não disponível (comprovante ainda não enviado ao Drive)');
+    linhas.push('', '🔗 LINKS NO DRIVE: Aguardando upload dos comprovantes');
   }
 
   linhas.push(
-    '',
     '───────────────────────────────────',
     `Data do lançamento: ${d.data}`,
     'Enviado via Sistema de Gestão de Despesas – Electric · Nortmont'
@@ -2231,6 +2380,7 @@ function abrirGmail(d) {
   const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(EMAIL_DESTINO)}&su=${assunto}&body=${corpo}`;
   window.open(url, '_blank');
 
+  fecharEmailModal();
   mostrarConfirmacaoEmail(d.id, anexosList.length > 0);
 }
 
@@ -2929,6 +3079,30 @@ async function enviarParaGoogle(despesa) {
 }
 
 </script>
+
+<!-- ═══ EMAIL MODAL ═══ -->
+<div class="email-modal-overlay" id="email-modal-overlay" onclick="if(event.target===this)fecharEmailModal()">
+  <div class="email-modal">
+    <div class="email-modal-header">
+      <div>
+        <h3>📧 Enviar despesa por e-mail</h3>
+        <p id="email-modal-subtitle">Confirme os links e abra o Gmail</p>
+      </div>
+      <button class="email-modal-close" onclick="fecharEmailModal()">✕</button>
+    </div>
+    <div class="email-modal-body" id="email-modal-body"></div>
+    <div class="email-modal-footer">
+      <div class="email-modal-info">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Os links acima são clicáveis e vão no corpo do e-mail
+      </div>
+      <button id="email-modal-btn-gmail" class="btn btn-primary" style="margin-left:auto" onclick="confirmarEnvioEmail()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Abrir Gmail
+      </button>
+    </div>
+  </div>
+</div>
 </div><!-- /app-root -->
 </body>
 </html>
