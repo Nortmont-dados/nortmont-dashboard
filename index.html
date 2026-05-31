@@ -1711,7 +1711,26 @@ function logout() {
 const KEY = { clientes:'gd_clientes', colaboradores:'gd_colaboradores', propostas:'gd_propostas', despesas:'gd_despesas', custos:'gd_custos' };
 const EMAIL_DESTINO = 'contasapagar@electricservice.com.br';
 function load(k) { try { return JSON.parse(localStorage.getItem(k)) || []; } catch { return []; } }
-function save(k, d) { localStorage.setItem(k, JSON.stringify(d)); }
+function save(k, d) {
+  try {
+    localStorage.setItem(k, JSON.stringify(d));
+  } catch(e) {
+    if (e.name === 'QuotaExceededError' || e.code === 22) {
+      console.warn('localStorage cheio — salvando sem base64 dos anexos');
+      // Remove base64 pesados antes de salvar, mantém só nomes e links
+      const d2 = Array.isArray(d) ? d.map(item => {
+        if (!item || typeof item !== 'object') return item;
+        const clone = { ...item };
+        if (clone.anexos) clone.anexos = clone.anexos.map(a => ({ name: a.name }));
+        delete clone.pdfBase64;
+        return clone;
+      }) : d;
+      try { localStorage.setItem(k, JSON.stringify(d2)); } catch(e2) { console.error('Falha crítica ao salvar:', e2); }
+    } else {
+      console.error('Erro ao salvar:', e);
+    }
+  }
+}
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function showAlert(id, msg, type) {
@@ -2114,7 +2133,11 @@ function salvarDespesa() {
       pdfFileName: anexosArr[0]?.name   || null,
       linksDrive:  existente.linksDrive || [],
     };
-    lista = lista.map(x => x.id===editingId ? upd : x);
+    const updLeve = { ...upd,
+      anexos: (upd.anexos||[]).map(a => ({ name: a.name })),
+      pdfBase64: null,
+    };
+    lista = lista.map(x => x.id===editingId ? updLeve : x);
     save(KEY.despesas, lista);
     limparFormDespesa();
     renderDespesas();
@@ -2138,12 +2161,17 @@ function salvarDespesa() {
       pdfFileName: anexosArr[0]?.name   || null,
       linksDrive: [],
     };
-    lista.push(novaDesp);
+    // Versão leve para salvar no localStorage (sem base64 pesado)
+    const novaDespLeve = { ...novaDesp,
+      anexos: (novaDesp.anexos||[]).map(a => ({ name: a.name })), // só nomes, sem base64
+      pdfBase64: null,
+    };
+    lista.push(novaDespLeve);
     save(KEY.despesas, lista);
     limparFormDespesa();
     renderDespesas();
     showAlert('alert-despesa','Despesa registrada com sucesso!','success');
-    // Envia ao Drive imediatamente em background e atualiza links assim que retornar
+    // Envia ao Drive com a versão completa (com base64) em background
     enviarParaGoogle(novaDesp).catch(()=>{});
   }
 }
