@@ -1201,7 +1201,18 @@ body {
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             Atualizar
           </button>
+          <button onclick="document.getElementById('drive-diag-panel').style.display='block'" style="font-size:11px;font-weight:600;background:none;border:1.5px solid rgba(15,66,69,0.3);color:var(--teal);border-radius:var(--r-pill);padding:6px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:'Montserrat',sans-serif;">
+            🔧 Diagnóstico Drive
+          </button>
         </div>
+      </div>
+      <div id="drive-diag-panel" style="display:none;margin-bottom:14px;background:#011E3C;border-radius:10px;padding:14px 16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:700;color:#A8CCA8;letter-spacing:0.08em;">🔧 DIAGNÓSTICO DRIVE</span>
+          <button onclick="document.getElementById('drive-diag-panel').style.display='none'" style="background:none;border:none;color:#A8CCA8;cursor:pointer;font-size:14px;">✕</button>
+        </div>
+        <div id="drive-diag-log" style="background:#000d1a;border-radius:6px;padding:10px;max-height:180px;overflow-y:auto;font-family:monospace;"></div>
+        <button onclick="document.getElementById('drive-diag-log').innerHTML='';diagnosticarDrive()" style="margin-top:10px;font-size:11px;font-weight:700;background:#A8CCA8;color:#011E3C;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;">▶ Rodar diagnóstico</button>
       </div>
       <div style="overflow-x:auto;">
         <div id="lista-despesas">
@@ -3012,6 +3023,58 @@ renderRelatorio();
 
 /* ══════════════ GOOGLE SHEETS + DRIVE INTEGRATION ══════════════ */
 // Cole aqui a URL gerada após publicar o Apps Script como Web App:
+
+// Diagnóstico Drive — chame diagnosticarDrive() no console para testar
+async function diagnosticarDrive() {
+  const logEl = document.getElementById('drive-diag-log');
+  function log(msg, cor) {
+    console.log('[DiagDrive]', msg);
+    if (logEl) {
+      const span = document.createElement('div');
+      span.style.cssText = 'font-size:11px;padding:2px 0;color:' + (cor||'#130F10');
+      span.textContent = new Date().toLocaleTimeString() + ' — ' + msg;
+      logEl.appendChild(span);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+  }
+  log('Iniciando diagnóstico…');
+  // 1. Teste GET
+  try {
+    log('Testando GET (leitura)…');
+    const r = await fetch(APPS_SCRIPT_URL, { method:'GET', mode:'cors' });
+    const t = await r.text();
+    log('GET status: ' + r.status + ' | bytes: ' + t.length, r.ok ? '#2F8F6E' : '#B33A3A');
+    const j = JSON.parse(t);
+    log('GET ok=' + j.ok + ' | despesas=' + (j.despesas ? j.despesas.length : '?'), '#2F8F6E');
+  } catch(e) { log('GET ERRO: ' + e.message, '#B33A3A'); }
+
+  // 2. Teste POST mínimo (sem arquivo)
+  try {
+    log('Testando POST sem arquivo…');
+    const payload = { id: 'DIAG_' + Date.now(), acao: 'diagnostico', data: new Date().toLocaleDateString('pt-BR'), cliente: 'DIAGNOSTICO', colaborador: 'DIAGNOSTICO', cc: 'Gestão', tipos: [], valorTotal: '0,00' };
+    const r = await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'cors', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) });
+    const t = await r.text();
+    log('POST status: ' + r.status + ' | resp: ' + t.slice(0,150), r.ok ? '#2F8F6E' : '#B33A3A');
+  } catch(e) { log('POST ERRO: ' + e.message, '#B33A3A'); }
+
+  // 3. Teste POST com arquivo de 1KB (texto simples)
+  try {
+    log('Testando POST com arquivo pequeno (1KB)…');
+    const fakeBase64 = btoa('Arquivo de teste Nortmont - ' + new Date().toISOString());
+    const payload = { id: 'DIAG2_' + Date.now(), data: new Date().toLocaleDateString('pt-BR'), cliente: 'DIAGNOSTICO', colaborador: 'DIAGNOSTICO', cc: 'Gestão', tipos: [], valorTotal: '0,00', anexoBase64: fakeBase64, anexoTipo: 'text/plain', anexoNome: 'teste_diagnostico.txt' };
+    const r = await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'cors', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) });
+    const t = await r.text();
+    log('POST+arquivo status: ' + r.status + ' | resp: ' + t.slice(0,200), r.ok ? '#2F8F6E' : '#B33A3A');
+    try {
+      const j = JSON.parse(t);
+      if (j.linkAnexo) log('✅ LINK GERADO: ' + j.linkAnexo, '#2F8F6E');
+      else log('⚠ Sem link — ok=' + j.ok + ' erro=' + (j.erro||'nenhum'), '#B33A3A');
+    } catch(pe) { log('JSON inválido: ' + t.slice(0,100), '#B33A3A'); }
+  } catch(e) { log('POST+arquivo ERRO: ' + e.message, '#B33A3A'); }
+
+  log('Diagnóstico concluído.');
+}
+
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFf3t_iSkx-PKbGHSUp6n402VCZHaMN3iKETaavSAq0Ebngm9KWCCTirXvxYWV3VM/exec';
 
 // Cache de base64 por despesa id — necessario para reenvio
@@ -3071,7 +3134,7 @@ async function enviarParaGoogle(despesa, modoRetry) {
       'Enviando ' + atual + '/' + total + '...</span>';
   }
 
-  // Envia UM arquivo com timeout de 55s (limite do Apps Script eh 60s)
+  // Envia UM arquivo com timeout de 55s
   async function enviarUm(anexo, idx) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 55000);
@@ -3084,26 +3147,67 @@ async function enviarParaGoogle(despesa, modoRetry) {
         payload.anexoTipo   = anexo.base64.match(/data:(.*?);/)?.[1] || 'application/pdf';
         payload.anexoNome   = anexo.name || 'anexo';
       }
-      const res  = await fetch(APPS_SCRIPT_URL, {
+
+      // Tamanho do payload em KB para debug
+      const bodyStr = JSON.stringify(payload);
+      console.log('[Drive] Enviando arquivo ' + (idx+1) + '/' + anexosList.length,
+        anexo.name, '— payload:', Math.round(bodyStr.length / 1024) + 'KB');
+
+      const res = await fetch(APPS_SCRIPT_URL, {
         method:'POST', mode:'cors',
         headers:{'Content-Type':'text/plain'},
-        body: JSON.stringify(payload),
+        body: bodyStr,
         signal: controller.signal,
       });
-      const json = await res.json();
-      const link = json && (json.linksAnexos ? json.linksAnexos[0] : json.linkAnexo);
+
+      // Lê como texto primeiro para evitar falha silenciosa no JSON.parse
+      const rawText = await res.text();
+      console.log('[Drive] Resposta bruta [' + (idx+1) + ']:', rawText.slice(0, 300));
+
+      let json;
+      try { json = JSON.parse(rawText); }
+      catch(pe) {
+        console.error('[Drive] JSON invalido:', rawText.slice(0, 200));
+        mostrarErroCelula(despesa.id, 'Resposta invalida do servidor');
+        return;
+      }
+
+      if (!json.ok && json.erro) {
+        console.error('[Drive] Erro do Apps Script:', json.erro);
+        mostrarErroCelula(despesa.id, 'Erro: ' + json.erro.slice(0, 60));
+        return;
+      }
+
+      const link = json.linkAnexo || (json.linksAnexos && json.linksAnexos[0]) || '';
       if (link) {
         linksDrive[idx] = link;
         salvarLinks();
-        console.log('Drive OK [' + (idx+1) + ']:', anexo.name, link);
+        console.log('[Drive] OK [' + (idx+1) + ']:', anexo.name, link);
       } else {
-        console.warn('Sem link retornado para', anexo.name, json);
+        console.warn('[Drive] Sem link retornado para', anexo.name, '— resposta completa:', json);
+        mostrarErroCelula(despesa.id, 'Drive nao retornou link. Verifique o Apps Script.');
       }
     } catch(e) {
-      console.warn('Falha anexo [' + (idx+1) + '] ' + anexo.name + ':', e.message);
+      const msg = e.name === 'AbortError' ? 'Timeout (55s) — arquivo muito grande?' : e.message;
+      console.error('[Drive] Excecao [' + (idx+1) + '] ' + anexo.name + ':', msg);
+      mostrarErroCelula(despesa.id, msg);
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  function mostrarErroCelula(id, msg) {
+    const cell = document.querySelector('[data-drive-id="' + id + '"]');
+    if (!cell) return;
+    // So mostra erro se ainda nao tem links validos na celula
+    const temLink = cell.querySelector('a');
+    if (temLink) return;
+    cell.innerHTML =
+      '<div style="display:flex;flex-direction:column;gap:5px;">' +
+      '<span style="color:var(--danger);font-size:10px;font-weight:600;line-height:1.4;">⚠ ' + msg + '</span>' +
+      '<button onclick="reenviarDrive(' + id + ')" style="font-size:10px;font-weight:700;' +
+      'background:#011E3C;color:#A8CCA8;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;">↺ Reenviar</button>' +
+      '</div>';
   }
 
   // Envia sequencialmente (evita multiplas execucoes longas paralelas no Apps Script)
