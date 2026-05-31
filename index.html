@@ -2122,7 +2122,7 @@ function salvarDespesa() {
     editingId = null;
     document.getElementById('edit-banner').classList.remove('show');
     document.getElementById('card-eyebrow-despesa').textContent = 'Nova despesa';
-    enviarParaGoogle(upd).then(() => renderDespesas()).catch(()=>{});
+    enviarParaGoogle(upd).catch(()=>{});
   } else {
     const novaDesp = { ...base, id: Date.now(),
       tipos: tiposDetalhados,
@@ -2144,7 +2144,7 @@ function salvarDespesa() {
     renderDespesas();
     showAlert('alert-despesa','Despesa registrada com sucesso!','success');
     // Envia ao Drive imediatamente em background e atualiza links assim que retornar
-    enviarParaGoogle(novaDesp).then(() => renderDespesas()).catch(()=>{});
+    enviarParaGoogle(novaDesp).catch(()=>{});
   }
 }
 async function enviarEmail(id) {
@@ -2498,7 +2498,7 @@ function renderDespesas() {
             return `<a href="${esc(lnk)}" target="_blank" rel="noopener" title="${esc(nome)}" style="display:flex;align-items:center;gap:5px;color:#1a73e8;font-size:11px;font-weight:600;text-decoration:none;margin-bottom:4px;line-height:1.3;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${esc(nomeCurto)}</a>`;
           }).join('')
         : (driveAnexos.length
-            ? `<span style="color:var(--text-muted);font-size:11px;font-style:italic;">⏳ Aguardando Drive…</span>`
+            ? `<span style="display:flex;align-items:center;gap:5px;color:#92400e;font-size:11px;font-weight:500;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:4px 8px;white-space:nowrap;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1.2s linear infinite;flex-shrink:0"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Enviando…</span>`
             : '<span style="color:var(--text-muted)">—</span>');
 
       // Veículo (primeiro combustível encontrado para exibição rápida)
@@ -2523,7 +2523,7 @@ function renderDespesas() {
         <td class="muted">${d.competencia ? d.competencia.split('-').reverse().join('/') : '—'}</td>
         <td>${veiculo}</td>
         <td style="min-width:140px">${pdfCell}</td>
-        <td style="min-width:160px">${driveCell}</td>
+        <td style="min-width:160px" data-drive-id="${d.id}">${driveCell}</td>
         <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted);font-size:11px">${esc(d.obs)||'—'}</td>
         <td style="white-space:nowrap;">
           ${d.emailStatus==='enviado'
@@ -3030,19 +3030,27 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFf3t_iSkx-PKb
 async function enviarParaGoogle(despesa) {
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'COLE_AQUI_A_URL_DO_WEB_APP') return;
   try {
-    // Envia cada anexo separadamente e coleta os links do Drive
     const anexosList = despesa.anexos && despesa.anexos.length
       ? despesa.anexos
       : (despesa.pdfBase64 ? [{ name: despesa.pdfFileName, base64: despesa.pdfBase64 }] : []);
 
+    // Sem comprovantes — envia só os dados (sem loop de anexos)
+    if (!anexosList.length) {
+      const payload = { ...despesa, tipos: despesa.tipos || [] };
+      delete payload.pdfBase64; delete payload.anexos;
+      await fetch(APPS_SCRIPT_URL, {
+        method:'POST', mode:'cors',
+        headers:{'Content-Type':'text/plain'},
+        body: JSON.stringify(payload)
+      });
+      return;
+    }
+
     const linksDrive = [];
 
-    for (const anexo of anexosList) {
-      const payload = {
-        ...despesa,
-        tipos: despesa.tipos || [],
-      };
-      // Remove base64 dos outros anexos para não sobrecarregar
+    for (let i = 0; i < anexosList.length; i++) {
+      const anexo = anexosList[i];
+      const payload = { ...despesa, tipos: despesa.tipos || [] };
       delete payload.pdfBase64;
       delete payload.anexos;
 
@@ -3053,10 +3061,9 @@ async function enviarParaGoogle(despesa) {
         payload.anexoNome   = anexo.name || 'anexo.pdf';
       }
 
-      const res = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'cors',
-        headers: { 'Content-Type': 'text/plain' },
+      const res  = await fetch(APPS_SCRIPT_URL, {
+        method:'POST', mode:'cors',
+        headers:{'Content-Type':'text/plain'},
         body: JSON.stringify(payload)
       });
       const json = await res.json();
@@ -3064,18 +3071,47 @@ async function enviarParaGoogle(despesa) {
       if (json && json.linkAnexo) linksDrive.push(json.linkAnexo);
     }
 
-    // Salva todos os links no registro
+    // Persiste os links e atualiza a célula Drive diretamente (sem re-render completo)
     if (linksDrive.length && despesa.id) {
       let lista = load(KEY.despesas);
       lista = lista.map(d => d.id === despesa.id
         ? { ...d, linksDrive, linkDrive: linksDrive[0] }
         : d);
       save(KEY.despesas, lista);
-      renderDespesas();
+
+      // Atualiza só a célula da linha correspondente (evita piscar a tabela inteira)
+      const updatedDesp = lista.find(x => x.id === despesa.id);
+      atualizarCelulaDrive(updatedDesp);
     }
   } catch(e) {
     console.warn('Falha ao enviar para Google:', e.message);
   }
+}
+
+// Atualiza somente a célula "Links Drive" de uma linha já renderizada
+function atualizarCelulaDrive(d) {
+  const cell = document.querySelector(`[data-drive-id="${d.id}"]`);
+  if (!cell) { renderDespesas(); return; } // fallback se não encontrar
+
+  const anexosList = d.anexos && d.anexos.length
+    ? d.anexos
+    : (d.pdfFileName ? [{ name: d.pdfFileName }] : []);
+  const links = d.linksDrive && d.linksDrive.length ? d.linksDrive : [];
+
+  if (!links.length) return;
+
+  cell.innerHTML = links.map((lnk, i) => {
+    const nome = anexosList[i]?.name || `Comprovante ${i+1}`;
+    const nomeCurto = nome.length > 20 ? nome.slice(0,20)+'…' : nome;
+    return `<a href="${esc(lnk)}" target="_blank" rel="noopener" title="${esc(nome)}"
+      style="display:flex;align-items:center;gap:5px;color:#1a73e8;font-size:11px;font-weight:600;
+             text-decoration:none;margin-bottom:4px;line-height:1.3;">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+        <polyline points="15 3 21 3 21 9"/>
+        <line x1="10" y1="14" x2="21" y2="3"/>
+      </svg>${esc(nomeCurto)}</a>`;
+  }).join('');
 }
 
 </script>
