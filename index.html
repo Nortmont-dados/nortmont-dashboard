@@ -1784,17 +1784,7 @@ async function carregarDoSheets() {
     if (json.colaboradores) _db.colaboradores = normalizarLista(json.colaboradores);
     if (json.propostas)     _db.propostas     = normalizarLista(json.propostas);
     if (json.custos)        _db.custos        = normalizarLista(json.custos);
-
-    // ── Despesas: merge inteligente ──
-    // Evita duplicata: se a despesa já existe no Sheets (mesmo id), usa a versão do Sheets.
-    // Se existe só local (ainda não chegou no Sheets), mantém a local.
-    if (json.despesas) {
-      const doSheets   = normalizarDespesas(json.despesas);
-      const sheetsIds  = new Set(doSheets.map(d => String(d.id)));
-      const soLocal    = (_db.despesas || []).filter(d => !sheetsIds.has(String(d.id)));
-      // Merge: Sheets + locais que ainda não chegaram
-      _db.despesas = [...doSheets, ...soLocal];
-    }
+    if (json.despesas)      _db.despesas      = normalizarDespesas(json.despesas);
 
     // Atualiza cache local
     ['clientes','colaboradores','propostas','despesas','custos'].forEach(nome => {
@@ -2443,18 +2433,16 @@ function salvarDespesa() {
       pdfFileName: anexosArr[0]?.name   || null,
       linksDrive: [],
     };
-    // Versão leve para o cache em memória (sem base64 pesado)
     const novaDespLeve = { ...novaDesp,
       anexos: (novaDesp.anexos||[]).map(a => ({ name: a.name })),
       pdfBase64: null,
     };
-    lista.push(novaDespLeve);
-    save(KEY.despesas, lista);
-    limparFormDespesa();
-    renderDespesas();
-    showAlert('alert-despesa','Despesa registrada com sucesso!','success');
 
-    // ── Envia ao Sheets DIRETAMENTE (sem intermediário) ──
+    // ── Limpa o formulário imediatamente para boa UX ──
+    limparFormDespesa();
+    showAlert('alert-despesa','Enviando despesa…','success');
+
+    // ── Payload para o Sheets ──
     const payloadSheets = {
       aba:              'despesas',
       id:               String(novaDesp.id),
@@ -2478,31 +2466,37 @@ function salvarDespesa() {
       tiposJson:        novaDesp.tiposJson        || JSON.stringify(novaDesp.tipos||[]),
       emailStatus:      '',
     };
-    console.log('[salvarDespesa] Enviando ao Sheets:', payloadSheets);
 
-    // Envia dados ao Sheets primeiro (sem anexos)
+    // ── Envia ao Sheets e só depois adiciona ao _db local ──
     sheetsPost(payloadSheets).then(r => {
-      console.log('[salvarDespesa] Resposta Sheets:', r);
       if (r.ok) {
         mostrarToast('✓ Despesa salva no Google Sheets!', 'success', 3000);
-        // Recarrega do Sheets após 2s para sincronizar e eliminar qualquer duplicata
-        setTimeout(() => {
-          carregarDoSheets().then(ok => {
-            if (ok) { renderDespesas(); renderRelatorio(); }
-          });
-        }, 2000);
+        // Adiciona ao _db local SOMENTE agora, após confirmação do Sheets
+        lista.push(novaDespLeve);
+        save(KEY.despesas, lista);
+        renderDespesas();
+        renderRelatorio();
+        // Envia comprovantes ao Drive se houver
+        if (novaDesp.anexos && novaDesp.anexos.some(a => a.base64)) {
+          enviarParaGoogle(novaDesp).catch(e => console.error('[Drive]:', e));
+        }
       } else {
-        mostrarToast('⚠ Erro Sheets: ' + (r.erro||'desconhecido'), 'error', 6000);
+        const err = r.erro || 'desconhecido';
+        mostrarToast('⚠ Erro ao salvar no Sheets: ' + err, 'error', 6000);
+        console.error('[salvarDespesa] Sheets erro:', err);
+        // Mesmo com erro, adiciona localmente para não perder o dado
+        lista.push(novaDespLeve);
+        save(KEY.despesas, lista);
+        renderDespesas();
       }
     }).catch(e => {
-      console.error('[salvarDespesa] Falha Sheets:', e.message);
-      mostrarToast('⚠ Falha ao salvar no Sheets: ' + e.message, 'error', 6000);
+      console.error('[salvarDespesa] Falha:', e.message);
+      mostrarToast('⚠ Falha de conexão — despesa salva só localmente', 'warning', 6000);
+      // Salva localmente como fallback
+      lista.push(novaDespLeve);
+      save(KEY.despesas, lista);
+      renderDespesas();
     });
-
-    // Se tiver anexos com base64, envia ao Drive em background
-    if (novaDesp.anexos && novaDesp.anexos.some(a => a.base64)) {
-      enviarParaGoogle(novaDesp).catch(e => console.error('[Drive] catch externo:', e));
-    }
   }
 }
 async function enviarEmail(id) {
