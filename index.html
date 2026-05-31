@@ -2179,60 +2179,9 @@ async function enviarEmail(id) {
   const d = load(KEY.despesas).find(x=>x.id===id);
   if (!d) return;
 
-  // Se já tem links do Drive, abre o e-mail direto
-  const jaTemLinks = (d.linksDrive && d.linksDrive.length) || d.linkDrive;
-  if (jaTemLinks) {
-    abrirGmail(d);
-    return;
-  }
-
-  // Verifica se tem algum anexo para enviar
-  const temAnexos = (d.anexos && d.anexos.length) || (d.pdfBase64 && d.pdfFileName);
-
-  // Se tem anexo mas ainda não tem link, faz upload agora e aguarda
-  if (temAnexos) {
-    // Mostra aviso de aguardo
-    const aviso = document.createElement('div');
-    aviso.id = 'aviso-upload';
-    aviso.style.cssText = `
-      position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
-      background:#011E3C; color:#A8CCA8; border-radius:14px;
-      box-shadow:0 8px 32px rgba(1,30,60,0.25); padding:16px 28px;
-      font-family:Montserrat,sans-serif; font-size:13px; font-weight:600;
-      z-index:9999; display:flex; align-items:center; gap:10px;
-      animation:slideUp 0.25s ease;
-    `;
-    aviso.innerHTML = `
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite">
-        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-      </svg>
-      Enviando comprovante para o Drive, aguarde...
-    `;
-    // Adiciona animação de spin
-    if (!document.getElementById('spin-style')) {
-      const s = document.createElement('style');
-      s.id = 'spin-style';
-      s.textContent = '@keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }';
-      document.head.appendChild(s);
-    }
-    document.body.appendChild(aviso);
-
-    try {
-      await enviarParaGoogle(d);
-      // Recarrega despesa atualizada com linksDrive
-      const listaAtual = load(KEY.despesas);
-      const dAtualizada = listaAtual.find(x => x.id === id) || d;
-      aviso.remove();
-      abrirGmail(dAtualizada);
-    } catch(err) {
-      aviso.remove();
-      console.warn('Erro ao obter link do Drive:', err);
-      abrirGmail(d);
-    }
-  } else {
-    // Sem anexo, abre direto
-    abrirGmail(d);
-  }
+  // Abre Gmail direto — os links do Drive já foram enviados ao registrar a despesa.
+  // Se ainda não chegaram, o modal exibirá aviso de "enviando" mas NÃO fará upload agora.
+  abrirGmail(d);
 }
 
 // Guarda estado do modal para uso no confirmar
@@ -2294,7 +2243,7 @@ function abrirGmail(d) {
   } else if (anexosList.length) {
     html += `<div class="drive-link-pending">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;flex-shrink:0"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-      Upload ao Drive em andamento — tente novamente em instantes
+      Upload ao Drive ainda em processamento — aguarde alguns instantes e tente novamente
     </div>`;
   } else {
     html += `<div style="color:var(--text-muted);font-size:12px;padding:8px 0">Nenhum comprovante anexado</div>`;
@@ -3098,10 +3047,10 @@ async function enviarParaGoogle(despesa) {
     });
   }
 
-  // Envia UM arquivo com timeout de 60s e atualiza assim que terminar
+  // Envia UM arquivo com timeout de 25s (todos devem caber em 30s no total)
   async function enviarUm(anexo, idx) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 60000);
+    const timer = setTimeout(() => controller.abort(), 25000);
     try {
       const payload = { ...despesa, tipos: despesa.tipos || [] };
       delete payload.pdfBase64; delete payload.anexos;
@@ -3131,8 +3080,12 @@ async function enviarParaGoogle(despesa) {
   }
 
   try {
-    // Dispara todos em paralelo — cada um atualiza a célula quando terminar
-    await Promise.allSettled(anexosList.map((anexo, i) => enviarUm(anexo, i)));
+    // Dispara todos em paralelo com timeout global de 30s
+    const timeout30s = new Promise(resolve => setTimeout(resolve, 30000));
+    await Promise.race([
+      Promise.allSettled(anexosList.map((anexo, i) => enviarUm(anexo, i))),
+      timeout30s
+    ]);
 
     // Se nenhum funcionou, mostra erro
     if (!linksDrive.filter(Boolean).length && despesa.id) {
