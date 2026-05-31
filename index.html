@@ -3107,6 +3107,30 @@ async function diagnosticarDrive() {
     } catch(pe) { log('JSON inválido: ' + t.slice(0,100), '#B33A3A'); }
   } catch(e) { log('POST+arquivo ERRO: ' + e.message, '#B33A3A'); }
 
+  // 4. Teste POST batch com 2 arquivos pequenos
+  try {
+    log('Testando POST batch (2 arquivos)…');
+    const fakeB64a = btoa('Arquivo A de teste ' + new Date().toISOString());
+    const fakeB64b = btoa('Arquivo B de teste ' + new Date().toISOString());
+    const payload = {
+      id: 'DIAG3_' + Date.now(), data: new Date().toLocaleDateString('pt-BR'),
+      cliente: 'DIAGNOSTICO', colaborador: 'DIAGNOSTICO', cc: 'Gestão',
+      tipos: [], valorTotal: '0,00',
+      anexos: [
+        { nome: 'teste_a.txt', base64: fakeB64a, tipo: 'text/plain' },
+        { nome: 'teste_b.txt', base64: fakeB64b, tipo: 'text/plain' },
+      ]
+    };
+    const r = await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'cors', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) });
+    const t = await r.text();
+    log('Batch status: ' + r.status + ' | resp: ' + t.slice(0,250), r.ok ? '#2F8F6E' : '#B33A3A');
+    try {
+      const j = JSON.parse(t);
+      if (j.linksAnexos && j.linksAnexos.length) log('✅ BATCH OK: ' + j.linksAnexos.length + ' links: ' + j.linksAnexos.join(' | ').slice(0,120), '#2F8F6E');
+      else log('⚠ Batch sem links — ok=' + j.ok + ' erro=' + (j.erro||'nenhum') + ' resp=' + JSON.stringify(j), '#B33A3A');
+    } catch(pe) { log('JSON inválido: ' + t.slice(0,100), '#B33A3A'); }
+  } catch(e) { log('Batch ERRO: ' + e.message, '#B33A3A'); }
+
   log('Diagnóstico concluído.');
 }
 
@@ -3115,176 +3139,157 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFf3t_iSkx-PKb
 // Cache de base64 por despesa id — necessario para reenvio
 const _b64Cache = {};
 
-async function enviarParaGoogle(despesa, modoRetry) {
+async function enviarParaGoogle(despesa) {
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'COLE_AQUI_A_URL_DO_WEB_APP') return;
 
+  // Monta lista de anexos com base64
   const anexosList = despesa.anexos && despesa.anexos.length
     ? despesa.anexos
     : (despesa.pdfBase64 ? [{ name: despesa.pdfFileName, base64: despesa.pdfBase64 }] : []);
 
-  // Guarda base64 no cache para poder reenviar depois
+  // Guarda em cache para reenvio posterior (base64 na memoria da sessao)
   if (despesa.id && anexosList.some(a => a.base64)) {
-    _b64Cache[despesa.id] = { despesa, anexosList };
+    _b64Cache[despesa.id] = { despesa: JSON.parse(JSON.stringify(despesa)), anexosList };
   }
 
+  // Payload limpo — sem os campos pesados
   const payloadBase = { ...despesa, tipos: despesa.tipos || [] };
   delete payloadBase.pdfBase64;
-  delete payloadBase.anexos;
+  delete payloadBase.anexos; // remove array com base64
 
-  // Sem comprovantes
+  // ---------- SEM ANEXOS: só grava na planilha ----------
   if (!anexosList.length) {
     try {
       await fetch(APPS_SCRIPT_URL, {
-        method:'POST', mode:'cors',
-        headers:{'Content-Type':'text/plain'},
+        method: 'POST', mode: 'cors',
+        headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(payloadBase)
       });
-    } catch(e) { console.warn('Falha registro sem anexo:', e.message); }
+    } catch(e) { console.warn('[Drive] sem anexo:', e.message); }
     return;
   }
 
-  // Estado de links (null = ainda nao chegou)
-  const linksDrive = new Array(anexosList.length).fill(null);
+  // ---------- COM ANEXOS: envia TUDO em uma unica requisicao ----------
+  // Apps Script recebe: { ...dados, anexos: [{nome, base64, tipo}] }
+  // Retorna: { ok, linkAnexo, linksAnexos: ["url1","url2",...] }
 
-  // Salva links parciais e atualiza celula
-  function salvarLinks() {
+  // Mostra progresso inicial
+  function setProgresso(msg) {
+    const cell = document.querySelector('[data-drive-id="' + despesa.id + '"]');
+    if (cell) cell.innerHTML =
+      '<span style="display:flex;align-items:center;gap:5px;color:#92400e;font-size:10px;font-weight:600;">' +
+      '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1.2s linear infinite;flex-shrink:0"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>' +
+      msg + '</span>';
+  }
+
+  function setErro(msg) {
+    const cell = document.querySelector('[data-drive-id="' + despesa.id + '"]');
+    if (!cell) return;
+    cell.innerHTML =
+      '<div style="display:flex;flex-direction:column;gap:5px;">' +
+      '<span style="color:var(--danger);font-size:10px;font-weight:600;line-height:1.4;">⚠ ' + msg + '</span>' +
+      '<button onclick="reenviarDrive(' + despesa.id + ')" style="font-size:10px;font-weight:700;background:#011E3C;color:#A8CCA8;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;">↺ Reenviar</button>' +
+      '</div>';
+  }
+
+  function salvarLinks(links) {
     if (!despesa.id) return;
+    const linksDrive = anexosList.map((_, i) => links[i] || null);
     let lista = load(KEY.despesas);
     lista = lista.map(d => d.id === despesa.id
-      ? { ...d, linksDrive: [...linksDrive], linkDrive: linksDrive.find(Boolean) || '' }
+      ? { ...d, linksDrive, linkDrive: links.find(Boolean) || '' }
       : d);
     save(KEY.despesas, lista);
     const despAtual = lista.find(x => x.id === despesa.id);
     if (despAtual) atualizarCelulaDrive({ ...despAtual, anexos: anexosList.map(a => ({ name: a.name })) });
   }
 
-  // Mostra progresso na celula
-  function mostrarProgresso(atual, total) {
-    if (!despesa.id) return;
-    const cell = document.querySelector('[data-drive-id="' + despesa.id + '"]');
-    if (!cell) return;
-    cell.innerHTML =
-      '<span style="display:flex;align-items:center;gap:5px;color:#92400e;font-size:10px;font-weight:600;">' +
-      '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1.2s linear infinite;flex-shrink:0"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>' +
-      'Enviando ' + atual + '/' + total + '...</span>';
-  }
+  // Monta payload batch — todos os arquivos de uma vez
+  const payloadBatch = {
+    ...payloadBase,
+    anexos: anexosList.map(a => {
+      if (!a.base64 || !a.base64.includes(',')) return { nome: a.name || 'anexo', base64: '', tipo: 'application/pdf' };
+      const parts = a.base64.split(',');
+      return {
+        nome:   a.name || 'anexo',
+        base64: parts[1],
+        tipo:   a.base64.match(/data:(.*?);/)?.[1] || 'application/pdf',
+      };
+    }),
+  };
 
-  // Envia UM arquivo com timeout de 55s
-  async function enviarUm(anexo, idx) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 55000);
-    mostrarProgresso(idx + 1, anexosList.length);
-    try {
-      const payload = { ...payloadBase };
-      if (anexo.base64 && anexo.base64.includes(',')) {
-        const parts = anexo.base64.split(',');
-        payload.anexoBase64 = parts[1];
-        payload.anexoTipo   = anexo.base64.match(/data:(.*?);/)?.[1] || 'application/pdf';
-        payload.anexoNome   = anexo.name || 'anexo';
-      }
+  const totalKB = Math.round(JSON.stringify(payloadBatch).length / 1024);
+  console.log('[Drive] Enviando batch:', anexosList.length, 'arquivo(s),', totalKB, 'KB total');
+  setProgresso('Enviando ' + anexosList.length + ' arquivo(s)…');
 
-      // Tamanho do payload em KB para debug
-      const bodyStr = JSON.stringify(payload);
-      console.log('[Drive] Enviando arquivo ' + (idx+1) + '/' + anexosList.length,
-        anexo.name, '— payload:', Math.round(bodyStr.length / 1024) + 'KB');
+  const controller = new AbortController();
+  // Timeout: 30s por arquivo + 10s base, max 90s
+  const timeoutMs = Math.min(90000, 10000 + anexosList.length * 30000);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-      const res = await fetch(APPS_SCRIPT_URL, {
-        method:'POST', mode:'cors',
-        headers:{'Content-Type':'text/plain'},
-        body: bodyStr,
-        signal: controller.signal,
-      });
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST', mode: 'cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payloadBatch),
+      signal: controller.signal,
+    });
 
-      // Lê como texto primeiro para evitar falha silenciosa no JSON.parse
-      const rawText = await res.text();
-      console.log('[Drive] Resposta bruta [' + (idx+1) + ']:', rawText.slice(0, 300));
+    const rawText = await res.text();
+    console.log('[Drive] Resposta:', rawText.slice(0, 400));
 
-      let json;
-      try { json = JSON.parse(rawText); }
-      catch(pe) {
-        console.error('[Drive] JSON invalido:', rawText.slice(0, 200));
-        mostrarErroCelula(despesa.id, 'Resposta invalida do servidor');
-        return;
-      }
-
-      if (!json.ok && json.erro) {
-        console.error('[Drive] Erro do Apps Script:', json.erro);
-        mostrarErroCelula(despesa.id, 'Erro: ' + json.erro.slice(0, 60));
-        return;
-      }
-
-      const link = json.linkAnexo || (json.linksAnexos && json.linksAnexos[0]) || '';
-      if (link) {
-        linksDrive[idx] = link;
-        salvarLinks();
-        console.log('[Drive] OK [' + (idx+1) + ']:', anexo.name, link);
-      } else {
-        console.warn('[Drive] Sem link retornado para', anexo.name, '— resposta completa:', json);
-        mostrarErroCelula(despesa.id, 'Drive nao retornou link. Verifique o Apps Script.');
-      }
-    } catch(e) {
-      const msg = e.name === 'AbortError' ? 'Timeout (55s) — arquivo muito grande?' : e.message;
-      console.error('[Drive] Excecao [' + (idx+1) + '] ' + anexo.name + ':', msg);
-      mostrarErroCelula(despesa.id, msg);
-    } finally {
-      clearTimeout(timer);
+    let json;
+    try { json = JSON.parse(rawText); }
+    catch(pe) {
+      console.error('[Drive] JSON invalido:', rawText.slice(0, 300));
+      setErro('Resposta invalida. Verifique o Apps Script.');
+      return;
     }
-  }
 
-  function mostrarErroCelula(id, msg) {
-    const cell = document.querySelector('[data-drive-id="' + id + '"]');
-    if (!cell) return;
-    // So mostra erro se ainda nao tem links validos na celula
-    const temLink = cell.querySelector('a');
-    if (temLink) return;
-    cell.innerHTML =
-      '<div style="display:flex;flex-direction:column;gap:5px;">' +
-      '<span style="color:var(--danger);font-size:10px;font-weight:600;line-height:1.4;">⚠ ' + msg + '</span>' +
-      '<button onclick="reenviarDrive(' + id + ')" style="font-size:10px;font-weight:700;' +
-      'background:#011E3C;color:#A8CCA8;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;">↺ Reenviar</button>' +
-      '</div>';
-  }
-
-  // Envia sequencialmente (evita multiplas execucoes longas paralelas no Apps Script)
-  for (let i = 0; i < anexosList.length; i++) {
-    await enviarUm(anexosList[i], i);
-  }
-
-  // Verifica resultado final
-  const sucessos = linksDrive.filter(Boolean).length;
-  if (despesa.id) {
-    if (sucessos === 0) {
-      // Nenhum enviou — mostra botao de reenvio
-      const cell = document.querySelector('[data-drive-id="' + despesa.id + '"]');
-      if (cell) cell.innerHTML =
-        '<div style="display:flex;flex-direction:column;gap:4px;">' +
-        '<span style="color:var(--danger);font-size:10px;font-weight:600;">⚠ Falha no Drive</span>' +
-        '<button onclick="reenviarDrive(' + despesa.id + ')" style="font-size:10px;font-weight:700;' +
-        'background:#011E3C;color:#A8CCA8;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;">↺ Reenviar</button></div>';
-    } else if (sucessos < anexosList.length) {
-      // Parcial — salva o que chegou e mostra reenvio
-      const cell = document.querySelector('[data-drive-id="' + despesa.id + '"]');
-      if (cell) {
-        const btnReenvio = '<button onclick="reenviarDrive(' + despesa.id + ')" style="font-size:10px;font-weight:700;' +
-          'background:#92400e;color:#fff;border:none;border-radius:6px;padding:3px 7px;cursor:pointer;margin-top:3px;">↺ Reenviar faltantes</button>';
-        cell.insertAdjacentHTML('beforeend', btnReenvio);
-      }
+    if (!json.ok) {
+      console.error('[Drive] Erro Apps Script:', json.erro);
+      setErro('Erro: ' + (json.erro || 'desconhecido').slice(0, 80));
+      return;
     }
-    // Se todos ok, salvarLinks() ja atualizou a celula com os links
+
+    // Aceita { linksAnexos: [...] } ou { linkAnexo: "..." } (legado)
+    const links = json.linksAnexos && json.linksAnexos.length
+      ? json.linksAnexos
+      : (json.linkAnexo ? [json.linkAnexo] : []);
+
+    console.log('[Drive] Links recebidos:', links);
+
+    if (links.some(Boolean)) {
+      salvarLinks(links);
+    } else {
+      console.warn('[Drive] Apps Script respondeu ok=true mas sem links. Resposta completa:', json);
+      setErro('Drive nao retornou links. Reenvie ou verifique o Apps Script.');
+    }
+
+  } catch(e) {
+    const msg = e.name === 'AbortError'
+      ? 'Timeout (' + Math.round(timeoutMs/1000) + 's). Arquivos muito grandes?'
+      : e.message;
+    console.error('[Drive] Excecao:', msg);
+    setErro(msg);
+  } finally {
+    clearTimeout(timer);
   }
 }
-
 // Reenviar ao Drive despesas que ficaram com "Enviando..." ou falharam
 async function reenviarDrive(id) {
   const cached = _b64Cache[id];
   if (!cached) {
-    // base64 nao esta em cache (pagina foi recarregada) — avisa usuario
     const cell = document.querySelector('[data-drive-id="' + id + '"]');
     if (cell) cell.innerHTML =
-      '<span style="color:var(--danger);font-size:10px;font-weight:600;">Recarregue a pagina e registre novamente</span>';
+      '<div style="display:flex;flex-direction:column;gap:4px;">' +
+      '<span style="color:var(--danger);font-size:10px;font-weight:600;">⚠ Cache perdido (pagina recarregada)</span>' +
+      '<span style="color:var(--text-muted);font-size:10px;">Exclua esta despesa e registre novamente.</span></div>';
     return;
   }
-  await enviarParaGoogle(cached.despesa, true);
+  // Reconstroi despesa com os base64 do cache
+  const despesaComAnexos = { ...cached.despesa, anexos: cached.anexosList };
+  await enviarParaGoogle(despesaComAnexos);
 }
 
 // Atualiza somente a célula "Links Drive" de uma linha já renderizada
