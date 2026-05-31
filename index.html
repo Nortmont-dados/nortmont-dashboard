@@ -1201,19 +1201,7 @@ body {
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             Atualizar
           </button>
-          <button onclick="document.getElementById('drive-diag-panel').style.display='block'" style="font-size:11px;font-weight:600;background:none;border:1.5px solid rgba(15,66,69,0.3);color:var(--teal);border-radius:var(--r-pill);padding:6px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:'Montserrat',sans-serif;">
-            🔧 Diagnóstico Drive
-          </button>
         </div>
-      </div>
-      <div id="drive-diag-panel" style="display:none;margin-bottom:14px;background:#011E3C;border-radius:10px;padding:14px 16px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <span style="font-size:11px;font-weight:700;color:#A8CCA8;letter-spacing:0.08em;">🔧 DIAGNÓSTICO DRIVE</span>
-          <button onclick="document.getElementById('drive-diag-panel').style.display='none'" style="background:none;border:none;color:#A8CCA8;cursor:pointer;font-size:14px;">✕</button>
-        </div>
-        <div id="drive-diag-log" style="background:#000d1a;border-radius:6px;padding:10px;max-height:180px;overflow-y:auto;font-family:monospace;"></div>
-        <button onclick="document.getElementById('drive-diag-log').innerHTML='';diagnosticarDrive()" style="margin-top:10px;font-size:11px;font-weight:700;background:#A8CCA8;color:#011E3C;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;">▶ Rodar diagnóstico</button>
-        <button onclick="testarConexaoSheets()" style="margin-top:10px;margin-left:8px;font-size:11px;font-weight:700;background:#fde68a;color:#011E3C;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;">⚡ Testar Sheets agora</button>
       </div>
       <div style="overflow-x:auto;">
         <div id="lista-despesas">
@@ -3096,7 +3084,19 @@ function alternarStatusRel(id) {
   });
   save(KEY.despesas, lista);
   renderRelatorio();
-  sheetsPost({ aba: 'Despesas', id, acao: 'atualizar', statusLancamento: novoStatus });
+  // Salva no Sheets usando o nome exato da coluna
+  sheetsPost({
+    aba: 'Despesas',
+    id: String(id),
+    acao: 'atualizar',
+    'Status Lançamento': novoStatus
+  }).then(r => {
+    if (r.ok) {
+      mostrarToast('✓ Status atualizado para ' + novoStatus + ' no Sheets', 'success', 2500);
+    } else {
+      mostrarToast('⚠ Erro ao atualizar status: ' + (r.erro||''), 'error', 4000);
+    }
+  }).catch(e => mostrarToast('⚠ Falha: ' + e.message, 'error', 4000));
 }
 
 function filtrarGrupo(key) {
