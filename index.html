@@ -1228,7 +1228,6 @@ body {
   <!-- ═══ ABA 5: MANUAL ═══ -->
   <div id="tab-manual" class="tab-panel active">
     <div class="page-header">
-      <div class="page-eyebrow">Referência</div>
       <h2>Manual de Centro de Custo</h2>
       <p>Orientações para classificação de despesas, pagamentos e categorização financeira — Maio 2026.</p>
     </div>
@@ -2484,6 +2483,7 @@ function removerDespesa(id) {
 
 /* ══════════════ RENDER DESPESAS ══════════════ */
 const tipoIcon = { 'Adiantamento':'💰','Táxi/Uber':'🚗','Passagem Aérea':'✈️','Aluguel de Carro':'🚙','Combustível':'⛽','Estacionamento':'🅿️','Pedágio':'🛣️','Hospedagem':'🏨','Alimentação':'🍽️','Outros':'📋','Hora Extra':'⏰' };
+const tipoIconRel = tipoIcon;
 
 function renderDespesas() {
   const lista = load(KEY.despesas);
@@ -2702,72 +2702,85 @@ function renderRelatorio() {
     return;
   }
   const fmtDate = v => v ? v.split('-').reverse().join('/') : '—';
-  const sorted = [...lista].sort((a,b)=>{ if(a.tipo<b.tipo) return -1; if(a.tipo>b.tipo) return 1; return 0; });
+  const sorted = [...lista].sort((a,b)=>{ if(a.cliente<b.cliente) return -1; if(a.cliente>b.cliente) return 1; return (a.ida||'') < (b.ida||'') ? -1 : 1; });
 
-  el.innerHTML = `<table class="data-table" style="min-width:980px">
+  el.innerHTML = `<table class="data-table" style="min-width:1060px">
     <thead><tr>
-      <th style="width:140px">Categoria</th>
       <th>Cliente</th>
       <th>Proposta</th>
       <th>Colaborador</th>
       <th>Cidade/UF</th>
       <th>Ida</th>
+      <th>Volta</th>
       <th>Dias</th>
-      <th style="text-align:right">Valor</th>
+      <th style="min-width:220px">Despesas (discriminado)</th>
+      <th style="text-align:right">Total</th>
       <th>C. Custo</th>
       <th>Competência</th>
-      <th>Veículo</th>
       <th>Status</th>
       <th class="no-print"></th>
     </tr></thead>
     <tbody>`+
     sorted.map(d=>{
-      const g = getGrupo(d.tipo);
-      const pill = `<span style="display:inline-flex;align-items:center;gap:5px;background:${g.bg};color:${g.txt};border:1px solid ${g.border};font-size:10px;font-weight:700;letter-spacing:0.08em;padding:3px 8px;border-radius:var(--r-pill);white-space:nowrap;">
-        <span style="width:7px;height:7px;border-radius:50%;background:${g.border};display:inline-block;flex-shrink:0;"></span>
-        ${esc(d.tipo)}</span>`;
       const ccPill = d.cc==='Engenharia'
         ? `<span class="cc-pill cc-eng">Eng.</span>`
         : `<span class="cc-pill cc-gest">Gest.</span>`;
-      const veiculo = d.tipo==='Combustível' && d.placa
-        ? `<span style="font-size:11px;font-weight:600;letter-spacing:0.04em">${esc(d.placa)}</span>`
-        : '—';
-      const valorNum = parseBRL(d.valor);
-      const valorHtml = d.valor
-        ? `<span style="font-weight:700;color:${valorNum>500?'#b83030':'var(--teal)'};">${fmtBRL(valorNum)}</span>`
+
+      // Build tipos array — supports new multi-tipo and legacy single-tipo
+      const tiposArr = (d.tipos && d.tipos.length)
+        ? d.tipos
+        : (d.tipo ? [{ tipo: d.tipo, valor: d.valor, placa: d.placa, modelo: d.modelo, tipoVeiculo: d.tipoVeiculo, finalidade: d.finalidade }] : []);
+
+      const tiposDiscriminados = tiposArr.filter(t=>t.valor&&t.valor!=='0,00'&&t.valor!=='').map(t => {
+        const icon = tipoIconRel[t.tipo]||'📋';
+        let extra = '';
+        if (t.tipo==='Combustível' && t.placa) extra = `<span style="font-size:9px;color:var(--text-muted);margin-left:4px;">${esc(t.tipoVeiculo||'')} ${esc(t.placa)}</span>`;
+        if (t.tipo==='Outros' && t.finalidade) extra = `<span style="font-size:9px;color:var(--text-muted);margin-left:4px;">${esc(t.finalidade)}</span>`;
+        return `<div style="display:flex;align-items:center;gap:5px;padding:3px 0;border-bottom:1px dashed var(--border);">
+          <span style="font-size:13px;flex-shrink:0;">${icon}</span>
+          <span style="font-size:11px;color:var(--text-secondary);flex:1;">${esc(t.tipo)}${extra}</span>
+          <span style="font-family:'Montserrat',monospace;font-size:11px;font-weight:700;color:var(--teal);white-space:nowrap;">R$ ${esc(t.valor)}</span>
+        </div>`;
+      }).join('');
+
+      const totalNum = parseBRL(d.valorTotal||d.valor||'0');
+      const totalHtml = (d.valorTotal||d.valor)
+        ? `<span style="font-weight:700;font-family:'Montserrat',monospace;color:${totalNum>500?'#b83030':'var(--teal)'};">${fmtBRL(totalNum)}</span>`
         : '<span style="color:var(--text-muted)">—</span>';
+
       const statusLanc = d.statusLancamento||'Pendente';
       const statusBadge = statusLanc==='Realizado'
-        ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#e6f4ef;color:#1a7a55;border:1px solid #a7d7c5;font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill)">✓ Realizado</span>`
-        : `<span style="display:inline-flex;align-items:center;gap:4px;background:#fff8e6;color:#92400e;border:1px solid #fde68a;font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill)">⏳ Pendente</span>`;
+        ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#e6f4ef;color:#1a7a55;border:1px solid #a7d7c5;font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);white-space:nowrap;">✓ Realizado</span>`
+        : `<span style="display:inline-flex;align-items:center;gap:4px;background:#fff8e6;color:#92400e;border:1px solid #fde68a;font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);white-space:nowrap;">⏳ Pendente</span>`;
+
       return `<tr>
-        <td>${pill}</td>
         <td style="font-weight:600;font-size:12px">${esc(d.cliente)}</td>
-        <td class="muted">${esc(d.proposta)||'—'}</td>
+        <td class="muted" style="font-family:'Montserrat',monospace;font-size:11px;">${esc(d.proposta)||'—'}</td>
         <td style="font-size:12px">${esc(d.colaborador)}</td>
         <td style="font-size:12px">${esc(d.cidade)||'—'}</td>
-        <td class="muted">${fmtDate(d.ida)}</td>
+        <td class="muted" style="white-space:nowrap;">${fmtDate(d.ida)}</td>
+        <td class="muted" style="white-space:nowrap;">${fmtDate(d.volta)}</td>
         <td class="muted" style="text-align:center">${d.dias||'—'}</td>
-        <td style="text-align:right">${valorHtml}</td>
+        <td style="min-width:220px;">${tiposDiscriminados||'<span style="color:var(--text-muted);font-size:11px;">—</span>'}</td>
+        <td style="text-align:right;vertical-align:middle;">${totalHtml}</td>
         <td>${ccPill}</td>
-        <td class="muted" style="font-size:11px">${d.competencia ? d.competencia.split('-').reverse().join('/') : '—'}</td>
-        <td style="font-size:11px">${veiculo}</td>
+        <td class="muted" style="font-size:11px;white-space:nowrap;">${d.competencia ? d.competencia.split('-').reverse().join('/') : '—'}</td>
         <td>${statusBadge}</td>
-        <td class="no-print" style="white-space:nowrap;display:flex;gap:4px;padding:7px 6px;">
-          <button class="btn btn-edit" onclick="alternarStatusRel(${d.id})" title="Alternar Status" style="font-size:10px;">
-            ⇄ Status
-          </button>
-          <button class="btn btn-edit" onclick="editarDespesa(${d.id})" title="Editar">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </button>
-          <button class="btn btn-danger" onclick="confirmarExclusaoRel(${d.id}, this)">🗑</button>
+        <td class="no-print" style="white-space:nowrap;vertical-align:middle;">
+          <div style="display:flex;flex-wrap:wrap;gap:4px;">
+            <button class="btn btn-edit" onclick="alternarStatusRel(${d.id})" title="Alternar Status" style="font-size:10px;">⇄ Status</button>
+            <button class="btn btn-edit" onclick="editarDespesa(${d.id})" title="Editar">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="btn btn-danger" onclick="confirmarExclusaoRel(${d.id}, this)">🗑</button>
+          </div>
         </td>
       </tr>`;
     }).join('') +
     `<tr style="border-top:2px solid var(--border);background:var(--surface-2)">
-      <td colspan="7" style="padding:10px 12px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);text-align:right">Total filtrado</td>
+      <td colspan="8" style="padding:10px 12px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);text-align:right">Total filtrado</td>
       <td style="padding:10px 12px;font-size:14px;font-weight:700;color:var(--navy);text-align:right">${fmtBRL(totalFilVal)}</td>
-      <td colspan="4" class="no-print"></td>
+      <td colspan="3" class="no-print"></td>
     </tr>`+
     '</tbody></table>';
 }
