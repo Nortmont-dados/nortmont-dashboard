@@ -1491,7 +1491,7 @@ body {
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 1.41 13.45"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
         Filtros do relatório
       </div>
-      <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;gap:12px;align-items:end;">
+      <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;gap:12px;align-items:end;">
         <div class="form-group">
           <label>Cliente</label>
           <div style="position:relative;">
@@ -1508,13 +1508,22 @@ body {
           <select id="rel-colaborador" onchange="renderRelatorio()"><option value="">Todos</option></select>
         </div>
         <div class="form-group">
+          <label>Tipo Lançamento</label>
+          <select id="rel-tipo-lanc" onchange="renderRelatorio()">
+            <option value="">Todos</option>
+            <option value="Adiantamento">Adiantamento</option>
+            <option value="Ressarcimento">Ressarcimento</option>
+            <option value="Devolução">Devolução</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label>Tipo de Despesa</label>
           <select id="rel-tipo" onchange="renderRelatorio()">
             <option value="">Todos os tipos</option>
-            <option>Adiantamento</option><option>Táxi/Uber</option><option>Passagem Aérea</option>
+            <option>Táxi/Uber</option><option>Passagem Aérea</option>
             <option>Aluguel de Carro</option><option>Combustível</option><option>Estacionamento</option>
             <option>Pedágio</option><option>Hospedagem</option><option>Alimentação</option>
-            <option>Outros</option><option>Hora Extra</option>
+            <option>Hora Extra</option><option>Outros</option>
           </select>
         </div>
         <div class="form-group">
@@ -2492,7 +2501,7 @@ function renderDespesas() {
   if (!lista.length) { el.innerHTML='<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Nenhuma despesa registrada ainda.</div>'; return; }
   const fmtDate = v => v ? v.split('-').reverse().join('/') : '—';
   el.innerHTML = '<table class="data-table" style="min-width:1060px"><thead><tr>' +
-    '<th>Data</th><th>Cadastrado Por</th><th>Cliente</th><th>Proposta</th><th>Colaborador</th><th>Cidade/UF</th><th>Ida</th><th>Volta</th><th>Dias</th><th>Centro Custo</th><th>Tipo</th><th>Valor</th><th>Competência</th><th>Veículo</th><th>Comprovante</th><th>Links Drive</th><th>Obs</th><th>Status E-mail</th><th></th>' +
+    '<th>Data Lançamento</th><th>Cadastrado Por</th><th>Cliente</th><th>Proposta</th><th>Colaborador</th><th>Cidade/UF</th><th>Ida</th><th>Volta</th><th>Dias</th><th>Centro Custo</th><th>Tipo Lançamento</th><th>Despesas (discriminado)</th><th>Valor Total</th><th>Competência</th><th>Veículo</th><th>Comprovante</th><th>Links Drive</th><th>Obs</th><th>Status E-mail</th><th></th>' +
     '</tr></thead><tbody>' +
     [...lista].reverse().map(d => {
       const ccPill = d.cc==='Engenharia'
@@ -2556,6 +2565,15 @@ function renderDespesas() {
         ? `<span style="font-family:'Montserrat',monospace;font-size:11px;font-weight:600">${esc(combRow.placa)}</span><br><span style="font-size:10px;color:var(--text-muted)">${esc(combRow.modelo||'')}</span>`
         : '<span style="color:var(--text-muted)">—</span>';
 
+      // Tipo Lançamento badge
+      const tipoLancBadge = (() => {
+        const tl = d.tipoLancamento||'';
+        if (tl==='Adiantamento') return `<span style="display:inline-flex;align-items:center;gap:4px;background:#e0f0ff;color:#1a56a0;border:1px solid #93c5fd;font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);white-space:nowrap;">💰 Adiantamento</span>`;
+        if (tl==='Ressarcimento') return `<span style="display:inline-flex;align-items:center;gap:4px;background:#e6f4ef;color:#1a7a55;border:1px solid #a7d7c5;font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);white-space:nowrap;">↩ Ressarcimento</span>`;
+        if (tl==='Devolução') return `<span style="display:inline-flex;align-items:center;gap:4px;background:#fde8e8;color:#b33a3a;border:1px solid #f5b8b8;font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);white-space:nowrap;">↵ Devolução</span>`;
+        return '<span style="color:var(--text-muted);font-size:11px;">—</span>';
+      })();
+
       return `<tr>
         <td class="muted">${d.data}</td>
         <td class="muted" style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(d.cadastradoPor||'')}">${esc(d.cadastradoPor||'—')}</td>
@@ -2567,7 +2585,8 @@ function renderDespesas() {
         <td class="muted">${fmtDate(d.volta)}</td>
         <td class="muted" style="text-align:center">${d.dias||'—'}</td>
         <td>${ccPill}</td>
-        <td style="min-width:180px">${tiposCell}</td>
+        <td style="white-space:nowrap;">${tipoLancBadge}</td>
+        <td style="min-width:200px">${tiposCell}</td>
         <td>${valorExib}</td>
         <td class="muted">${d.competencia ? d.competencia.split('-').reverse().join('/') : '—'}</td>
         <td>${veiculo}</td>
@@ -2610,24 +2629,26 @@ function fmtBRL(v) {
 
 function getFiltrados() {
   let lista = load(KEY.despesas);
-  const fC  = (document.getElementById('rel-cliente-txt')?.value||'').toLowerCase().trim();
-  const fP  = document.getElementById('rel-proposta')?.value||'';
-  const fB  = document.getElementById('rel-colaborador')?.value||'';
-  const fCC = document.getElementById('rel-cc')?.value||'';
-  const fT  = document.getElementById('rel-tipo')?.value||'';
-  const fSt = document.getElementById('rel-status')?.value||'';
-  const fDe = document.getElementById('rel-de')?.value||'';
-  const fAte= document.getElementById('rel-ate')?.value||'';
-  const fComp = document.getElementById('rel-competencia')?.value||'';
-  if (fC)    lista = lista.filter(d=>d.cliente.toLowerCase().includes(fC));
-  if (fP)    lista = lista.filter(d=>d.proposta===fP);
-  if (fB)    lista = lista.filter(d=>d.colaborador===fB);
-  if (fCC)   lista = lista.filter(d=>d.cc===fCC);
-  if (fT)    lista = lista.filter(d=>d.tipo===fT);
-  if (fSt)   lista = lista.filter(d=>(d.statusLancamento||'Pendente')===fSt);
-  if (fDe)   lista = lista.filter(d=>d.ida&&d.ida>=fDe);
-  if (fAte)  lista = lista.filter(d=>d.ida&&d.ida<=fAte);
-  if (fComp) lista = lista.filter(d=>d.competencia&&d.competencia.startsWith(fComp));
+  const fC   = (document.getElementById('rel-cliente-txt')?.value||'').toLowerCase().trim();
+  const fP   = document.getElementById('rel-proposta')?.value||'';
+  const fB   = document.getElementById('rel-colaborador')?.value||'';
+  const fCC  = document.getElementById('rel-cc')?.value||'';
+  const fT   = document.getElementById('rel-tipo')?.value||'';
+  const fTL  = document.getElementById('rel-tipo-lanc')?.value||'';
+  const fSt  = document.getElementById('rel-status')?.value||'';
+  const fDe  = document.getElementById('rel-de')?.value||'';
+  const fAte = document.getElementById('rel-ate')?.value||'';
+  const fComp= document.getElementById('rel-competencia')?.value||'';
+  if (fC)   lista = lista.filter(d=>d.cliente.toLowerCase().includes(fC));
+  if (fP)   lista = lista.filter(d=>d.proposta===fP);
+  if (fB)   lista = lista.filter(d=>d.colaborador===fB);
+  if (fCC)  lista = lista.filter(d=>d.cc===fCC);
+  if (fT)   lista = lista.filter(d=>(d.tipos&&d.tipos.length ? d.tipos.some(t=>t.tipo===fT) : d.tipo===fT));
+  if (fTL)  lista = lista.filter(d=>(d.tipoLancamento||'')===fTL);
+  if (fSt)  lista = lista.filter(d=>(d.statusLancamento||'Pendente')===fSt);
+  if (fDe)  lista = lista.filter(d=>d.ida&&d.ida>=fDe);
+  if (fAte) lista = lista.filter(d=>d.ida&&d.ida<=fAte);
+  if (fComp)lista = lista.filter(d=>d.competencia&&d.competencia.startsWith(fComp));
   return lista;
 }
 
@@ -2672,7 +2693,7 @@ function renderRelatorio() {
     cardsEl.innerHTML = `
       <div style="background:#fff8e6;border:1px solid #fde68a;border-left:4px solid #d4a017;border-radius:var(--r-lg);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--elev1);">
         <div>
-          <div style="font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#92400e;margin-bottom:6px;">⏳ Lançamentos Pendentes</div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#92400e;margin-bottom:6px;">⏳ Pendentes</div>
           <div style="font-size:32px;font-weight:700;color:#92400e;line-height:1;">${pendentes.length}</div>
           <div style="font-size:12px;color:#b07a00;margin-top:4px;">${fmtBRL(valPend)}</div>
         </div>
@@ -2680,7 +2701,7 @@ function renderRelatorio() {
       </div>
       <div style="background:#e6f4ef;border:1px solid #a7d7c5;border-left:4px solid #2F8F6E;border-radius:var(--r-lg);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--elev1);">
         <div>
-          <div style="font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#1a7a55;margin-bottom:6px;">✓ Lançamentos Realizados</div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#1a7a55;margin-bottom:6px;">✓ Realizados</div>
           <div style="font-size:32px;font-weight:700;color:#1a7a55;line-height:1;">${realizados.length}</div>
           <div style="font-size:12px;color:#2F8F6E;margin-top:4px;">${fmtBRL(valReal)}</div>
         </div>
@@ -2704,7 +2725,7 @@ function renderRelatorio() {
   const fmtDate = v => v ? v.split('-').reverse().join('/') : '—';
   const sorted = [...lista].sort((a,b)=>{ if(a.cliente<b.cliente) return -1; if(a.cliente>b.cliente) return 1; return (a.ida||'') < (b.ida||'') ? -1 : 1; });
 
-  el.innerHTML = `<table class="data-table" style="min-width:1060px">
+  el.innerHTML = `<table class="data-table" style="min-width:1160px">
     <thead><tr>
       <th>Cliente</th>
       <th>Proposta</th>
@@ -2713,6 +2734,7 @@ function renderRelatorio() {
       <th>Ida</th>
       <th>Volta</th>
       <th>Dias</th>
+      <th>Tipo Lançamento</th>
       <th style="min-width:220px">Despesas (discriminado)</th>
       <th style="text-align:right">Total</th>
       <th>C. Custo</th>
@@ -2753,6 +2775,15 @@ function renderRelatorio() {
         ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#e6f4ef;color:#1a7a55;border:1px solid #a7d7c5;font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);white-space:nowrap;">✓ Realizado</span>`
         : `<span style="display:inline-flex;align-items:center;gap:4px;background:#fff8e6;color:#92400e;border:1px solid #fde68a;font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);white-space:nowrap;">⏳ Pendente</span>`;
 
+      const tl = d.tipoLancamento||'';
+      const tipoLancBadgeRel = tl==='Adiantamento'
+        ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#e0f0ff;color:#1a56a0;border:1px solid #93c5fd;font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);white-space:nowrap;">💰 Adiantamento</span>`
+        : tl==='Ressarcimento'
+        ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#e6f4ef;color:#1a7a55;border:1px solid #a7d7c5;font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);white-space:nowrap;">↩ Ressarcimento</span>`
+        : tl==='Devolução'
+        ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#fde8e8;color:#b33a3a;border:1px solid #f5b8b8;font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);white-space:nowrap;">↵ Devolução</span>`
+        : '<span style="color:var(--text-muted);font-size:11px;">—</span>';
+
       return `<tr>
         <td style="font-weight:600;font-size:12px">${esc(d.cliente)}</td>
         <td class="muted" style="font-family:'Montserrat',monospace;font-size:11px;">${esc(d.proposta)||'—'}</td>
@@ -2761,6 +2792,7 @@ function renderRelatorio() {
         <td class="muted" style="white-space:nowrap;">${fmtDate(d.ida)}</td>
         <td class="muted" style="white-space:nowrap;">${fmtDate(d.volta)}</td>
         <td class="muted" style="text-align:center">${d.dias||'—'}</td>
+        <td>${tipoLancBadgeRel}</td>
         <td style="min-width:220px;">${tiposDiscriminados||'<span style="color:var(--text-muted);font-size:11px;">—</span>'}</td>
         <td style="text-align:right;vertical-align:middle;">${totalHtml}</td>
         <td>${ccPill}</td>
@@ -2778,7 +2810,7 @@ function renderRelatorio() {
       </tr>`;
     }).join('') +
     `<tr style="border-top:2px solid var(--border);background:var(--surface-2)">
-      <td colspan="8" style="padding:10px 12px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);text-align:right">Total filtrado</td>
+      <td colspan="9" style="padding:10px 12px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);text-align:right">Total filtrado</td>
       <td style="padding:10px 12px;font-size:14px;font-weight:700;color:var(--navy);text-align:right">${fmtBRL(totalFilVal)}</td>
       <td colspan="3" class="no-print"></td>
     </tr>`+
@@ -2820,7 +2852,7 @@ function removerDespesaRel(id) {
 }
 
 function limparFiltros() {
-  const ids = ['rel-cliente-txt','rel-proposta','rel-colaborador','rel-cc','rel-tipo','rel-status','rel-de','rel-ate','rel-competencia'];
+  const ids = ['rel-cliente-txt','rel-proposta','rel-colaborador','rel-cc','rel-tipo','rel-tipo-lanc','rel-status','rel-de','rel-ate','rel-competencia'];
   ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   renderRelatorio();
 }
@@ -2828,88 +2860,110 @@ function limparFiltros() {
 function imprimirRelatorio() {
   const lista = getFiltrados();
   const partes = [];
-  const fc   = document.getElementById('rel-cliente-txt')?.value;
-  const fb   = document.getElementById('rel-colaborador')?.value;
-  const fcc  = document.getElementById('rel-cc')?.value;
-  const ft   = document.getElementById('rel-tipo')?.value;
-  const fde  = document.getElementById('rel-de')?.value;
-  const fat  = document.getElementById('rel-ate')?.value;
-  const fcomp= document.getElementById('rel-competencia')?.value;
+  const fc    = document.getElementById('rel-cliente-txt')?.value;
+  const fp    = document.getElementById('rel-proposta')?.value;
+  const fb    = document.getElementById('rel-colaborador')?.value;
+  const fcc   = document.getElementById('rel-cc')?.value;
+  const ft    = document.getElementById('rel-tipo')?.value;
+  const ftl   = document.getElementById('rel-tipo-lanc')?.value;
+  const fst   = document.getElementById('rel-status')?.value;
+  const fde   = document.getElementById('rel-de')?.value;
+  const fat   = document.getElementById('rel-ate')?.value;
+  const fcomp = document.getElementById('rel-competencia')?.value;
   if(fc)   partes.push('Cliente: '+fc);
+  if(fp)   partes.push('Proposta: '+fp);
   if(fb)   partes.push('Colaborador: '+fb);
   if(fcc)  partes.push('CC: '+fcc);
-  if(ft)   partes.push('Tipo: '+ft);
+  if(ft)   partes.push('Tipo Despesa: '+ft);
+  if(ftl)  partes.push('Tipo Lançamento: '+ftl);
+  if(fst)  partes.push('Status: '+fst);
   if(fde||fat) partes.push('Período: '+(fde?fde.split('-').reverse().join('/'):'—')+' → '+(fat?fat.split('-').reverse().join('/'):'—'));
   if(fcomp) partes.push('Competência: '+fcomp.split('-').reverse().join('/'));
-  const totalVal = fmtBRL(lista.reduce((s,d)=>s+parseBRL(d.valor),0));
   const subtitulo = partes.join(' · ') || 'Todos os lançamentos';
   const fmtDate = v => v ? v.split('-').reverse().join('/') : '—';
 
+  const tipoIconsPrint = { 'Adiantamento':'💰','Táxi/Uber':'🚗','Passagem Aérea':'✈️','Aluguel de Carro':'🚙','Combustível':'⛽','Estacionamento':'🅿️','Pedágio':'🛣️','Hospedagem':'🏨','Alimentação':'🍽️','Outros':'📋','Hora Extra':'⏰' };
+
   const rows = lista.map(d => {
-    const g = getGrupo(d.tipo);
     const cc = d.cc||'—';
-    const veiculo = d.tipo==='Combustível'&&d.placa ? d.placa : '—';
+    const tl = d.tipoLancamento||'—';
+    const tiposArr = (d.tipos && d.tipos.length)
+      ? d.tipos
+      : (d.tipo ? [{ tipo: d.tipo, valor: d.valor, placa: d.placa, tipoVeiculo: d.tipoVeiculo, finalidade: d.finalidade }] : []);
+    const tiposHtml = tiposArr.filter(t=>t.valor&&t.valor!=='0,00'&&t.valor!=='').map(t => {
+      const icon = tipoIconsPrint[t.tipo]||'📋';
+      let extra = '';
+      if (t.tipo==='Combustível' && t.placa) extra = ` (${t.tipoVeiculo||''} ${t.placa})`;
+      if (t.tipo==='Outros' && t.finalidade) extra = ` — ${t.finalidade}`;
+      return `<div style="padding:2px 0;border-bottom:1px dashed #e5e5e5;font-size:10px;">${icon} ${esc(t.tipo)}${extra}: <strong>R$ ${esc(t.valor)}</strong></div>`;
+    }).join('');
+    const totalVal = d.valorTotal||d.valor||'—';
+    const statusLanc = d.statusLancamento||'Pendente';
     return `<tr>
-      <td>${esc(d.tipo)}</td>
       <td>${esc(d.cliente)}</td>
       <td>${esc(d.proposta)||'—'}</td>
       <td>${esc(d.colaborador)}</td>
       <td>${esc(d.cidade)||'—'}</td>
-      <td>${fmtDate(d.ida)}</td>
-      <td>${d.dias||'—'}</td>
-      <td style="text-align:right">${d.valor?'R$ '+esc(d.valor):'—'}</td>
+      <td style="white-space:nowrap">${fmtDate(d.ida)}</td>
+      <td style="white-space:nowrap">${fmtDate(d.volta)}</td>
+      <td style="text-align:center">${d.dias||'—'}</td>
+      <td>${tl}</td>
+      <td style="min-width:160px">${tiposHtml||'—'}</td>
+      <td style="text-align:right;white-space:nowrap;font-weight:700">${totalVal!=='—'?'R$ '+esc(totalVal):'—'}</td>
       <td>${cc}</td>
       <td>${d.competencia?d.competencia.split('-').reverse().join('/'):'—'}</td>
-      <td>${veiculo}</td>
-      <td>${esc(d.obs||'')}</td>
+      <td>${statusLanc}</td>
     </tr>`;
   }).join('');
-  const totalFilVal = lista.reduce((s,d)=>s+parseBRL(d.valor),0);
+
+  const totalFilVal = lista.reduce((s,d)=>s+parseBRL(d.valorTotal||d.valor||'0'),0);
+  const totalFmted  = fmtBRL(totalFilVal);
 
   const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
-    <title>Relatório de Despesas · Nortmont</title>
+    <title>Relatório Financeiro · Nortmont</title>
     <style>
       * { box-sizing:border-box; margin:0; padding:0; }
-      body { font-family: 'Segoe UI', Arial, sans-serif; font-size:11px; color:#111; padding:20px; }
+      body { font-family: 'Segoe UI', Arial, sans-serif; font-size:10px; color:#111; padding:16px; }
       .hdr { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; padding-bottom:10px; border-bottom:2px solid #011E3C; }
-      .hdr-left h1 { font-size:16px; font-weight:700; color:#011E3C; }
-      .hdr-left p  { font-size:10px; color:#555; margin-top:3px; }
-      .hdr-right   { text-align:right; font-size:11px; color:#333; }
-      .hdr-right strong { font-size:14px; color:#0F4245; display:block; }
+      .hdr-left h1 { font-size:15px; font-weight:700; color:#011E3C; }
+      .hdr-left p  { font-size:9px; color:#555; margin-top:3px; }
+      .hdr-right   { text-align:right; font-size:10px; color:#333; }
+      .hdr-right strong { font-size:13px; color:#0F4245; display:block; }
       table { width:100%; border-collapse:collapse; margin-top:10px; }
-      th { font-size:8px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#555; background:#f4f8f5; padding:6px 8px; border-bottom:1.5px solid #ccc; text-align:left; }
-      td { padding:6px 8px; border-bottom:1px solid #e5e5e5; vertical-align:middle; }
-      tr:hover td { background:#f9fcfa; }
+      th { font-size:8px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#555; background:#f4f8f5; padding:5px 7px; border-bottom:1.5px solid #ccc; text-align:left; white-space:nowrap; }
+      td { padding:5px 7px; border-bottom:1px solid #e5e5e5; vertical-align:top; font-size:10px; }
+      tr:nth-child(even) td { background:#f9fcfa; }
       .foot td { font-weight:700; color:#011E3C; background:#e0eee7; border-top:2px solid #011E3C; }
-      @media print { body { padding:10px; } }
+      @media print { body { padding:8px; } }
     </style>
   </head><body>
     <div class="hdr">
       <div class="hdr-left">
-        <h1>Nortmont · Relatório de Despesas</h1>
+        <h1>Nortmont · Relatório Financeiro de Despesas</h1>
         <p>${subtitulo}</p>
       </div>
       <div class="hdr-right">
-        ${lista.length} lançamento(s)<br>
-        <strong>${totalVal}</strong>
+        ${lista.length} registro(s)<br>
+        <strong>${totalFmted}</strong>
       </div>
     </div>
     <table>
       <thead><tr>
-        <th>Tipo</th><th>Cliente</th><th>Proposta</th><th>Colaborador</th>
-        <th>Cidade/UF</th><th>Ida</th><th>Dias</th><th>Valor</th>
-        <th>C. Custo</th><th>Competência</th><th>Veículo</th><th>Obs</th>
+        <th>Cliente</th><th>Proposta</th><th>Colaborador</th><th>Cidade/UF</th>
+        <th>Ida</th><th>Volta</th><th>Dias</th><th>Tipo Lançamento</th>
+        <th>Despesas (discriminado)</th><th>Total</th>
+        <th>C. Custo</th><th>Competência</th><th>Status</th>
       </tr></thead>
       <tbody>${rows}</tbody>
       <tfoot><tr class="foot">
-        <td colspan="7" style="text-align:right">Total</td>
-        <td>R$ ${totalFilVal.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.')}</td>
-        <td colspan="4"></td>
+        <td colspan="9" style="text-align:right;font-size:10px;">Total filtrado</td>
+        <td style="white-space:nowrap">R$ ${totalFilVal.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.')}</td>
+        <td colspan="3"></td>
       </tr></tfoot>
     </table>
   </body></html>`;
 
-  const w = window.open('','_blank','width=1100,height=750');
+  const w = window.open('','_blank','width=1200,height=800');
   w.document.write(html);
   w.document.close();
   w.focus();
