@@ -3011,89 +3011,81 @@ async function enviarParaGoogle(despesa) {
     ? despesa.anexos
     : (despesa.pdfBase64 ? [{ name: despesa.pdfFileName, base64: despesa.pdfBase64 }] : []);
 
-  // Sem comprovantes — só registra os dados (sem base64)
+  // Monta payload base (sem base64)
+  const payloadBase = { ...despesa, tipos: despesa.tipos || [] };
+  delete payloadBase.pdfBase64;
+  delete payloadBase.anexos;
+
+  // Sem comprovantes — só registra os dados
   if (!anexosList.length) {
     try {
-      const payload = { ...despesa, tipos: despesa.tipos || [] };
-      delete payload.pdfBase64; delete payload.anexos;
       await fetch(APPS_SCRIPT_URL, {
         method:'POST', mode:'cors',
         headers:{'Content-Type':'text/plain'},
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payloadBase)
       });
     } catch(e) { console.warn('Falha registro sem anexo:', e.message); }
     return;
   }
 
-  // Array de links indexado (null se ainda não chegou ou falhou)
-  const linksDrive = new Array(anexosList.length).fill(null);
-
-  // Persiste links parciais e atualiza célula a cada arquivo que retorna
-  function salvarEAtualizar() {
-    if (!despesa.id) return;
-    const linksValidos = linksDrive.filter(Boolean);
-    if (!linksValidos.length) return;
-    let lista = load(KEY.despesas);
-    lista = lista.map(d => d.id === despesa.id
-      ? { ...d, linksDrive: [...linksDrive], linkDrive: linksValidos[0] }
-      : d);
-    save(KEY.despesas, lista);
-    // Atualiza célula com os links que já chegaram (parcial ou completo)
-    const despAtual = lista.find(x => x.id === despesa.id);
-    if (despAtual) atualizarCelulaDrive({
-      ...despAtual,
-      // Passa nomes dos anexos para exibição correta
-      anexos: anexosList.map((a, i) => ({ name: a.name, base64: null })),
-    });
-  }
-
-  // Envia UM arquivo com timeout de 25s (todos devem caber em 30s no total)
-  async function enviarUm(anexo, idx) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 25000);
-    try {
-      const payload = { ...despesa, tipos: despesa.tipos || [] };
-      delete payload.pdfBase64; delete payload.anexos;
-      if (anexo.base64 && anexo.base64.includes(',')) {
-        const parts = anexo.base64.split(',');
-        payload.anexoBase64 = parts[1];
-        payload.anexoTipo   = anexo.base64.match(/data:(.*?);/)?.[1] || 'application/pdf';
-        payload.anexoNome   = anexo.name || 'anexo';
-      }
-      const res  = await fetch(APPS_SCRIPT_URL, {
-        method:'POST', mode:'cors',
-        headers:{'Content-Type':'text/plain'},
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-      });
-      const json = await res.json();
-      if (json?.linkAnexo) {
-        linksDrive[idx] = json.linkAnexo;
-        salvarEAtualizar(); // atualiza a célula imediatamente com o link que chegou
-        console.log(`Drive OK [${idx+1}]:`, anexo.name, json.linkAnexo);
-      }
-    } catch(e) {
-      console.warn(`Falha anexo [${idx+1}] ${anexo.name}:`, e.message);
-    } finally {
-      clearTimeout(timer);
-    }
-  }
+  // BATCH: envia TODOS os arquivos em UMA unica requisicao
+  // Apps Script recebe { ...despesa, anexos: [{nome,base64,tipo}] }
+  // e retorna { linksAnexos: ["url1","url2",...] }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 28000);
 
   try {
-    // Dispara todos em paralelo com timeout global de 30s
-    const timeout30s = new Promise(resolve => setTimeout(resolve, 30000));
-    await Promise.race([
-      Promise.allSettled(anexosList.map((anexo, i) => enviarUm(anexo, i))),
-      timeout30s
-    ]);
+    const payloadBatch = {
+      ...payloadBase,
+      anexos: anexosList.map(a => {
+        if (!a.base64 || !a.base64.includes(',')) return { nome: a.name, base64: '', tipo: 'application/pdf' };
+        const parts = a.base64.split(',');
+        return {
+          nome:   a.name || 'anexo',
+          base64: parts[1],
+          tipo:   a.base64.match(/data:(.*?);/)?.[1] || 'application/pdf',
+        };
+      }),
+    };
 
-    // Se nenhum funcionou, mostra erro
-    if (!linksDrive.filter(Boolean).length && despesa.id) {
-      const cell = document.querySelector(`[data-drive-id="${despesa.id}"]`);
-      if (cell) cell.innerHTML = '<span style="color:var(--danger);font-size:11px;font-weight:600;">⚠ Falha no envio ao Drive</span>';
+    const res  = await fetch(APPS_SCRIPT_URL, {
+      method:'POST', mode:'cors',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify(payloadBatch),
+      signal: controller.signal,
+    });
+    const json = await res.json();
+
+    // Suporta resposta batch { linksAnexos: [...] } ou legado { linkAnexo: "..." }
+    const links = json && json.linksAnexos
+      ? json.linksAnexos
+      : (json && json.linkAnexo ? [json.linkAnexo] : []);
+
+    if (links.length && despesa.id) {
+      const linksDrive = anexosList.map((_, i) => links[i] || null);
+      let lista = load(KEY.despesas);
+      lista = lista.map(d => d.id === despesa.id
+        ? { ...d, linksDrive, linkDrive: links[0] }
+        : d);
+      save(KEY.despesas, lista);
+      const despAtual = lista.find(x => x.id === despesa.id);
+      if (despAtual) atualizarCelulaDrive({
+        ...despAtual,
+        anexos: anexosList.map(a => ({ name: a.name })),
+      });
+      console.log('Drive OK (batch):', links);
+    } else if (despesa.id) {
+      const cell = document.querySelector('[data-drive-id="' + despesa.id + '"]');
+      if (cell) cell.innerHTML = '<span style="color:var(--danger);font-size:11px;font-weight:600;">Falha no envio ao Drive</span>';
     }
   } catch(e) {
-    console.warn('Erro geral enviarParaGoogle:', e.message);
+    console.warn('Erro envio batch ao Drive:', e.message);
+    if (despesa.id) {
+      const cell = document.querySelector('[data-drive-id="' + despesa.id + '"]');
+      if (cell) cell.innerHTML = '<span style="color:var(--danger);font-size:11px;font-weight:600;">Timeout — tente novamente</span>';
+    }
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -3205,3 +3197,93 @@ Abra o arquivo no navegador. A tela de login aparecerá.
 Somente os e-mails da lista terão acesso ao painel.
 ════════════════════════════════════════════════════════════════════
 -->
+
+<!--
+════════════════════════════════════════════════════════════════════
+  APPS SCRIPT — ATUALIZAR PARA SUPORTE A BATCH (MULTIPLOS ARQUIVOS)
+════════════════════════════════════════════════════════════════════
+
+O HTML agora envia TODOS os arquivos em UMA unica requisicao (batch),
+o que e muito mais rapido. Para isso funcionar, o Apps Script precisa
+ser atualizado para processar o array "anexos" e retornar "linksAnexos".
+
+Cole o codigo abaixo no seu Apps Script (substitua o doPost atual):
+
+─────────────────────────────────────────────────────────────────────
+
+function doPost(e) {
+  try {
+    var dados = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var aba = ss.getSheetByName('Despesas') || ss.getSheets()[0];
+    var pasta = DriveApp.getFolderById('ID_DA_SUA_PASTA_NO_DRIVE');
+
+    // Registra linha na planilha
+    aba.appendRow([
+      dados.data || '',
+      dados.cadastradoPor || '',
+      dados.cliente || '',
+      dados.proposta || '',
+      dados.colaborador || '',
+      dados.cidade || '',
+      dados.ida || '',
+      dados.volta || '',
+      dados.dias || '',
+      dados.cc || '',
+      (dados.tipos || []).map(function(t){ return t.tipo + ' R$ ' + t.valor; }).join(' | '),
+      dados.valorTotal || dados.valor || '',
+      dados.competencia || '',
+      dados.obs || '',
+    ]);
+
+    // Processa batch de anexos
+    var linksAnexos = [];
+    var anexos = dados.anexos || [];
+
+    // Compatibilidade legado (campo unico)
+    if (!anexos.length && dados.anexoBase64) {
+      anexos = [{ nome: dados.anexoNome || 'anexo', base64: dados.anexoBase64, tipo: dados.anexoTipo || 'application/pdf' }];
+    }
+
+    for (var i = 0; i < anexos.length; i++) {
+      var a = anexos[i];
+      if (!a.base64) { linksAnexos.push(''); continue; }
+      try {
+        var bytes = Utilities.base64Decode(a.base64);
+        var blob = Utilities.newBlob(bytes, a.tipo || 'application/pdf', a.nome || ('anexo_' + (i+1)));
+        var arquivo = pasta.createFile(blob);
+        arquivo.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        linksAnexos.push(arquivo.getUrl());
+      } catch(err) {
+        linksAnexos.push('');
+      }
+    }
+
+    // Resposta: array de links (batch) + primeiro link (legado)
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        ok: true,
+        linksAnexos: linksAnexos,
+        linkAnexo: linksAnexos[0] || ''
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: false, erro: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+─────────────────────────────────────────────────────────────────────
+
+IMPORTANTE: Apos colar o codigo acima no Apps Script:
+1. Salve (Ctrl+S)
+2. Clique em "Implantar" > "Gerenciar implantacoes"
+3. Edite a implantacao existente, incrementando a versao
+4. Clique em "Implantar"
+A URL do Web App permanece a mesma — nao precisa atualizar no HTML.
+
+════════════════════════════════════════════════════════════════════
+-->
+
