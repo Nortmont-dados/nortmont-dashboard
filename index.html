@@ -1190,18 +1190,7 @@ body {
     <div class="card">
       <div class="list-header">
         <span>Despesas lançadas</span>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span class="badge" id="badge-despesas">0</span>
-          <button onclick="recarregarDoSheets()" style="
-            background:none; border:1.5px solid rgba(15,66,69,0.3);
-            border-radius:999px; padding:4px 12px; font-family:Montserrat,sans-serif;
-            font-size:11px; font-weight:600; color:var(--teal); cursor:pointer;
-            display:inline-flex; align-items:center; gap:5px; transition:all 0.15s;
-          " onmouseover="this.style.background='var(--teal-light)'" onmouseout="this.style.background='none'">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-            Atualizar
-          </button>
-        </div>
+        <span class="badge" id="badge-despesas">0</span>
       </div>
       <div style="overflow-x:auto;">
         <div id="lista-despesas">
@@ -1795,7 +1784,17 @@ async function carregarDoSheets() {
     if (json.colaboradores) _db.colaboradores = normalizarLista(json.colaboradores);
     if (json.propostas)     _db.propostas     = normalizarLista(json.propostas);
     if (json.custos)        _db.custos        = normalizarLista(json.custos);
-    if (json.despesas)      _db.despesas      = normalizarDespesas(json.despesas);
+
+    // ── Despesas: merge inteligente ──
+    // Evita duplicata: se a despesa já existe no Sheets (mesmo id), usa a versão do Sheets.
+    // Se existe só local (ainda não chegou no Sheets), mantém a local.
+    if (json.despesas) {
+      const doSheets   = normalizarDespesas(json.despesas);
+      const sheetsIds  = new Set(doSheets.map(d => String(d.id)));
+      const soLocal    = (_db.despesas || []).filter(d => !sheetsIds.has(String(d.id)));
+      // Merge: Sheets + locais que ainda não chegaram
+      _db.despesas = [...doSheets, ...soLocal];
+    }
 
     // Atualiza cache local
     ['clientes','colaboradores','propostas','despesas','custos'].forEach(nome => {
@@ -2486,6 +2485,12 @@ function salvarDespesa() {
       console.log('[salvarDespesa] Resposta Sheets:', r);
       if (r.ok) {
         mostrarToast('✓ Despesa salva no Google Sheets!', 'success', 3000);
+        // Recarrega do Sheets após 2s para sincronizar e eliminar qualquer duplicata
+        setTimeout(() => {
+          carregarDoSheets().then(ok => {
+            if (ok) { renderDespesas(); renderRelatorio(); }
+          });
+        }, 2000);
       } else {
         mostrarToast('⚠ Erro Sheets: ' + (r.erro||'desconhecido'), 'error', 6000);
       }
