@@ -1846,28 +1846,60 @@ function onPdfChange(input) {
   const files = Array.from(input.files);
   if (!files.length) return;
 
-  // Validate all files
   for (const file of files) {
     if (!file.type.match(/^(application\/pdf|image\/.*)$/)) { alert('Selecione apenas arquivos PDF ou imagem.'); input.value=''; return; }
-    if (file.size > 5*1024*1024) { alert(`O arquivo "${file.name}" excede 5 MB.`); input.value=''; return; }
+    if (file.size > 10*1024*1024) { alert(`O arquivo "${file.name}" excede 10 MB.`); input.value=''; return; }
   }
 
   anexosMultiplos = [];
   pdfBase64 = null; pdfFileName = null;
 
-  const promises = files.map(file => new Promise(resolve => {
-    const r = new FileReader();
-    r.onload = e => resolve({ base64: e.target.result, name: file.name });
-    r.readAsDataURL(file);
-  }));
+  // Comprime imagens para JPEG qualidade 70% — mantém PDF intacto
+  // Alvo: máximo 800KB por arquivo para caber no Apps Script em < 30s
+  function processarArquivo(file) {
+    return new Promise(resolve => {
+      if (file.type === 'application/pdf') {
+        // PDF: lê direto sem compressão
+        const r = new FileReader();
+        r.onload = e => resolve({ base64: e.target.result, name: file.name, tamanho: file.size });
+        r.readAsDataURL(file);
+        return;
+      }
+      // Imagem: redimensiona e comprime via canvas
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const MAX = 1400; // px no lado maior
+        let { width, height } = img;
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+          else { width = Math.round(width * MAX / height); height = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        const base64 = canvas.toDataURL('image/jpeg', 0.72);
+        const tamanhoKB = Math.round(base64.length * 0.75 / 1024);
+        console.log(`[Compress] ${file.name}: ${Math.round(file.size/1024)}KB → ${tamanhoKB}KB`);
+        resolve({ base64, name: file.name.replace(/\.[^.]+$/, '.jpg'), tamanho: tamanhoKB * 1024 });
+      };
+      img.onerror = () => {
+        // Fallback: lê sem compressão
+        const r = new FileReader();
+        r.onload = e => resolve({ base64: e.target.result, name: file.name, tamanho: file.size });
+        r.readAsDataURL(file);
+      };
+      img.src = url;
+    });
+  }
 
-  Promise.all(promises).then(results => {
+  // Processa todos em paralelo
+  Promise.all(files.map(processarArquivo)).then(results => {
     anexosMultiplos = results;
-    // Compatibilidade: usa o primeiro como pdfBase64
     pdfBase64    = results[0].base64;
     pdfFileName  = results[0].name;
 
-    // Atualiza UI
     const listaEl = document.getElementById('anexos-lista');
     const itemsEl = document.getElementById('anexos-items');
     if (results.length === 1) {
@@ -1877,11 +1909,14 @@ function onPdfChange(input) {
     } else {
       document.getElementById('pdf-name-text').textContent = `${results.length} arquivos selecionados`;
       listaEl.style.display = 'block';
-      itemsEl.innerHTML = results.map((f,i) => `
-        <div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-secondary);">
+      itemsEl.innerHTML = results.map((f,i) => {
+        const kb = Math.round((f.tamanho||0) / 1024);
+        return `<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-secondary);">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           <span style="font-weight:600;">${f.name}</span>
-        </div>`).join('');
+          ${kb ? `<span style="color:var(--text-muted);font-size:10px;">(${kb}KB)</span>` : ''}
+        </div>`;
+      }).join('');
     }
     const prev = document.getElementById('anexo-preview');
     if (prev) prev.classList.add('show');
