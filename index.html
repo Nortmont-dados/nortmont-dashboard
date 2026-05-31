@@ -3029,62 +3029,78 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFf3t_iSkx-PKb
 
 async function enviarParaGoogle(despesa) {
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'COLE_AQUI_A_URL_DO_WEB_APP') return;
-  try {
-    const anexosList = despesa.anexos && despesa.anexos.length
-      ? despesa.anexos
-      : (despesa.pdfBase64 ? [{ name: despesa.pdfFileName, base64: despesa.pdfBase64 }] : []);
 
-    // Sem comprovantes — envia só os dados (sem loop de anexos)
-    if (!anexosList.length) {
-      const payload = { ...despesa, tipos: despesa.tipos || [] };
-      delete payload.pdfBase64; delete payload.anexos;
-      await fetch(APPS_SCRIPT_URL, {
-        method:'POST', mode:'cors',
-        headers:{'Content-Type':'text/plain'},
-        body: JSON.stringify(payload)
-      });
-      return;
-    }
+  const anexosList = despesa.anexos && despesa.anexos.length
+    ? despesa.anexos
+    : (despesa.pdfBase64 ? [{ name: despesa.pdfFileName, base64: despesa.pdfBase64 }] : []);
 
-    const linksDrive = [];
+  // Helper: envia UM anexo com timeout de 45s
+  async function enviarUmAnexo(anexo) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 45000);
+    try {
+      const basePayload = { ...despesa, tipos: despesa.tipos || [] };
+      delete basePayload.pdfBase64;
+      delete basePayload.anexos;
 
-    for (let i = 0; i < anexosList.length; i++) {
-      const anexo = anexosList[i];
-      const payload = { ...despesa, tipos: despesa.tipos || [] };
-      delete payload.pdfBase64;
-      delete payload.anexos;
-
-      if (anexo.base64 && anexo.base64.includes(',')) {
+      if (anexo && anexo.base64 && anexo.base64.includes(',')) {
         const parts = anexo.base64.split(',');
-        payload.anexoBase64 = parts[1];
-        payload.anexoTipo   = anexo.base64.match(/data:(.*?);/)?.[1] || 'application/pdf';
-        payload.anexoNome   = anexo.name || 'anexo.pdf';
+        basePayload.anexoBase64 = parts[1];
+        basePayload.anexoTipo   = anexo.base64.match(/data:(.*?);/)?.[1] || 'application/pdf';
+        basePayload.anexoNome   = anexo.name || 'anexo.pdf';
       }
 
       const res  = await fetch(APPS_SCRIPT_URL, {
-        method:'POST', mode:'cors',
-        headers:{'Content-Type':'text/plain'},
-        body: JSON.stringify(payload)
+        method: 'POST', mode: 'cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(basePayload),
+        signal: controller.signal,
       });
       const json = await res.json();
-      console.log('Enviado para Google:', json);
-      if (json && json.linkAnexo) linksDrive.push(json.linkAnexo);
+      console.log('Drive OK:', anexo?.name, json);
+      return json?.linkAnexo || null;
+    } catch(e) {
+      console.warn('Falha ao enviar anexo:', anexo?.name, e.message);
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  try {
+    let linksDrive = [];
+
+    if (!anexosList.length) {
+      // Sem comprovantes — só registra os dados
+      await enviarUmAnexo(null);
+    } else {
+      // Envia TODOS em paralelo (Promise.allSettled não aborta se um falhar)
+      const resultados = await Promise.allSettled(
+        anexosList.map(anexo => enviarUmAnexo(anexo))
+      );
+      // Mantém ordem dos arquivos; null se falhou
+      linksDrive = resultados.map(r => r.status === 'fulfilled' ? r.value : null);
+      // Remove nulls do final mas preserva índices com null no meio
+      // (para manter correspondência nome↔link)
     }
 
-    // Persiste os links e atualiza a célula Drive diretamente (sem re-render completo)
-    if (linksDrive.length && despesa.id) {
+    // Salva links e atualiza célula mesmo que alguns tenham falhado
+    const linksValidos = linksDrive.filter(Boolean);
+    if (linksValidos.length && despesa.id) {
       let lista = load(KEY.despesas);
       lista = lista.map(d => d.id === despesa.id
-        ? { ...d, linksDrive, linkDrive: linksDrive[0] }
+        ? { ...d, linksDrive, linkDrive: linksValidos[0] }
         : d);
       save(KEY.despesas, lista);
-
-      // Atualiza só a célula da linha correspondente (evita piscar a tabela inteira)
       const updatedDesp = lista.find(x => x.id === despesa.id);
       atualizarCelulaDrive(updatedDesp);
+    } else if (despesa.id && !linksValidos.length && anexosList.length) {
+      // Todos falharam — remove o spinner
+      const cell = document.querySelector(`[data-drive-id="${despesa.id}"]`);
+      if (cell) cell.innerHTML = '<span style="color:var(--danger);font-size:11px;">⚠ Falha no envio</span>';
     }
   } catch(e) {
-    console.warn('Falha ao enviar para Google:', e.message);
+    console.warn('Erro geral enviarParaGoogle:', e.message);
   }
 }
 
