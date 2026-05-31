@@ -3182,36 +3182,20 @@ async function enviarParaGoogle(despesa) {
     ? despesa.anexos
     : (despesa.pdfBase64 ? [{ name: despesa.pdfFileName, base64: despesa.pdfBase64 }] : []);
 
-  // Guarda em cache para reenvio posterior (base64 na memoria da sessao)
+  // Guarda em cache para reenvio posterior
   if (despesa.id && anexosList.some(a => a.base64)) {
     _b64Cache[despesa.id] = { despesa: JSON.parse(JSON.stringify(despesa)), anexosList };
   }
 
-  // Payload base limpo — sem campos pesados
+  // Payload base limpo
   const payloadBase = { ...despesa, tipos: despesa.tipos || [] };
   delete payloadBase.pdfBase64;
   delete payloadBase.anexos;
 
-  // ---------- SEM ANEXOS: só grava na planilha ----------
-  if (!anexosList.length) {
-    try {
-      await fetch(APPS_SCRIPT_URL, {
-        method: 'POST', mode: 'cors',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(payloadBase)
-      });
-    } catch(e) { console.warn('[Drive] sem anexo:', e.message); }
-    return;
-  }
-
-  // ---------- COM ANEXOS: envia arquivo por arquivo em paralelo ----------
-  // Cada arquivo tem timeout de 28s (garante retorno em < 30s)
-  // O link aparece na célula assim que cada arquivo é confirmado pelo Drive.
-
-  const TIMEOUT_MS = 28000; // 28s por arquivo — cabe em 30s com folga
+  function getCell() { return document.querySelector('[data-drive-id="' + despesa.id + '"]'); }
 
   function setProgresso(msg) {
-    const cell = document.querySelector('[data-drive-id="' + despesa.id + '"]');
+    const cell = getCell();
     if (cell) cell.innerHTML =
       '<span style="display:flex;align-items:center;gap:5px;color:#92400e;font-size:10px;font-weight:600;">' +
       '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1.2s linear infinite;flex-shrink:0"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>' +
@@ -3219,7 +3203,7 @@ async function enviarParaGoogle(despesa) {
   }
 
   function setErro(msg) {
-    const cell = document.querySelector('[data-drive-id="' + despesa.id + '"]');
+    const cell = getCell();
     if (!cell) return;
     cell.innerHTML =
       '<div style="display:flex;flex-direction:column;gap:5px;">' +
@@ -3228,96 +3212,109 @@ async function enviarParaGoogle(despesa) {
       '</div>';
   }
 
-  // linksDrive parciais — começa tudo null, vai preenchendo conforme chega
-  const linksDrive = new Array(anexosList.length).fill(null);
-
-  function salvarLinksParcias() {
+  function salvarLinks(links) {
     if (!despesa.id) return;
+    const linksDrive = anexosList.map((_, i) => links[i] || null);
     let lista = load(KEY.despesas);
     lista = lista.map(d => d.id === despesa.id
-      ? { ...d, linksDrive: [...linksDrive], linkDrive: linksDrive.find(Boolean) || '' }
+      ? { ...d, linksDrive, linkDrive: links.find(Boolean) || '' }
       : d);
     save(KEY.despesas, lista);
     const despAtual = lista.find(x => x.id === despesa.id);
-    if (despAtual) atualizarCelulaDrive({ ...despAtual, anexos: anexosList.map(a => ({ name: a.name })) });
+    if (despAtual) atualizarCelulaDrive({ ...despAtual, anexos: anexosList.map(a => ({ name: a.name || a.nome })) });
   }
 
-  // Envia um único arquivo ao Drive — retorna o link ou null em caso de falha
-  async function enviarUmArquivo(anexo, index, isFirst) {
-    if (!anexo.base64 || !anexo.base64.includes(',')) return null;
-    const parts = anexo.base64.split(',');
-    const base64puro = parts[1];
-    const tipo = anexo.base64.match(/data:(.*?);/)?.[1] || 'application/pdf';
-
-    // Só o primeiro arquivo grava a linha na planilha (gravar=true)
-    // Os demais apenas fazem upload do arquivo (gravar=false)
-    const payload = {
-      ...payloadBase,
-      gravar: isFirst,           // Apps Script só appendRow quando true
-      indiceAnexo: index,        // posição para log/debug
-      totalAnexos: anexosList.length,
-      anexos: [{
-        nome:   anexo.name || ('comprovante_' + (index + 1)),
-        base64: base64puro,
-        tipo:   tipo,
-      }],
-    };
-
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-    const tamanhoKB = Math.round(base64puro.length * 0.75 / 1024);
-    console.log('[Drive] Enviando arquivo', index + 1, '/', anexosList.length,
-      '—', anexo.name, tamanhoKB + 'KB');
-
+  // ---------- SEM ANEXOS: só grava na planilha ----------
+  if (!anexosList.length) {
     try {
+      setProgresso('Gravando…');
       const res = await fetch(APPS_SCRIPT_URL, {
         method: 'POST', mode: 'cors',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
+        body: JSON.stringify(payloadBase)
       });
-      const rawText = await res.text();
-      let json;
-      try { json = JSON.parse(rawText); } catch { return null; }
-      if (!json.ok) { console.warn('[Drive] Arquivo', index + 1, 'erro:', json.erro); return null; }
-      // Aceita linksAnexos[0] ou linkAnexo (legado)
-      return (json.linksAnexos && json.linksAnexos[0]) || json.linkAnexo || null;
+      const j = await res.json().catch(() => ({}));
+      const cell = getCell();
+      if (cell) cell.innerHTML = '<span style="color:var(--text-muted);font-size:11px;">Sem anexo</span>';
     } catch(e) {
-      console.warn('[Drive] Arquivo', index + 1, e.name === 'AbortError' ? 'timeout 28s' : e.message);
-      return null;
-    } finally {
-      clearTimeout(timer);
+      console.warn('[Drive] sem anexo:', e.message);
     }
+    return;
   }
 
-  // Mostra spinner inicial
-  const totalKB = Math.round(anexosList.reduce((s,a) => s + (a.base64 ? a.base64.length * 0.75 : 0) / 1024, 0));
-  console.log('[Drive] Iniciando upload paralelo:', anexosList.length, 'arquivo(s),', totalKB, 'KB total');
-  setProgresso('Enviando ' + anexosList.length + ' arquivo(s) para o Drive…');
+  // ---------- COM ANEXOS: envia tudo em UMA requisição (batch) ----------
+  // Timeout fixo de 55s — suficiente para imagens comprimidas (< 800KB cada)
+  const TIMEOUT_MS = 55000;
 
-  // Envia todos em paralelo — cada um com seu próprio timeout de 28s
-  // O primeiro arquivo (index 0) grava a linha na planilha (gravar:true)
-  const promises = anexosList.map((anexo, i) =>
-    enviarUmArquivo(anexo, i, i === 0).then(link => {
-      linksDrive[i] = link;
-      // Atualiza célula imediatamente quando cada link chega
-      salvarLinksParcias();
-      const recebidos = linksDrive.filter(Boolean).length;
-      console.log('[Drive] Link recebido', recebidos, '/', anexosList.length, '→', link ? link.slice(0, 60) : 'null');
-    })
+  // Converte cada anexo para { nome, base64 (puro, sem prefixo), tipo }
+  const anexosPayload = anexosList.map((a, i) => {
+    const b64full = a.base64 || '';
+    let base64puro = b64full;
+    let tipo = 'application/pdf';
+    if (b64full.includes(',')) {
+      base64puro = b64full.split(',')[1];
+      tipo = b64full.match(/data:(.*?);/)?.[1] || tipo;
+    }
+    const nome = a.name || a.nome || ('comprovante_' + (i + 1) + '.pdf');
+    return { nome, base64: base64puro, tipo };
+  });
+
+  const totalKB = Math.round(
+    anexosPayload.reduce((s, a) => s + a.base64.length * 0.75, 0) / 1024
   );
+  console.log('[Drive] Enviando batch:', anexosPayload.length, 'arquivo(s),', totalKB, 'KB');
+  setProgresso('Enviando ' + anexosPayload.length + ' arquivo(s)… (' + totalKB + 'KB)');
 
-  await Promise.all(promises);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-  // Verifica resultado final
-  const totalLinks = linksDrive.filter(Boolean).length;
-  if (totalLinks === 0) {
-    setErro('Drive não retornou links. Verifique o Apps Script e reenvie.');
-  } else if (totalLinks < anexosList.length) {
-    console.warn('[Drive] Upload parcial:', totalLinks, 'de', anexosList.length, 'links recebidos.');
-    // Já mostrou os links recebidos — deixa o parcial visível
-  } else {
-    console.log('[Drive] Todos os', totalLinks, 'links recebidos com sucesso.');
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST', mode: 'cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ ...payloadBase, anexos: anexosPayload }),
+      signal: controller.signal,
+    });
+
+    const rawText = await res.text();
+    console.log('[Drive] Resposta raw:', rawText.slice(0, 300));
+
+    let json;
+    try { json = JSON.parse(rawText); }
+    catch(pe) {
+      console.error('[Drive] JSON inválido:', rawText.slice(0, 200));
+      setErro('Resposta inválida do servidor. Reenvie.');
+      return;
+    }
+
+    if (!json.ok) {
+      console.error('[Drive] Erro Apps Script:', json.erro);
+      setErro('Erro: ' + (json.erro || 'desconhecido').slice(0, 80));
+      return;
+    }
+
+    // Aceita linksAnexos[] (novo) ou linkAnexo (legado)
+    const links = (json.linksAnexos && json.linksAnexos.length)
+      ? json.linksAnexos
+      : (json.linkAnexo ? [json.linkAnexo] : []);
+
+    console.log('[Drive] Links recebidos:', links);
+
+    if (links.some(Boolean)) {
+      salvarLinks(links);
+    } else {
+      console.warn('[Drive] ok=true mas sem links. Resposta:', json);
+      setErro('Drive não retornou links. Verifique a pasta no Apps Script.');
+    }
+
+  } catch(e) {
+    const msg = e.name === 'AbortError'
+      ? 'Timeout (' + Math.round(TIMEOUT_MS/1000) + 's). Arquivo grande demais?'
+      : e.message;
+    console.error('[Drive] Exceção:', msg);
+    setErro(msg);
+  } finally {
+    clearTimeout(timer);
   }
 }
 // Reenviar ao Drive despesas que ficaram com "Enviando..." ou falharam
