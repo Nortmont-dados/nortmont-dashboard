@@ -1192,7 +1192,7 @@ body {
         <span>Despesas lançadas</span>
         <div style="display:flex;align-items:center;gap:8px;">
           <span class="badge" id="badge-despesas">0</span>
-          <button onclick="renderDespesas()" style="
+          <button onclick="recarregarDoSheets()" style="
             background:none; border:1.5px solid rgba(15,66,69,0.3);
             border-radius:999px; padding:4px 12px; font-family:Montserrat,sans-serif;
             font-size:11px; font-weight:600; color:var(--teal); cursor:pointer;
@@ -1916,6 +1916,19 @@ function mostrarToast(msg, tipo, duracao) {
 function fecharToast() {
   const el = document.getElementById('_sheets-toast');
   if (el) el.style.opacity = '0';
+}
+
+// Recarrega todos os dados do Sheets e re-renderiza tudo
+async function recarregarDoSheets() {
+  const ok = await carregarDoSheets();
+  if (ok) {
+    renderClientes();
+    renderCustos();
+    renderColaboradores();
+    renderPropostas();
+    renderDespesas();
+    renderRelatorio();
+  }
 }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -3494,9 +3507,10 @@ async function enviarParaGoogle(despesa) {
     _b64Cache[despesa.id] = { despesa: JSON.parse(JSON.stringify(despesa)), anexosList };
   }
 
-  // Payload base limpo
+  // Payload base limpo — inclui aba para o Apps Script rotear corretamente
   const payloadBase = {
     ...despesa,
+    aba: 'despesas',                  // ← CRÍTICO: diz ao Apps Script que é uma despesa
     tipos: despesa.tipos || [],
     tiposJson: despesa.tiposJson || JSON.stringify(despesa.tipos || []),
     tipoLancamento: despesa.tipoLancamento || '',
@@ -3541,20 +3555,33 @@ async function enviarParaGoogle(despesa) {
     if (linkStr) sheetsPost({ aba: 'Despesas', id: despesa.id, acao: 'atualizar', 'Link Drive': linkStr });
   }
 
-  // ---------- SEM ANEXOS: só grava na planilha ----------
+  // ---------- SEM ANEXOS: grava na planilha ----------
   if (!anexosList.length) {
+    setProgresso('Gravando na planilha…');
     try {
-      setProgresso('Gravando…');
       const res = await fetch(APPS_SCRIPT_URL, {
         method: 'POST', mode: 'cors',
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(payloadBase)
       });
-      const j = await res.json().catch(() => ({}));
+      const rawText = await res.text();
+      console.log('[Sheets] Resposta (sem anexo):', rawText.slice(0, 300));
+      let j = {};
+      try { j = JSON.parse(rawText); } catch(e) { console.error('[Sheets] JSON inválido:', rawText.slice(0,200)); }
       const cell = getCell();
-      if (cell) cell.innerHTML = '<span style="color:var(--text-muted);font-size:11px;">Sem anexo</span>';
+      if (j.ok) {
+        if (cell) cell.innerHTML = '<span style="color:var(--success);font-size:11px;font-weight:600;">✓ Gravado</span>';
+        mostrarToast('✓ Despesa salva no Google Sheets!', 'success', 3000);
+      } else {
+        const errMsg = (j.erro || 'Erro desconhecido').slice(0, 120);
+        if (cell) cell.innerHTML = '<span style="color:var(--danger);font-size:10px;">⚠ ' + errMsg + '</span>';
+        mostrarToast('⚠ Erro ao salvar no Sheets: ' + errMsg, 'error', 6000);
+        console.error('[Sheets] Erro:', j.erro);
+      }
     } catch(e) {
-      console.warn('[Drive] sem anexo:', e.message);
+      console.error('[Sheets] Exceção (sem anexo):', e.message);
+      setErro('Sem conexão com o servidor: ' + e.message);
+      mostrarToast('⚠ Sem conexão com o Sheets: ' + e.message, 'error', 6000);
     }
     return;
   }
@@ -3619,9 +3646,13 @@ async function enviarParaGoogle(despesa) {
 
     if (links.some(Boolean)) {
       salvarLinks(links);
+      mostrarToast('✓ Despesa e comprovantes salvos no Google Sheets!', 'success', 3000);
     } else {
       console.warn('[Drive] ok=true mas sem links. Resposta:', json);
-      setErro('Drive não retornou links. Verifique a pasta no Apps Script.');
+      // Mesmo sem links do Drive, a linha JÁ foi gravada no Sheets — informa o usuário
+      mostrarToast('✓ Despesa salva no Sheets. Comprovante não enviado ao Drive.', 'warning', 5000);
+      const cell = getCell();
+      if (cell) cell.innerHTML = '<span style="color:var(--warning);font-size:10px;font-weight:600;">⚠ Sem link Drive</span>';
     }
 
   } catch(e) {
