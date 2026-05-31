@@ -716,7 +716,7 @@ body {
           <input type="text" id="cli-nome" placeholder="Razão social ou nome fantasia">
         </div>
         <div class="form-group">
-          <label for="cli-cnpj">CNPJ *</label>
+          <label for="cli-cnpj">CNPJ</label>
           <input type="text" id="cli-cnpj" placeholder="00.000.000/0001-00" maxlength="18" style="font-family:'Montserrat',monospace;letter-spacing:0.04em;">
         </div>
       </div>
@@ -835,19 +835,41 @@ body {
       </div>
       <div class="card-eyebrow" id="card-eyebrow-despesa">Nova despesa</div>
 
+      <!-- TIPO DO LANÇAMENTO + PROJETO/VISITA -->
+      <div class="form-grid cols-3" style="margin-bottom:16px;">
+        <div class="form-group">
+          <label for="desp-tipo-lancamento">Tipo *</label>
+          <select id="desp-tipo-lancamento">
+            <option value="">— Selecione —</option>
+            <option value="Adiantamento">Adiantamento</option>
+            <option value="Ressarcimento">Ressarcimento</option>
+            <option value="Devolução">Devolução</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="desp-categoria">Categoria *</label>
+          <select id="desp-categoria" onchange="togglePropostaField()">
+            <option value="">— Selecione —</option>
+            <option value="Projeto">Projeto</option>
+            <option value="Visita">Visita</option>
+          </select>
+        </div>
+        <div class="form-group" id="grupo-proposta" style="display:none;">
+          <label for="desp-proposta">Proposta *</label>
+          <select id="desp-proposta"><option value="">— Selecione —</option></select>
+        </div>
+      </div>
+
+      <div class="divider"></div>
       <!-- IDENTIFICAÇÃO -->
       <div class="section-badge">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
         Identificação
       </div>
-      <div class="form-grid cols-3">
+      <div class="form-grid cols-2">
         <div class="form-group">
           <label for="desp-cliente">Cliente *</label>
           <select id="desp-cliente"><option value="">— Selecione —</option></select>
-        </div>
-        <div class="form-group">
-          <label for="desp-proposta">Proposta *</label>
-          <select id="desp-proposta"><option value="">— Selecione —</option></select>
         </div>
         <div class="form-group">
           <label for="desp-colaborador">Colaborador *</label>
@@ -991,9 +1013,6 @@ body {
       <div style="border:1.5px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--surface);">
         <table class="tipo-table">
           <tbody>
-            <tr><td class="td-label">💰 Adiantamento</td>
-              <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Adiantamento" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this)"></td>
-              <td class="td-extra"></td></tr>
             <tr><td class="td-label">🚗 Táxi/Uber</td>
               <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Táxi/Uber" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this)"></td>
               <td class="td-extra"></td></tr>
@@ -1007,6 +1026,11 @@ body {
               <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Combustível" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this);toggleVeiculoInline(this)"></td>
               <td class="td-extra">
                 <div class="veiculo-inline" id="veiculo-inline">
+                  <select id="desp-tipo-veiculo" style="font-family:'Montserrat',sans-serif;font-size:12px;border:1.5px solid var(--border-strong);border-radius:8px;padding:6px 10px;margin-bottom:6px;width:100%">
+                    <option value="">Tipo do veículo *</option>
+                    <option value="Alugado">Alugado</option>
+                    <option value="Elétrico">Elétrico</option>
+                  </select>
                   <input type="text" id="desp-placa" placeholder="Placa (ex: ABC1D23)" maxlength="8">
                   <input type="text" id="desp-modelo" placeholder="Modelo do veículo">
                 </div>
@@ -1027,8 +1051,12 @@ body {
               <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Hora Extra" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this)"></td>
               <td class="td-extra"></td></tr>
             <tr><td class="td-label">📋 Outros</td>
-              <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Outros" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this)"></td>
-              <td class="td-extra"></td></tr>
+              <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Outros" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this);toggleFinalidade(this)"></td>
+              <td class="td-extra">
+                <div class="outros-finalidade" id="outros-finalidade" style="display:none;margin-top:4px;">
+                  <input type="text" id="desp-finalidade" placeholder="Finalidade *" style="font-family:'Montserrat',sans-serif;font-size:12px;border:1.5px solid var(--border-strong);border-radius:8px;padding:6px 10px;width:100%">
+                </div>
+              </td></tr>
           </tbody>
         </table>
       </div>
@@ -1049,13 +1077,17 @@ body {
         Comprovante
       </div>
       <div class="form-group" style="max-width:480px;">
-        <label>Comprovante (PDF ou Imagem)</label>
+        <label>Comprovantes (PDF ou Imagem — pode selecionar vários)</label>
         <div class="file-upload-wrap" id="upload-area">
-          <input type="file" id="desp-pdf" accept="application/pdf,image/*" onchange="onPdfChange(this)">
+          <input type="file" id="desp-pdf" accept="application/pdf,image/*" multiple onchange="onPdfChange(this)">
           <div class="file-upload-btn">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Clique para anexar PDF ou Imagem
+            Clique para anexar PDF ou Imagens (múltiplos)
           </div>
+        </div>
+        <div id="anexos-lista" style="margin-top:8px;display:none;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Arquivos selecionados</div>
+          <div id="anexos-items"></div>
         </div>
         <div class="anexo-preview" id="anexo-preview">
           <div class="anexo-preview-header">
@@ -1685,36 +1717,87 @@ function toggleVeiculoInline(input) {
   if (!inline) return;
   const hasVal = input.value.replace(/[^0-9]/g,'') !== '';
   inline.classList.toggle('show', hasVal);
-  if (!hasVal) { document.getElementById('desp-placa').value=''; document.getElementById('desp-modelo').value=''; }
+  if (!hasVal) {
+    document.getElementById('desp-placa').value='';
+    document.getElementById('desp-modelo').value='';
+    document.getElementById('desp-tipo-veiculo').value='';
+  }
+}
+
+function toggleFinalidade(input) {
+  const el = document.getElementById('outros-finalidade');
+  if (!el) return;
+  const hasVal = input.value.replace(/[^0-9]/g,'') !== '';
+  el.style.display = hasVal ? 'block' : 'none';
+  if (!hasVal) document.getElementById('desp-finalidade').value = '';
+}
+
+function togglePropostaField() {
+  const cat = document.getElementById('desp-categoria').value;
+  const grupo = document.getElementById('grupo-proposta');
+  if (grupo) grupo.style.display = (cat === 'Projeto') ? 'flex' : 'none';
 }
 
 function selectTipo(btn) { /* legacy */ }
 function onTipoChange() { /* legacy */ }
 
-/* ── PDF upload ── */
+/* ── PDF upload (múltiplos) ── */
 let pdfBase64 = null, pdfFileName = null;
+let anexosMultiplos = []; // [{base64, name}]
+
 function onPdfChange(input) {
-  const file = input.files[0];
-  if (!file) return;
-  if (!file.type.match(/^(application\/pdf|image\/.*)$/)) { alert('Selecione um arquivo PDF ou imagem.'); input.value=''; return; }
-  if (file.size > 5*1024*1024) { alert('O arquivo deve ter no máximo 5 MB.'); input.value=''; return; }
-  pdfFileName = file.name;
-  const r = new FileReader();
-  r.onload = e => {
-    pdfBase64 = e.target.result;
-    document.getElementById('pdf-name-text').textContent = file.name;
-    document.getElementById('pdf-name-display').classList.add('show');
-  };
-  r.readAsDataURL(file);
+  const files = Array.from(input.files);
+  if (!files.length) return;
+
+  // Validate all files
+  for (const file of files) {
+    if (!file.type.match(/^(application\/pdf|image\/.*)$/)) { alert('Selecione apenas arquivos PDF ou imagem.'); input.value=''; return; }
+    if (file.size > 5*1024*1024) { alert(`O arquivo "${file.name}" excede 5 MB.`); input.value=''; return; }
+  }
+
+  anexosMultiplos = [];
+  pdfBase64 = null; pdfFileName = null;
+
+  const promises = files.map(file => new Promise(resolve => {
+    const r = new FileReader();
+    r.onload = e => resolve({ base64: e.target.result, name: file.name });
+    r.readAsDataURL(file);
+  }));
+
+  Promise.all(promises).then(results => {
+    anexosMultiplos = results;
+    // Compatibilidade: usa o primeiro como pdfBase64
+    pdfBase64    = results[0].base64;
+    pdfFileName  = results[0].name;
+
+    // Atualiza UI
+    const listaEl = document.getElementById('anexos-lista');
+    const itemsEl = document.getElementById('anexos-items');
+    if (results.length === 1) {
+      document.getElementById('pdf-name-text').textContent = results[0].name;
+      document.getElementById('pdf-name-display')?.classList.add('show');
+      listaEl.style.display = 'none';
+    } else {
+      document.getElementById('pdf-name-text').textContent = `${results.length} arquivos selecionados`;
+      listaEl.style.display = 'block';
+      itemsEl.innerHTML = results.map((f,i) => `
+        <div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-secondary);">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span style="font-weight:600;">${f.name}</span>
+        </div>`).join('');
+    }
+    const prev = document.getElementById('anexo-preview');
+    if (prev) prev.classList.add('show');
+  });
 }
 
 /* ══════════════ CLIENTES ══════════════ */
 function salvarCliente() {
   const nome = document.getElementById('cli-nome').value.trim();
   const cnpj = document.getElementById('cli-cnpj').value.trim();
-  if (!nome || !cnpj) return showAlert('alert-cliente','Preencha nome e CNPJ.','danger');
+  if (!nome) return showAlert('alert-cliente','Preencha o nome do cliente.','danger');
   const lista = load(KEY.clientes);
-  if (lista.some(c => c.cnpj===cnpj)) return showAlert('alert-cliente','CNPJ já cadastrado.','danger');
+  if (cnpj && lista.some(c => c.cnpj===cnpj)) return showAlert('alert-cliente','CNPJ já cadastrado.','danger');
   lista.push({ id:Date.now(), nome, cnpj });
   save(KEY.clientes, lista);
   document.getElementById('cli-nome').value = '';
@@ -1786,10 +1869,12 @@ function renderPropostas() {
 function populateSelects() {
   const clientes = load(KEY.clientes), colaboradores = load(KEY.colaboradores), propostas = load(KEY.propostas);
   const sc = document.getElementById('desp-cliente'), sp = document.getElementById('desp-proposta'), sb = document.getElementById('desp-colaborador');
-  const cur = { c:sc.value, p:sp.value, b:sb.value };
+  const cur = { c:sc.value, p:sp?sp.value:'', b:sb.value };
   sc.innerHTML = '<option value="">— Selecione o cliente —</option>' + clientes.map(c=>`<option value="${c.id}" ${cur.c==c.id?'selected':''}>${esc(c.nome)}</option>`).join('');
-  sp.innerHTML = '<option value="">— Selecione a proposta —</option>' + propostas.map(p=>`<option value="${p.id}" ${cur.p==p.id?'selected':''}>${esc(p.num)}${p.desc?' – '+esc(p.desc):''}</option>`).join('');
+  if (sp) sp.innerHTML = '<option value="">— Selecione a proposta —</option>' + propostas.map(p=>`<option value="${p.id}" ${cur.p==p.id?'selected':''}>${esc(p.num)}${p.desc?' – '+esc(p.desc):''}</option>`).join('');
   sb.innerHTML = '<option value="">— Selecione o colaborador —</option>' + colaboradores.map(c=>`<option value="${c.id}" ${cur.b==c.id?'selected':''}>${esc(c.nome)}</option>`).join('');
+  // Init proposta visibility
+  togglePropostaField();
 }
 
 /* ══════════════ SALVAR / EDITAR DESPESA ══════════════ */
@@ -1815,6 +1900,8 @@ function editarDespesa(id) {
   document.getElementById('desp-dias').value  = d.dias||'';
   document.getElementById('desp-cc').value    = d.cc||'';
   document.getElementById('desp-competencia').value  = d.competencia||'';
+  if (d.tipoLancamento) document.getElementById('desp-tipo-lancamento').value = d.tipoLancamento;
+  if (d.categoria) { document.getElementById('desp-categoria').value = d.categoria; togglePropostaField(); }
   // fill the tipo row
   document.querySelectorAll('.tipo-valor-input').forEach(inp=>{
     if(inp.dataset.tipo===d.tipo) { inp.value=d.valor||''; }
@@ -1822,6 +1909,11 @@ function editarDespesa(id) {
   });
   if(d.tipo==='Combustível' && d.valor) {
     const vi=document.getElementById('veiculo-inline'); if(vi) vi.classList.add('show');
+    if(d.tipoVeiculo) document.getElementById('desp-tipo-veiculo').value = d.tipoVeiculo;
+  }
+  if(d.tipo==='Outros' && d.finalidade) {
+    const of=document.getElementById('outros-finalidade'); if(of) of.style.display='block';
+    document.getElementById('desp-finalidade').value = d.finalidade;
   }
   document.getElementById('desp-valor').value = d.valor||'';
   document.getElementById('desp-placa').value = d.placa||'';
@@ -1843,21 +1935,29 @@ function cancelarEdicao() {
 }
 
 function limparFormDespesa() {
-  ['desp-cliente','desp-proposta','desp-colaborador','desp-cidade','desp-ida','desp-volta','desp-dias','desp-cc','desp-competencia','desp-obs','desp-pdf'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  ['desp-cliente','desp-proposta','desp-colaborador','desp-cidade','desp-ida','desp-volta','desp-dias','desp-cc','desp-competencia','desp-obs','desp-pdf','desp-tipo-lancamento','desp-categoria','desp-finalidade','desp-tipo-veiculo'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.querySelectorAll('.tipo-valor-input').forEach(i=>i.value='');
   const vi = document.getElementById('veiculo-inline'); if(vi) vi.classList.remove('show');
   document.getElementById('desp-placa').value=''; document.getElementById('desp-modelo').value='';
+  const of = document.getElementById('outros-finalidade'); if(of) of.style.display='none';
   document.getElementById('tipo-required').classList.remove('show');
+  const anexosLista = document.getElementById('anexos-lista'); if(anexosLista) anexosLista.style.display='none';
+  togglePropostaField();
   removerAnexo();
-  pdfBase64=null; pdfFileName=null;
+  pdfBase64=null; pdfFileName=null; anexosMultiplos=[];
 }
 
 function salvarDespesa() {
   const cid = document.getElementById('desp-cliente').value;
-  const pid = document.getElementById('desp-proposta').value;
   const bid = document.getElementById('desp-colaborador').value;
   const cc  = document.getElementById('desp-cc').value;
   const comp= document.getElementById('desp-competencia').value;
+  const tipoLanc = document.getElementById('desp-tipo-lancamento').value;
+  const categoria = document.getElementById('desp-categoria').value;
+
+  // Proposta só obrigatória se categoria = Projeto
+  const pid = document.getElementById('desp-proposta')?.value || '';
+  if (categoria === 'Projeto' && !pid) return showAlert('alert-despesa','Selecione a proposta para o projeto.','danger');
 
   // Collect all tipo rows with values
   const tipoRows = [];
@@ -1869,14 +1969,21 @@ function salvarDespesa() {
   // Validation
   const tipReq = document.getElementById('tipo-required');
   if (tipoRows.length === 0) { tipReq.classList.add('show'); }
-  if (!cid||!pid||!bid||!cc||tipoRows.length===0) return showAlert('alert-despesa','Preencha todos os campos obrigatórios (*).','danger');
+  if (!cid||!bid||!cc||!tipoLanc||!categoria||tipoRows.length===0) return showAlert('alert-despesa','Preencha todos os campos obrigatórios (*).','danger');
   tipReq.classList.remove('show');
 
   const combustivelRow = tipoRows.find(r=>r.tipo==='Combustível');
   if (combustivelRow) {
+    const tipoVeic = document.getElementById('desp-tipo-veiculo').value.trim();
     const placa = document.getElementById('desp-placa').value.trim();
     const modelo= document.getElementById('desp-modelo').value.trim();
-    if (!placa||!modelo) return showAlert('alert-despesa','Para Combustível informe placa e modelo.','danger');
+    if (!tipoVeic||!placa||!modelo) return showAlert('alert-despesa','Para Combustível informe tipo do veículo, placa e modelo.','danger');
+  }
+
+  const outrosRow = tipoRows.find(r=>r.tipo==='Outros');
+  if (outrosRow) {
+    const finalidade = document.getElementById('desp-finalidade').value.trim();
+    if (!finalidade) return showAlert('alert-despesa','Para "Outros" informe a Finalidade.','danger');
   }
 
   const clientes=load(KEY.clientes), propostas=load(KEY.propostas), colaboradores=load(KEY.colaboradores);
@@ -1884,15 +1991,19 @@ function salvarDespesa() {
     data: editingId ? (load(KEY.despesas).find(x=>x.id===editingId)?.data||new Date().toLocaleDateString('pt-BR')) : new Date().toLocaleDateString('pt-BR'),
     cadastradoPor: usuarioLogado ? usuarioLogado.email : '',
     cliente:     clientes.find(x=>x.id==cid)?.nome||'',
-    proposta:    propostas.find(x=>x.id==pid)?.num||'',
+    proposta:    categoria === 'Projeto' ? (propostas.find(x=>x.id==pid)?.num||'') : '',
     colaborador: colaboradores.find(x=>x.id==bid)?.nome||'',
     cidade:      document.getElementById('desp-cidade').value.trim(),
     ida:         document.getElementById('desp-ida').value,
     volta:       document.getElementById('desp-volta').value,
     dias:        document.getElementById('desp-dias').value,
     cc, competencia: comp,
+    tipoLancamento: tipoLanc,
+    categoria,
     obs:         document.getElementById('desp-obs').value.trim(),
-    pdfBase64:   pdfBase64||null, pdfFileName: pdfFileName||null
+    finalidade:  document.getElementById('desp-finalidade')?.value.trim()||'',
+    pdfBase64:   pdfBase64||null, pdfFileName: pdfFileName||null,
+    anexosMultiplos: anexosMultiplos.length > 1 ? anexosMultiplos.map(a=>a.name) : [],
   };
 
   let lista = load(KEY.despesas);
@@ -1900,8 +2011,10 @@ function salvarDespesa() {
   if (editingId) {
     const r = tipoRows[0];
     const upd = { ...base, id: editingId, tipo: r.tipo, valor: r.valor,
+      tipoVeiculo: r.tipo==='Combustível' ? document.getElementById('desp-tipo-veiculo').value.trim() : '',
       placa: r.tipo==='Combustível' ? document.getElementById('desp-placa').value.trim().toUpperCase() : '',
       modelo: r.tipo==='Combustível' ? document.getElementById('desp-modelo').value.trim() : '',
+      finalidade: r.tipo==='Outros' ? document.getElementById('desp-finalidade').value.trim() : '',
     };
     lista = lista.map(x => x.id===editingId ? upd : x);
     save(KEY.despesas, lista);
@@ -1919,8 +2032,10 @@ function salvarDespesa() {
       const novaDesp = { ...base,
         id: Date.now() + i,
         tipo: r.tipo, valor: r.valor,
+        tipoVeiculo: r.tipo==='Combustível' ? document.getElementById('desp-tipo-veiculo').value.trim() : '',
         placa:  r.tipo==='Combustível' ? document.getElementById('desp-placa').value.trim().toUpperCase() : '',
         modelo: r.tipo==='Combustível' ? document.getElementById('desp-modelo').value.trim() : '',
+        finalidade: r.tipo==='Outros' ? document.getElementById('desp-finalidade').value.trim() : '',
       };
       lista.push(novaDesp);
       newIds.push(novaDesp);
@@ -2020,7 +2135,7 @@ function abrirGmail(d) {
   const fmtComp = v => v ? v.split('-').reverse().join('/') : '—';
 
   const assunto = encodeURIComponent(
-    `Lançamento de Despesa – ${d.cliente} | ${d.proposta||'s/proposta'} | ${d.tipo} | ${d.data}`
+    `Lançamento de Despesa – ${d.cliente} | ${d.proposta||d.categoria||'s/proposta'} | ${d.tipo} | ${d.data}`
   );
 
   const linhas = [
@@ -2029,9 +2144,11 @@ function abrirGmail(d) {
     '═══════════════════════════════════',
     '',
     '📋 IDENTIFICAÇÃO',
-    `   Cliente:       ${d.cliente||'—'}`,
-    `   Proposta:      ${d.proposta||'—'}`,
-    `   Colaborador:   ${d.colaborador||'—'}`,
+    `   Cliente:         ${d.cliente||'—'}`,
+    `   Tipo Lançamento: ${d.tipoLancamento||'—'}`,
+    `   Categoria:       ${d.categoria||'—'}`,
+    `   Proposta:        ${d.proposta||'—'}`,
+    `   Colaborador:     ${d.colaborador||'—'}`,
     '',
     '🗺  VIAGEM / PERÍODO',
     `   Cidade/UF:     ${d.cidade||'—'}`,
@@ -2046,13 +2163,25 @@ function abrirGmail(d) {
     `   Competência:       ${fmtComp(d.competencia)}`,
   ];
   if (d.tipo==='Combustível' && d.placa) {
-    linhas.push('','🚗 VEÍCULO',`   Placa:   ${d.placa}`,`   Modelo:  ${d.modelo||'—'}`);
+    linhas.push('','🚗 VEÍCULO',`   Tipo:    ${d.tipoVeiculo||'—'}`,`   Placa:   ${d.placa}`,`   Modelo:  ${d.modelo||'—'}`);
+  }
+  if (d.tipo==='Outros' && d.finalidade) {
+    linhas.push('','📌 FINALIDADE',`   ${d.finalidade}`);
   }
   if (d.obs) { linhas.push('','📝 OBSERVAÇÕES',`   ${d.obs}`); }
+
+  // Comprovante e link Drive
+  const nomeAnexos = d.anexosMultiplos && d.anexosMultiplos.length > 1
+    ? d.anexosMultiplos.join(', ')
+    : (d.pdfFileName || 'Não anexado');
+
   linhas.push(
     '',
-    `📎 COMPROVANTE: ${d.pdfFileName || 'Não anexado'}`,
-    `🔗 LINK NO DRIVE: ${d.linkDrive || 'Não disponível'}`,
+    `📎 COMPROVANTE(S): ${nomeAnexos}`,
+    '',
+    d.linkDrive
+      ? `🔗 LINK DO DRIVE (comprovantes): ${d.linkDrive}`
+      : '🔗 LINK DO DRIVE: Não disponível',
     '',
     '───────────────────────────────────',
     `Data do lançamento: ${d.data}`,
