@@ -1702,13 +1702,23 @@ function onGoogleLogin(response) {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-root').style.display     = 'block';
     renderizarUsuario(nome, foto, email);
+
+    // Carrega fallback local imediatamente (experiência rápida)
+    loadLocalFallback();
     renderClientes(); renderCustos(); renderColaboradores();
     renderPropostas(); renderDespesas(); renderRelatorio();
-    // Activate manual tab as first
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-manual').classList.add('active');
     document.querySelectorAll('.tab-btn')[0].classList.add('active');
+
+    // Depois carrega do Sheets em background e re-renderiza
+    carregarDoSheets().then(ok => {
+      if (ok) {
+        renderClientes(); renderCustos(); renderColaboradores();
+        renderPropostas(); renderDespesas(); renderRelatorio();
+      }
+    });
   } else {
     // ❌ Não autorizado
     const err = document.getElementById('login-erro');
@@ -1741,27 +1751,173 @@ function logout() {
 
 const KEY = { clientes:'gd_clientes', colaboradores:'gd_colaboradores', propostas:'gd_propostas', despesas:'gd_despesas', custos:'gd_custos' };
 const EMAIL_DESTINO = 'contasapagar@electricservice.com.br';
-function load(k) { try { return JSON.parse(localStorage.getItem(k)) || []; } catch { return []; } }
+
+/* ══════════════════════════════════════════════════════════════
+   GOOGLE SHEETS — banco de dados principal
+   localStorage é usado apenas como cache local em memória
+══════════════════════════════════════════════════════════════ */
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFf3t_iSkx-PKbGHSUp6n402VCZHaMN3iKETaavSAq0Ebngm9KWCCTirXvxYWV3VM/exec';
+
+// Cache em memória — substituído quando o Sheets carrega
+const _db = { clientes:[], colaboradores:[], propostas:[], despesas:[], custos:[] };
+
+function load(k) {
+  const nome = k.replace('gd_','');
+  return _db[nome] || [];
+}
+
 function save(k, d) {
+  const nome = k.replace('gd_','');
+  _db[nome] = d;
+  // Salva também no localStorage como fallback offline
   try {
-    localStorage.setItem(k, JSON.stringify(d));
+    const leve = Array.isArray(d) ? d.map(item => {
+      if (!item || typeof item !== 'object') return item;
+      const clone = { ...item };
+      if (clone.anexos) clone.anexos = clone.anexos.map(a => ({ name: a.name }));
+      delete clone.pdfBase64;
+      return clone;
+    }) : d;
+    localStorage.setItem(k, JSON.stringify(leve));
+  } catch(e) { /* ignora erro de quota */ }
+}
+
+// Carrega fallback do localStorage enquanto Sheets não responde
+function loadLocalFallback() {
+  ['clientes','colaboradores','propostas','despesas','custos'].forEach(nome => {
+    try {
+      const raw = localStorage.getItem('gd_'+nome);
+      if (raw) _db[nome] = JSON.parse(raw) || [];
+    } catch(e) {}
+  });
+}
+
+/* ── Carrega todos os dados do Google Sheets ── */
+async function carregarDoSheets() {
+  mostrarToast('🔄 Carregando dados do servidor…', 'info', 60000);
+  try {
+    const res = await fetch(APPS_SCRIPT_URL + '?t=' + Date.now(), {
+      method: 'GET', mode: 'cors'
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.erro || 'Erro no servidor');
+
+    if (json.clientes)      _db.clientes      = normalizarLista(json.clientes);
+    if (json.colaboradores) _db.colaboradores = normalizarLista(json.colaboradores);
+    if (json.propostas)     _db.propostas     = normalizarLista(json.propostas);
+    if (json.custos)        _db.custos        = normalizarLista(json.custos);
+    if (json.despesas)      _db.despesas      = normalizarDespesas(json.despesas);
+
+    // Atualiza cache local
+    ['clientes','colaboradores','propostas','despesas','custos'].forEach(nome => {
+      try { localStorage.setItem('gd_'+nome, JSON.stringify(_db[nome])); } catch(e){}
+    });
+
+    fecharToast();
+    mostrarToast('✓ Dados carregados do Google Sheets', 'success', 2500);
+    console.log('[Sheets] Carregado:', Object.fromEntries(Object.entries(_db).map(([k,v])=>[k,v.length])));
+    return true;
   } catch(e) {
-    if (e.name === 'QuotaExceededError' || e.code === 22) {
-      console.warn('localStorage cheio — salvando sem base64 dos anexos');
-      // Remove base64 pesados antes de salvar, mantém só nomes e links
-      const d2 = Array.isArray(d) ? d.map(item => {
-        if (!item || typeof item !== 'object') return item;
-        const clone = { ...item };
-        if (clone.anexos) clone.anexos = clone.anexos.map(a => ({ name: a.name }));
-        delete clone.pdfBase64;
-        return clone;
-      }) : d;
-      try { localStorage.setItem(k, JSON.stringify(d2)); } catch(e2) { console.error('Falha crítica ao salvar:', e2); }
-    } else {
-      console.error('Erro ao salvar:', e);
-    }
+    fecharToast();
+    mostrarToast('⚠ Offline — usando dados locais. ' + e.message, 'warning', 5000);
+    console.warn('[Sheets] Falha ao carregar:', e.message);
+    return false;
   }
 }
+
+/* ── Normaliza campos vindos do Sheets (datas, ids, etc.) ── */
+function normalizarLista(arr) {
+  return (arr || []).filter(Boolean).map(item => {
+    const obj = { ...item };
+    // Garante que id seja número quando possível
+    if (obj.id && !isNaN(Number(obj.id))) obj.id = Number(obj.id);
+    // Normaliza datas do Sheets (objetos Date → string)
+    ['ida','volta','competencia'].forEach(campo => {
+      if (obj[campo] && typeof obj[campo] === 'object') {
+        try { obj[campo] = obj[campo].toISOString().split('T')[0]; } catch(e){}
+      }
+      if (obj[campo] && typeof obj[campo] === 'string' && obj[campo].includes('T')) {
+        obj[campo] = obj[campo].split('T')[0];
+      }
+    });
+    return obj;
+  });
+}
+
+function normalizarDespesas(arr) {
+  return normalizarLista(arr).map(d => {
+    // Reconstrói array de tipos a partir do campo 'Tipos' do Sheets se necessário
+    if (!d.tipos || !d.tipos.length) {
+      if (d.tiposJson) {
+        try { d.tipos = JSON.parse(d.tiposJson); } catch(e) { d.tipos = []; }
+      } else if (d.tipo) {
+        d.tipos = [{ tipo: d.tipo, valor: d.valor||'0,00' }];
+      } else {
+        d.tipos = [];
+      }
+    }
+    // Reconstrói linksDrive a partir da string
+    if (!d.linksDrive && d.linkDrive && typeof d.linkDrive === 'string') {
+      d.linksDrive = d.linkDrive.split(' | ').filter(Boolean);
+    }
+    if (!Array.isArray(d.linksDrive)) d.linksDrive = [];
+    // Anexos — apenas nomes (base64 não é armazenado no Sheets)
+    if (!d.anexos || !Array.isArray(d.anexos)) {
+      d.anexos = d.pdfFileName
+        ? d.pdfFileName.split(' | ').filter(Boolean).map(n => ({ name: n }))
+        : [];
+    }
+    return d;
+  });
+}
+
+/* ── POST para o Sheets (inserir/atualizar/deletar) ── */
+async function sheetsPost(payload) {
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST', mode: 'cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!json.ok) console.error('[Sheets POST] erro:', json.erro);
+    return json;
+  } catch(e) {
+    console.error('[Sheets POST] exceção:', e.message);
+    return { ok: false, erro: e.message };
+  }
+}
+
+/* ── Toast de status ── */
+let _toastTimer = null;
+function mostrarToast(msg, tipo, duracao) {
+  let el = document.getElementById('_sheets-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = '_sheets-toast';
+    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);' +
+      'font-family:Montserrat,sans-serif;font-size:12px;font-weight:600;' +
+      'padding:10px 20px;border-radius:999px;box-shadow:0 4px 16px rgba(0,0,0,0.18);' +
+      'z-index:99999;transition:opacity 0.3s;white-space:nowrap;';
+    document.body.appendChild(el);
+  }
+  const cores = {
+    success: 'background:#e6f4ef;color:#1a7a55;border:1px solid #a7d7c5;',
+    info:    'background:#e0f0ff;color:#1a56a0;border:1px solid #93c5fd;',
+    warning: 'background:#fff8e6;color:#92400e;border:1px solid #fde68a;',
+    error:   'background:#fde8e8;color:#b33a3a;border:1px solid #f5b8b8;',
+  };
+  el.style.cssText += cores[tipo] || cores.info;
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(_toastTimer);
+  if (duracao && duracao < 60000) _toastTimer = setTimeout(fecharToast, duracao);
+}
+function fecharToast() {
+  const el = document.getElementById('_sheets-toast');
+  if (el) el.style.opacity = '0';
+}
+
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function showAlert(id, msg, type) {
@@ -1950,15 +2106,23 @@ function salvarCliente() {
   if (!nome) return showAlert('alert-cliente','Preencha o nome do cliente.','danger');
   const lista = load(KEY.clientes);
   if (cnpj && lista.some(c => c.cnpj===cnpj)) return showAlert('alert-cliente','CNPJ já cadastrado.','danger');
-  lista.push({ id:Date.now(), nome, cnpj });
+  const novo = { id: Date.now(), nome, cnpj };
+  lista.push(novo);
   save(KEY.clientes, lista);
   document.getElementById('cli-nome').value = '';
   document.getElementById('cli-cnpj').value = '';
-  showAlert('alert-cliente','Cliente adicionado com sucesso!','success');
+  showAlert('alert-cliente','Cliente adicionado!','success');
   renderClientes();
-renderCustos();
+  renderCustos();
+  // Envia ao Sheets
+  sheetsPost({ aba: 'clientes', id: novo.id, nome, cnpj })
+    .then(r => { if(!r.ok) mostrarToast('⚠ Erro ao salvar cliente no Sheets: '+(r.erro||''), 'error', 4000); });
 }
-function removerCliente(id) { save(KEY.clientes, load(KEY.clientes).filter(c=>c.id!==id)); renderClientes(); }
+function removerCliente(id) {
+  save(KEY.clientes, load(KEY.clientes).filter(c=>c.id!==id));
+  renderClientes();
+  sheetsPost({ aba: 'Clientes', id, acao: 'deletar' });
+}
 function renderClientes() {
   const lista = load(KEY.clientes);
   document.getElementById('badge-clientes').textContent = lista.length;
@@ -1975,13 +2139,20 @@ function salvarColaborador() {
   if (!nome) return showAlert('alert-colaborador','Preencha o nome.','danger');
   const lista = load(KEY.colaboradores);
   if (lista.some(c=>c.nome.toLowerCase()===nome.toLowerCase())) return showAlert('alert-colaborador','Colaborador já cadastrado.','danger');
-  lista.push({ id:Date.now(), nome });
+  const novo = { id: Date.now(), nome };
+  lista.push(novo);
   save(KEY.colaboradores, lista);
   document.getElementById('col-nome').value = '';
   showAlert('alert-colaborador','Colaborador adicionado!','success');
   renderColaboradores();
+  sheetsPost({ aba: 'colaboradores', id: novo.id, nome })
+    .then(r => { if(!r.ok) mostrarToast('⚠ Erro ao salvar colaborador: '+(r.erro||''), 'error', 4000); });
 }
-function removerColaborador(id) { save(KEY.colaboradores, load(KEY.colaboradores).filter(c=>c.id!==id)); renderColaboradores(); }
+function removerColaborador(id) {
+  save(KEY.colaboradores, load(KEY.colaboradores).filter(c=>c.id!==id));
+  renderColaboradores();
+  sheetsPost({ aba: 'Colaboradores', id, acao: 'deletar' });
+}
 function renderColaboradores() {
   const lista = load(KEY.colaboradores);
   document.getElementById('badge-colaboradores').textContent = lista.length;
@@ -1999,14 +2170,21 @@ function salvarProposta() {
   if (!num) return showAlert('alert-proposta','Preencha o número da proposta.','danger');
   const lista = load(KEY.propostas);
   if (lista.some(p=>p.num.toLowerCase()===num.toLowerCase())) return showAlert('alert-proposta','Proposta já cadastrada.','danger');
-  lista.push({ id:Date.now(), num, desc });
+  const novo = { id: Date.now(), num, desc };
+  lista.push(novo);
   save(KEY.propostas, lista);
   document.getElementById('prop-num').value = '';
   document.getElementById('prop-desc').value = '';
   showAlert('alert-proposta','Proposta adicionada!','success');
   renderPropostas();
+  sheetsPost({ aba: 'propostas', id: novo.id, num, desc })
+    .then(r => { if(!r.ok) mostrarToast('⚠ Erro ao salvar proposta: '+(r.erro||''), 'error', 4000); });
 }
-function removerProposta(id) { save(KEY.propostas, load(KEY.propostas).filter(p=>p.id!==id)); renderPropostas(); }
+function removerProposta(id) {
+  save(KEY.propostas, load(KEY.propostas).filter(p=>p.id!==id));
+  renderPropostas();
+  sheetsPost({ aba: 'Propostas', id, acao: 'deletar' });
+}
 function renderPropostas() {
   const lista = load(KEY.propostas);
   document.getElementById('badge-propostas').textContent = lista.length;
@@ -2223,14 +2401,15 @@ function salvarDespesa() {
       modelo:      tiposDetalhados[0]?.modelo || '',
       finalidade:  tiposDetalhados[0]?.finalidade || '',
       valorTotal: valorTotalFmt,
+      tiposJson: JSON.stringify(tiposDetalhados), // para o Sheets
       anexos: anexosArr.map(a=>({name:a.name, base64:a.base64})),
       pdfBase64:   anexosArr[0]?.base64 || null,
       pdfFileName: anexosArr[0]?.name   || null,
       linksDrive: [],
     };
-    // Versão leve para salvar no localStorage (sem base64 pesado)
+    // Versão leve para o cache em memória (sem base64 pesado)
     const novaDespLeve = { ...novaDesp,
-      anexos: (novaDesp.anexos||[]).map(a => ({ name: a.name })), // só nomes, sem base64
+      anexos: (novaDesp.anexos||[]).map(a => ({ name: a.name })),
       pdfBase64: null,
     };
     lista.push(novaDespLeve);
@@ -2238,10 +2417,9 @@ function salvarDespesa() {
     limparFormDespesa();
     renderDespesas();
     showAlert('alert-despesa','Despesa registrada com sucesso!','success');
-    // Log de diagnóstico antes de enviar
     console.log('[salvarDespesa] anexos para Drive:', novaDesp.anexos.length,
       novaDesp.anexos.map(a => a.name + ' base64:' + (a.base64 ? a.base64.length + 'chars' : 'VAZIO')));
-    // Envia ao Drive com a versão completa (com base64) em background
+    // Envia ao Sheets + Drive (com base64) em background
     enviarParaGoogle(novaDesp).catch(e => console.error('[Drive] catch externo:', e));
   }
 }
@@ -2473,11 +2651,11 @@ function definirStatusEmail(id, status) {
   lista = lista.map(d => d.id===id ? {...d, emailStatus: status} : d);
   save(KEY.despesas, lista);
   renderDespesas();
+  sheetsPost({ aba: 'Despesas', id, acao: 'atualizar', 'Status Email': status });
 }
 
 function confirmarExclusao(id, btn) {
   const cell = btn.closest('td');
-  const orig = cell.innerHTML;
   cell.innerHTML = `<div class="confirm-delete">
     <span>Tem certeza que quer excluir?</span>
     <button class="btn-confirm-yes" onclick="removerDespesa(${id})">Sim, excluir</button>
@@ -2488,6 +2666,7 @@ function confirmarExclusao(id, btn) {
 function removerDespesa(id) {
   save(KEY.despesas, load(KEY.despesas).filter(d=>d.id!==id));
   renderDespesas();
+  sheetsPost({ aba: 'Despesas', id, acao: 'deletar' });
 }
 
 /* ══════════════ RENDER DESPESAS ══════════════ */
@@ -2819,22 +2998,23 @@ function renderRelatorio() {
 
 function alternarStatusRel(id) {
   let lista = load(KEY.despesas);
+  let novoStatus = 'Pendente';
   lista = lista.map(d => {
     if (d.id !== id) return d;
     const cur = d.statusLancamento||'Pendente';
-    return {...d, statusLancamento: cur==='Pendente' ? 'Realizado' : 'Pendente'};
+    novoStatus = cur==='Pendente' ? 'Realizado' : 'Pendente';
+    return {...d, statusLancamento: novoStatus};
   });
   save(KEY.despesas, lista);
   renderRelatorio();
+  sheetsPost({ aba: 'Despesas', id, acao: 'atualizar', statusLancamento: novoStatus });
 }
 
 function filtrarGrupo(key) {
   const g = GRUPOS.find(x=>x.key===key);
   if (!g) return;
-  // set tipo filter to first tipo of the group (or clear if multiple)
   const sel = document.getElementById('rel-tipo');
   if (sel) { sel.value = g.tipos.length===1 ? g.tipos[0] : ''; }
-  // clear others
   const tc = document.getElementById('rel-cliente-txt'); if(tc) tc.value='';
   const cc = document.getElementById('rel-cc'); if(cc) cc.value='';
   renderRelatorio();
@@ -2849,6 +3029,7 @@ function removerDespesaRel(id) {
   save(KEY.despesas, load(KEY.despesas).filter(d=>d.id!==id));
   renderDespesas();
   renderRelatorio();
+  sheetsPost({ aba: 'Despesas', id, acao: 'deletar' });
 }
 
 function limparFiltros() {
@@ -2998,12 +3179,17 @@ function salvarCusto() {
   const existing = lista.find(c=>c.propostaId==propId);
   if (existing) {
     lista = lista.map(c => c.propostaId==propId ? {...c, orcado:valRaw} : c);
-    showAlert('alert-custo','Orçamento atualizado com sucesso!','success');
+    save(KEY.custos, lista);
+    showAlert('alert-custo','Orçamento atualizado!','success');
+    sheetsPost({ aba: 'Custos Orçados', id: existing.id, acao: 'atualizar', Orçado: valRaw });
   } else {
-    lista.push({ id:Date.now(), propostaId:propId, proposta:prop.num, descricao:prop.desc||'', orcado:valRaw });
-    showAlert('alert-custo','Orçamento salvo com sucesso!','success');
+    const novo = { id:Date.now(), propostaId:propId, proposta:prop.num, descricao:prop.desc||'', orcado:valRaw };
+    lista.push(novo);
+    save(KEY.custos, lista);
+    showAlert('alert-custo','Orçamento salvo!','success');
+    sheetsPost({ aba: 'custos', id: novo.id, propostaId: propId, proposta: prop.num, descricao: prop.desc||'', orcado: valRaw })
+      .then(r => { if(!r.ok) mostrarToast('⚠ Erro ao salvar orçamento: '+(r.erro||''), 'error', 4000); });
   }
-  save(KEY.custos, lista);
   document.getElementById('custo-proposta').value = '';
   document.getElementById('custo-orcado').value   = '';
   renderCustos();
@@ -3012,6 +3198,7 @@ function salvarCusto() {
 function removerCusto(id) {
   save(KEY.custos, load(KEY.custos).filter(c=>c.id!==id));
   renderCustos();
+  sheetsPost({ aba: 'Custos Orçados', id, acao: 'deletar' });
 }
 
 function renderCustos() {
@@ -3178,12 +3365,8 @@ function renderDashboard() {
   }).join('');
 }
 
-renderClientes();
-renderCustos();
-renderColaboradores();
-renderPropostas();
-renderDespesas();
-renderRelatorio();
+// As renders iniciais são feitas após login + carregamento do Sheets
+// (ver onGoogleLogin → carregarDoSheets)
 
 /* ══════════════ GOOGLE SHEETS + DRIVE INTEGRATION ══════════════ */
 // Cole aqui a URL gerada após publicar o Apps Script como Web App:
@@ -3295,8 +3478,6 @@ async function diagnosticarDrive() {
   log('Diagnóstico concluído.');
 }
 
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFf3t_iSkx-PKbGHSUp6n402VCZHaMN3iKETaavSAq0Ebngm9KWCCTirXvxYWV3VM/exec';
-
 // Cache de base64 por despesa id — necessario para reenvio
 const _b64Cache = {};
 
@@ -3314,7 +3495,14 @@ async function enviarParaGoogle(despesa) {
   }
 
   // Payload base limpo
-  const payloadBase = { ...despesa, tipos: despesa.tipos || [] };
+  const payloadBase = {
+    ...despesa,
+    tipos: despesa.tipos || [],
+    tiposJson: despesa.tiposJson || JSON.stringify(despesa.tipos || []),
+    tipoLancamento: despesa.tipoLancamento || '',
+    statusLancamento: despesa.statusLancamento || 'Pendente',
+    valorTotal: despesa.valorTotal || despesa.valor || '',
+  };
   delete payloadBase.pdfBase64;
   delete payloadBase.anexos;
 
@@ -3348,6 +3536,9 @@ async function enviarParaGoogle(despesa) {
     save(KEY.despesas, lista);
     const despAtual = lista.find(x => x.id === despesa.id);
     if (despAtual) atualizarCelulaDrive({ ...despAtual, anexos: anexosList.map(a => ({ name: a.name || a.nome })) });
+    // Persiste link de volta ao Sheets
+    const linkStr = links.filter(Boolean).join(' | ');
+    if (linkStr) sheetsPost({ aba: 'Despesas', id: despesa.id, acao: 'atualizar', 'Link Drive': linkStr });
   }
 
   // ---------- SEM ANEXOS: só grava na planilha ----------
