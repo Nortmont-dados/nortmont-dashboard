@@ -2404,7 +2404,24 @@ function salvarDespesa() {
     editingId = null;
     document.getElementById('edit-banner').classList.remove('show');
     document.getElementById('card-eyebrow-despesa').textContent = 'Nova despesa';
-    enviarParaGoogle(upd).catch(()=>{});
+
+    // Atualiza no Sheets
+    const payloadUpd = {
+      aba: 'Despesas', id: String(upd.id), acao: 'atualizar',
+      Data: upd.data||'', 'Cadastrado Por': upd.cadastradoPor||'',
+      Cliente: upd.cliente||'', Proposta: upd.proposta||'',
+      Colaborador: upd.colaborador||'', 'Cidade/UF': upd.cidade||'',
+      Ida: upd.ida||'', Volta: upd.volta||'', Dias: String(upd.dias||''),
+      'Centro de Custo': upd.cc||'', 'Tipo Lançamento': upd.tipoLancamento||'',
+      Categoria: upd.categoria||'', 'Status Lançamento': upd.statusLancamento||'Pendente',
+      Observações: upd.obs||'', Competência: upd.competencia||'',
+      'Valor Total': upd.valorTotal||'',
+      'Tipos JSON': upd.tiposJson || JSON.stringify(upd.tipos||[]),
+    };
+    sheetsPost(payloadUpd).catch(()=>{});
+    if (upd.anexos && upd.anexos.some(a => a.base64)) {
+      enviarParaGoogle(upd).catch(()=>{});
+    }
   } else {
     const novaDesp = { ...base, id: Date.now(),
       tipos: tiposDetalhados,
@@ -2431,15 +2448,50 @@ function salvarDespesa() {
     limparFormDespesa();
     renderDespesas();
     showAlert('alert-despesa','Despesa registrada com sucesso!','success');
-    console.log('[salvarDespesa] Chamando enviarParaGoogle. Payload preview:', {
-      id: novaDesp.id,
-      cliente: novaDesp.cliente,
-      tiposJson: novaDesp.tiposJson,
-      valorTotal: novaDesp.valorTotal,
-      temAnexos: novaDesp.anexos?.length,
+
+    // ── Envia ao Sheets DIRETAMENTE (sem intermediário) ──
+    const payloadSheets = {
+      aba:              'despesas',
+      id:               String(novaDesp.id),
+      data:             novaDesp.data             || '',
+      cadastradoPor:    novaDesp.cadastradoPor    || '',
+      cliente:          novaDesp.cliente          || '',
+      proposta:         novaDesp.proposta         || '',
+      colaborador:      novaDesp.colaborador      || '',
+      cidade:           novaDesp.cidade           || '',
+      ida:              novaDesp.ida              || '',
+      volta:            novaDesp.volta            || '',
+      dias:             String(novaDesp.dias      || ''),
+      cc:               novaDesp.cc               || '',
+      tipoLancamento:   novaDesp.tipoLancamento   || '',
+      categoria:        novaDesp.categoria        || '',
+      statusLancamento: novaDesp.statusLancamento || 'Pendente',
+      obs:              novaDesp.obs              || '',
+      competencia:      novaDesp.competencia      || '',
+      valorTotal:       novaDesp.valorTotal       || '',
+      tipos:            novaDesp.tipos            || [],
+      tiposJson:        novaDesp.tiposJson        || JSON.stringify(novaDesp.tipos||[]),
+      emailStatus:      '',
+    };
+    console.log('[salvarDespesa] Enviando ao Sheets:', payloadSheets);
+
+    // Envia dados ao Sheets primeiro (sem anexos)
+    sheetsPost(payloadSheets).then(r => {
+      console.log('[salvarDespesa] Resposta Sheets:', r);
+      if (r.ok) {
+        mostrarToast('✓ Despesa salva no Google Sheets!', 'success', 3000);
+      } else {
+        mostrarToast('⚠ Erro Sheets: ' + (r.erro||'desconhecido'), 'error', 6000);
+      }
+    }).catch(e => {
+      console.error('[salvarDespesa] Falha Sheets:', e.message);
+      mostrarToast('⚠ Falha ao salvar no Sheets: ' + e.message, 'error', 6000);
     });
-    // Envia ao Sheets + Drive (com base64) em background
-    enviarParaGoogle(novaDesp).catch(e => console.error('[Drive] catch externo:', e));
+
+    // Se tiver anexos com base64, envia ao Drive em background
+    if (novaDesp.anexos && novaDesp.anexos.some(a => a.base64)) {
+      enviarParaGoogle(novaDesp).catch(e => console.error('[Drive] catch externo:', e));
+    }
   }
 }
 async function enviarEmail(id) {
