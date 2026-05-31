@@ -2278,6 +2278,24 @@ function cancelarEdicao() {
   document.getElementById('card-eyebrow-despesa').textContent = 'Nova despesa';
 }
 
+function removerAnexo() {
+  pdfBase64 = null; pdfFileName = null; anexosMultiplos = [];
+  const prev = document.getElementById('anexo-preview');
+  if (prev) prev.classList.remove('show');
+  const body = document.getElementById('anexo-preview-body');
+  if (body) body.innerHTML = '';
+  const nameText = document.getElementById('pdf-name-text');
+  if (nameText) nameText.textContent = '';
+  const nameDisp = document.getElementById('pdf-name-display');
+  if (nameDisp) nameDisp.classList.remove('show');
+  const anexosLista = document.getElementById('anexos-lista');
+  if (anexosLista) { anexosLista.style.display='none'; }
+  const anexosItems = document.getElementById('anexos-items');
+  if (anexosItems) anexosItems.innerHTML = '';
+  const pdfInput = document.getElementById('desp-pdf');
+  if (pdfInput) pdfInput.value = '';
+}
+
 function limparFormDespesa() {
   ['desp-cliente','desp-proposta','desp-colaborador','desp-cidade','desp-ida','desp-volta','desp-dias','desp-cc','desp-competencia','desp-obs','desp-pdf','desp-tipo-lancamento','desp-categoria','desp-finalidade','desp-tipo-veiculo'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.querySelectorAll('.tipo-valor-input').forEach(i=>i.value='');
