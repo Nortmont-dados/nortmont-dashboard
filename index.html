@@ -1854,51 +1854,38 @@ function onPdfChange(input) {
   anexosMultiplos = [];
   pdfBase64 = null; pdfFileName = null;
 
-  // Comprime imagens em múltiplos passes até atingir alvo de 150KB (base64 ~200KB)
-  // Assim garante resposta do Apps Script em < 15s
+  // Comprime imagens para JPEG qualidade 70% — mantém PDF intacto
+  // Alvo: máximo 800KB por arquivo para caber no Apps Script em < 30s
   function processarArquivo(file) {
     return new Promise(resolve => {
       if (file.type === 'application/pdf') {
+        // PDF: lê direto sem compressão
         const r = new FileReader();
         r.onload = e => resolve({ base64: e.target.result, name: file.name, tamanho: file.size });
         r.readAsDataURL(file);
         return;
       }
+      // Imagem: redimensiona e comprime via canvas
       const img = new Image();
       const url = URL.createObjectURL(file);
       img.onload = () => {
         URL.revokeObjectURL(url);
-
-        // Tenta compressões progressivas até base64 < 200KB (~150KB de arquivo)
-        const tentativas = [
-          { maxPx: 1200, q: 0.70 },
-          { maxPx: 900,  q: 0.60 },
-          { maxPx: 700,  q: 0.50 },
-          { maxPx: 500,  q: 0.40 },
-        ];
-
-        function tentarCompress(idx) {
-          const { maxPx, q } = tentativas[idx] || { maxPx: 400, q: 0.35 };
-          let { width, height } = img;
-          if (width > maxPx || height > maxPx) {
-            if (width > height) { height = Math.round(height * maxPx / width); width = maxPx; }
-            else { width = Math.round(width * maxPx / height); height = maxPx; }
-          }
-          const canvas = document.createElement('canvas');
-          canvas.width = width; canvas.height = height;
-          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-          const base64 = canvas.toDataURL('image/jpeg', q);
-          const tamanhoKB = Math.round(base64.length * 0.75 / 1024);
-          console.log('[Compress] ' + file.name + ': ' + Math.round(file.size/1024) + 'KB → ' + tamanhoKB + 'KB (tentativa ' + (idx+1) + ')');
-          // Se ainda > 200KB e tem mais tentativas, tenta menor
-          if (tamanhoKB > 200 && idx < tentativas.length - 1) {
-            return tentarCompress(idx + 1);
-          }
-          resolve({ base64, name: file.name.replace(/\.[^.]+$/, '.jpg'), tamanho: tamanhoKB * 1024 });
+        const MAX = 1400; // px no lado maior
+        let { width, height } = img;
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+          else { width = Math.round(width * MAX / height); height = MAX; }
         }
-        tentarCompress(0);
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        const base64 = canvas.toDataURL('image/jpeg', 0.72);
+        const tamanhoKB = Math.round(base64.length * 0.75 / 1024);
+        console.log(`[Compress] ${file.name}: ${Math.round(file.size/1024)}KB → ${tamanhoKB}KB`);
+        resolve({ base64, name: file.name.replace(/\.[^.]+$/, '.jpg'), tamanho: tamanhoKB * 1024 });
       };
       img.onerror = () => {
+        // Fallback: lê sem compressão
         const r = new FileReader();
         r.onload = e => resolve({ base64: e.target.result, name: file.name, tamanho: file.size });
         r.readAsDataURL(file);
@@ -2230,8 +2217,11 @@ function salvarDespesa() {
     limparFormDespesa();
     renderDespesas();
     showAlert('alert-despesa','Despesa registrada com sucesso!','success');
+    // Log de diagnóstico antes de enviar
+    console.log('[salvarDespesa] anexos para Drive:', novaDesp.anexos.length,
+      novaDesp.anexos.map(a => a.name + ' base64:' + (a.base64 ? a.base64.length + 'chars' : 'VAZIO')));
     // Envia ao Drive com a versão completa (com base64) em background
-    enviarParaGoogle(novaDesp).catch(e => console.error('[Drive]:', e));
+    enviarParaGoogle(novaDesp).catch(e => console.error('[Drive] catch externo:', e));
   }
 }
 async function enviarEmail(id) {
@@ -2541,12 +2531,9 @@ function renderDespesas() {
           }).join('') + `<button onclick="reenviarDrive(${d.id})" style="font-size:10px;font-weight:700;background:#92400e;color:#fff;border:none;border-radius:6px;padding:3px 7px;cursor:pointer;margin-top:4px;">↺ Reenviar faltantes</button>`
         : (driveAnexos.length
             ? `<div style="display:flex;flex-direction:column;gap:5px;">
-                <label style="display:flex;align-items:center;gap:6px;background:#011E3C;color:#A8CCA8;font-size:10px;font-weight:700;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;position:relative;font-family:Montserrat,sans-serif;">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                  Enviar ao Drive
-                  <input type="file" accept="image/*,application/pdf" multiple style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;"
-                    onchange="reenviarComArquivo(${d.id}, this)">
-                </label>
+                <span style="display:flex;align-items:center;gap:5px;color:#92400e;font-size:10px;font-weight:600;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:4px 8px;">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1.2s linear infinite;flex-shrink:0"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Aguardando Drive…</span>
+                <button onclick="reenviarDrive(${d.id})" style="font-size:10px;font-weight:700;background:#011E3C;color:#A8CCA8;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;">↺ Reenviar ao Drive</button>
                </div>`
             : '<span style="color:var(--text-muted)">—</span>');
 
@@ -3094,4 +3081,462 @@ async function diagnosticarDrive() {
     log('Testando GET (leitura)…');
     const r = await fetch(APPS_SCRIPT_URL, { method:'GET', mode:'cors' });
     const t = await r.text();
-    log('GET status:
+    log('GET status: ' + r.status + ' | bytes: ' + t.length, r.ok ? '#2F8F6E' : '#B33A3A');
+    const j = JSON.parse(t);
+    log('GET ok=' + j.ok + ' | despesas=' + (j.despesas ? j.despesas.length : '?'), '#2F8F6E');
+  } catch(e) { log('GET ERRO: ' + e.message, '#B33A3A'); }
+
+  // 2. Teste POST mínimo (sem arquivo)
+  try {
+    log('Testando POST sem arquivo…');
+    const payload = { id: 'DIAG_' + Date.now(), acao: 'diagnostico', data: new Date().toLocaleDateString('pt-BR'), cliente: 'DIAGNOSTICO', colaborador: 'DIAGNOSTICO', cc: 'Gestão', tipos: [], valorTotal: '0,00' };
+    const r = await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'cors', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) });
+    const t = await r.text();
+    log('POST status: ' + r.status + ' | resp: ' + t.slice(0,150), r.ok ? '#2F8F6E' : '#B33A3A');
+  } catch(e) { log('POST ERRO: ' + e.message, '#B33A3A'); }
+
+  // 3. Teste POST com arquivo de 1KB (texto simples)
+  try {
+    log('Testando POST com arquivo pequeno (1KB)…');
+    const fakeBase64 = btoa('Arquivo de teste Nortmont - ' + new Date().toISOString());
+    const payload = { id: 'DIAG2_' + Date.now(), data: new Date().toLocaleDateString('pt-BR'), cliente: 'DIAGNOSTICO', colaborador: 'DIAGNOSTICO', cc: 'Gestão', tipos: [], valorTotal: '0,00', anexoBase64: fakeBase64, anexoTipo: 'text/plain', anexoNome: 'teste_diagnostico.txt' };
+    const r = await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'cors', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) });
+    const t = await r.text();
+    log('POST+arquivo status: ' + r.status + ' | resp: ' + t.slice(0,200), r.ok ? '#2F8F6E' : '#B33A3A');
+    try {
+      const j = JSON.parse(t);
+      if (j.linkAnexo) log('✅ LINK GERADO: ' + j.linkAnexo, '#2F8F6E');
+      else log('⚠ Sem link — ok=' + j.ok + ' erro=' + (j.erro||'nenhum'), '#B33A3A');
+    } catch(pe) { log('JSON inválido: ' + t.slice(0,100), '#B33A3A'); }
+  } catch(e) { log('POST+arquivo ERRO: ' + e.message, '#B33A3A'); }
+
+  // 4. Teste POST batch com imagem JPEG real (simula compressao do canvas)
+  try {
+    log('Testando POST batch com imagem JPEG real (canvas)…');
+    // Gera uma imagem JPEG real de 100x100px via canvas
+    const cv = document.createElement('canvas');
+    cv.width = 100; cv.height = 100;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#0F4245'; ctx.fillRect(0, 0, 100, 100);
+    ctx.fillStyle = '#A8CCA8'; ctx.fillText('Nortmont', 10, 50);
+    const imgDataUrl = cv.toDataURL('image/jpeg', 0.72);
+    const imgBase64 = imgDataUrl.split(',')[1];
+    const imgTipo = 'image/jpeg';
+    const sizeKB = Math.round(imgBase64.length * 0.75 / 1024);
+    log('Imagem gerada: ' + sizeKB + 'KB');
+    const payload = {
+      id: 'DIAG4_' + Date.now(), data: new Date().toLocaleDateString('pt-BR'),
+      cliente: 'DIAGNOSTICO', colaborador: 'DIAGNOSTICO', cc: 'Gestão',
+      tipos: [], valorTotal: '0,00',
+      anexos: [{ nome: 'teste_imagem.jpg', base64: imgBase64, tipo: imgTipo }]
+    };
+    const totalKB = Math.round(JSON.stringify(payload).length / 1024);
+    log('Payload total: ' + totalKB + 'KB');
+    const r = await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'cors', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) });
+    const t = await r.text();
+    log('JPEG status: ' + r.status + ' | resp: ' + t.slice(0,200), r.ok ? '#2F8F6E' : '#B33A3A');
+    try {
+      const j = JSON.parse(t);
+      if (j.linksAnexos && j.linksAnexos[0]) log('✅ JPEG OK: ' + j.linksAnexos[0], '#2F8F6E');
+      else log('⚠ Sem link JPEG: ' + JSON.stringify(j), '#B33A3A');
+    } catch(pe) { log('JSON inválido: ' + t.slice(0,150), '#B33A3A'); }
+  } catch(e) { log('JPEG ERRO: ' + e.message, '#B33A3A'); }
+
+  // 5. Teste POST batch com 2 arquivos pequenos (texto)
+  try {
+    log('Testando POST batch (2 arquivos)…');
+    const fakeB64a = btoa('Arquivo A de teste ' + new Date().toISOString());
+    const fakeB64b = btoa('Arquivo B de teste ' + new Date().toISOString());
+    const payload = {
+      id: 'DIAG3_' + Date.now(), data: new Date().toLocaleDateString('pt-BR'),
+      cliente: 'DIAGNOSTICO', colaborador: 'DIAGNOSTICO', cc: 'Gestão',
+      tipos: [], valorTotal: '0,00',
+      anexos: [
+        { nome: 'teste_a.txt', base64: fakeB64a, tipo: 'text/plain' },
+        { nome: 'teste_b.txt', base64: fakeB64b, tipo: 'text/plain' },
+      ]
+    };
+    const r = await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'cors', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) });
+    const t = await r.text();
+    log('Batch status: ' + r.status + ' | resp: ' + t.slice(0,250), r.ok ? '#2F8F6E' : '#B33A3A');
+    try {
+      const j = JSON.parse(t);
+      if (j.linksAnexos && j.linksAnexos.length) log('✅ BATCH OK: ' + j.linksAnexos.length + ' links: ' + j.linksAnexos.join(' | ').slice(0,120), '#2F8F6E');
+      else log('⚠ Batch sem links — ok=' + j.ok + ' erro=' + (j.erro||'nenhum') + ' resp=' + JSON.stringify(j), '#B33A3A');
+    } catch(pe) { log('JSON inválido: ' + t.slice(0,100), '#B33A3A'); }
+  } catch(e) { log('Batch ERRO: ' + e.message, '#B33A3A'); }
+
+  log('Diagnóstico concluído.');
+}
+
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFf3t_iSkx-PKbGHSUp6n402VCZHaMN3iKETaavSAq0Ebngm9KWCCTirXvxYWV3VM/exec';
+
+// Cache de base64 por despesa id — necessario para reenvio
+const _b64Cache = {};
+
+async function enviarParaGoogle(despesa) {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'COLE_AQUI_A_URL_DO_WEB_APP') return;
+
+  // Monta lista de anexos com base64
+  const anexosList = despesa.anexos && despesa.anexos.length
+    ? despesa.anexos
+    : (despesa.pdfBase64 ? [{ name: despesa.pdfFileName, base64: despesa.pdfBase64 }] : []);
+
+  // Guarda em cache para reenvio posterior (base64 na memoria da sessao)
+  if (despesa.id && anexosList.some(a => a.base64)) {
+    _b64Cache[despesa.id] = { despesa: JSON.parse(JSON.stringify(despesa)), anexosList };
+  }
+
+  // Payload base limpo — sem campos pesados
+  const payloadBase = { ...despesa, tipos: despesa.tipos || [] };
+  delete payloadBase.pdfBase64;
+  delete payloadBase.anexos;
+
+  // ---------- SEM ANEXOS: só grava na planilha ----------
+  if (!anexosList.length) {
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: 'POST', mode: 'cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payloadBase)
+      });
+    } catch(e) { console.warn('[Drive] sem anexo:', e.message); }
+    return;
+  }
+
+  // ---------- COM ANEXOS: envia arquivo por arquivo em paralelo ----------
+  // Cada arquivo tem timeout de 28s (garante retorno em < 30s)
+  // O link aparece na célula assim que cada arquivo é confirmado pelo Drive.
+
+  const TIMEOUT_MS = 28000; // 28s por arquivo — cabe em 30s com folga
+
+  function setProgresso(msg) {
+    const cell = document.querySelector('[data-drive-id="' + despesa.id + '"]');
+    if (cell) cell.innerHTML =
+      '<span style="display:flex;align-items:center;gap:5px;color:#92400e;font-size:10px;font-weight:600;">' +
+      '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1.2s linear infinite;flex-shrink:0"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>' +
+      msg + '</span>';
+  }
+
+  function setErro(msg) {
+    const cell = document.querySelector('[data-drive-id="' + despesa.id + '"]');
+    if (!cell) return;
+    cell.innerHTML =
+      '<div style="display:flex;flex-direction:column;gap:5px;">' +
+      '<span style="color:var(--danger);font-size:10px;font-weight:600;line-height:1.4;">⚠ ' + msg + '</span>' +
+      '<button onclick="reenviarDrive(' + despesa.id + ')" style="font-size:10px;font-weight:700;background:#011E3C;color:#A8CCA8;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;">↺ Reenviar</button>' +
+      '</div>';
+  }
+
+  // linksDrive parciais — começa tudo null, vai preenchendo conforme chega
+  const linksDrive = new Array(anexosList.length).fill(null);
+
+  function salvarLinksParcias() {
+    if (!despesa.id) return;
+    let lista = load(KEY.despesas);
+    lista = lista.map(d => d.id === despesa.id
+      ? { ...d, linksDrive: [...linksDrive], linkDrive: linksDrive.find(Boolean) || '' }
+      : d);
+    save(KEY.despesas, lista);
+    const despAtual = lista.find(x => x.id === despesa.id);
+    if (despAtual) atualizarCelulaDrive({ ...despAtual, anexos: anexosList.map(a => ({ name: a.name })) });
+  }
+
+  // Envia um único arquivo ao Drive — retorna o link ou null em caso de falha
+  async function enviarUmArquivo(anexo, index, isFirst) {
+    if (!anexo.base64 || !anexo.base64.includes(',')) return null;
+    const parts = anexo.base64.split(',');
+    const base64puro = parts[1];
+    const tipo = anexo.base64.match(/data:(.*?);/)?.[1] || 'application/pdf';
+
+    // Só o primeiro arquivo grava a linha na planilha (gravar=true)
+    // Os demais apenas fazem upload do arquivo (gravar=false)
+    const payload = {
+      ...payloadBase,
+      gravar: isFirst,           // Apps Script só appendRow quando true
+      indiceAnexo: index,        // posição para log/debug
+      totalAnexos: anexosList.length,
+      anexos: [{
+        nome:   anexo.name || ('comprovante_' + (index + 1)),
+        base64: base64puro,
+        tipo:   tipo,
+      }],
+    };
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const tamanhoKB = Math.round(base64puro.length * 0.75 / 1024);
+    console.log('[Drive] Enviando arquivo', index + 1, '/', anexosList.length,
+      '—', anexo.name, tamanhoKB + 'KB');
+
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST', mode: 'cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      const rawText = await res.text();
+      let json;
+      try { json = JSON.parse(rawText); } catch { return null; }
+      if (!json.ok) { console.warn('[Drive] Arquivo', index + 1, 'erro:', json.erro); return null; }
+      // Aceita linksAnexos[0] ou linkAnexo (legado)
+      return (json.linksAnexos && json.linksAnexos[0]) || json.linkAnexo || null;
+    } catch(e) {
+      console.warn('[Drive] Arquivo', index + 1, e.name === 'AbortError' ? 'timeout 28s' : e.message);
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  // Mostra spinner inicial
+  const totalKB = Math.round(anexosList.reduce((s,a) => s + (a.base64 ? a.base64.length * 0.75 : 0) / 1024, 0));
+  console.log('[Drive] Iniciando upload paralelo:', anexosList.length, 'arquivo(s),', totalKB, 'KB total');
+  setProgresso('Enviando ' + anexosList.length + ' arquivo(s) para o Drive…');
+
+  // Envia todos em paralelo — cada um com seu próprio timeout de 28s
+  // O primeiro arquivo (index 0) grava a linha na planilha (gravar:true)
+  const promises = anexosList.map((anexo, i) =>
+    enviarUmArquivo(anexo, i, i === 0).then(link => {
+      linksDrive[i] = link;
+      // Atualiza célula imediatamente quando cada link chega
+      salvarLinksParcias();
+      const recebidos = linksDrive.filter(Boolean).length;
+      console.log('[Drive] Link recebido', recebidos, '/', anexosList.length, '→', link ? link.slice(0, 60) : 'null');
+    })
+  );
+
+  await Promise.all(promises);
+
+  // Verifica resultado final
+  const totalLinks = linksDrive.filter(Boolean).length;
+  if (totalLinks === 0) {
+    setErro('Drive não retornou links. Verifique o Apps Script e reenvie.');
+  } else if (totalLinks < anexosList.length) {
+    console.warn('[Drive] Upload parcial:', totalLinks, 'de', anexosList.length, 'links recebidos.');
+    // Já mostrou os links recebidos — deixa o parcial visível
+  } else {
+    console.log('[Drive] Todos os', totalLinks, 'links recebidos com sucesso.');
+  }
+}
+// Reenviar ao Drive despesas que ficaram com "Enviando..." ou falharam
+async function reenviarDrive(id) {
+  const cached = _b64Cache[id];
+  if (!cached) {
+    const cell = document.querySelector('[data-drive-id="' + id + '"]');
+    if (cell) cell.innerHTML =
+      '<div style="display:flex;flex-direction:column;gap:4px;">' +
+      '<span style="color:var(--danger);font-size:10px;font-weight:600;">⚠ Cache perdido (pagina recarregada)</span>' +
+      '<span style="color:var(--text-muted);font-size:10px;">Exclua esta despesa e registre novamente.</span></div>';
+    return;
+  }
+  // Reconstroi despesa com os base64 do cache
+  const despesaComAnexos = { ...cached.despesa, anexos: cached.anexosList };
+  await enviarParaGoogle(despesaComAnexos);
+}
+
+// Atualiza somente a célula "Links Drive" de uma linha já renderizada
+// Suporta links parciais (alguns null = ainda enviando)
+function atualizarCelulaDrive(d) {
+  const cell = document.querySelector(`[data-drive-id="${d.id}"]`);
+  if (!cell) return;
+
+  const anexosList = d.anexos && d.anexos.length
+    ? d.anexos
+    : (d.pdfFileName ? [{ name: d.pdfFileName }] : []);
+  const links = d.linksDrive || [];
+  const total = Math.max(links.length, anexosList.length);
+
+  if (!total) return;
+
+  let html = '';
+  for (let i = 0; i < total; i++) {
+    const lnk  = links[i];
+    const nome = anexosList[i]?.name || `Comprovante ${i+1}`;
+    const nomeCurto = nome.length > 22 ? nome.slice(0,22)+'…' : nome;
+    if (lnk) {
+      html += `<a href="${esc(lnk)}" target="_blank" rel="noopener" title="${esc(nome)}"
+        style="display:flex;align-items:center;gap:5px;color:#1a73e8;font-size:11px;font-weight:600;
+               text-decoration:none;margin-bottom:4px;line-height:1.3;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+          <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>${esc(nomeCurto)}</a>`;
+    } else {
+      // Este arquivo ainda está enviando
+      html += `<span style="display:flex;align-items:center;gap:4px;color:#92400e;font-size:10px;
+               margin-bottom:4px;font-style:italic;">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+             style="animation:spin 1.2s linear infinite;flex-shrink:0"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+        ${esc(nomeCurto)}…</span>`;
+    }
+  }
+  cell.innerHTML = html;
+}
+
+</script>
+
+<!-- ═══ EMAIL MODAL ═══ -->
+<div class="email-modal-overlay" id="email-modal-overlay" onclick="if(event.target===this)fecharEmailModal()">
+  <div class="email-modal">
+    <div class="email-modal-header">
+      <div>
+        <h3>📧 Enviar despesa por e-mail</h3>
+        <p id="email-modal-subtitle">Confirme os links e abra o Gmail</p>
+      </div>
+      <button class="email-modal-close" onclick="fecharEmailModal()">✕</button>
+    </div>
+    <div class="email-modal-body" id="email-modal-body"></div>
+    <div class="email-modal-footer">
+      <div class="email-modal-info">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Os links acima são clicáveis e vão no corpo do e-mail
+      </div>
+      <button id="email-modal-btn-gmail" class="btn btn-primary" style="margin-left:auto" onclick="confirmarEnvioEmail()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Abrir Gmail
+      </button>
+    </div>
+  </div>
+</div>
+</div><!-- /app-root -->
+</body>
+</html>
+
+<!--
+════════════════════════════════════════════════════════════════════
+  COMO CONFIGURAR O LOGIN GOOGLE — PASSO A PASSO
+════════════════════════════════════════════════════════════════════
+
+PASSO 1 — Obter o Google Client ID (gratuito)
+──────────────────────────────────────────────
+1. Acesse: https://console.cloud.google.com/
+2. Crie um projeto (ou selecione um existente)
+3. Menu lateral → "APIs e Serviços" → "Credenciais"
+4. Clique em "+ CRIAR CREDENCIAIS" → "ID do cliente OAuth 2.0"
+5. Tipo de aplicativo: "Aplicativo da Web"
+6. Nome: "Nortmont Dashboard"
+7. Em "Origens JavaScript autorizadas", adicione:
+   - http://localhost  (para testes locais)
+   - file://           (se abrir o arquivo direto)
+8. Clique em "Criar"
+9. Copie o "ID do cliente" gerado (termina em .apps.googleusercontent.com)
+
+PASSO 2 — Colar o Client ID no HTML
+──────────────────────────────────────────────
+Abra o HTML e localize as duas linhas:
+  const GOOGLE_CLIENT_ID = '907316473072-mki9ggn4bk22o2q509nbddqvm68ob8d7.apps.googleusercontent.com';
+  data-client_id="907316473072-mki9ggn4bk22o2q509nbddqvm68ob8d7.apps.googleusercontent.com"
+Substitua 907316473072-mki9ggn4bk22o2q509nbddqvm68ob8d7.apps.googleusercontent.com pelo ID copiado no passo anterior.
+
+PASSO 3 — Adicionar e-mails autorizados
+──────────────────────────────────────────────
+Localize no HTML:
+  const EMAILS_AUTORIZADOS = [
+    'seuemail@gmail.com',
+  ];
+Adicione os e-mails das pessoas que podem acessar.
+
+PASSO 4 — Pronto!
+──────────────────────────────────────────────
+Abra o arquivo no navegador. A tela de login aparecerá.
+Somente os e-mails da lista terão acesso ao painel.
+════════════════════════════════════════════════════════════════════
+-->
+
+<!--
+════════════════════════════════════════════════════════════════════
+  APPS SCRIPT — UPLOAD POR ARQUIVO (< 30 SEGUNDOS POR ARQUIVO)
+════════════════════════════════════════════════════════════════════
+
+O HTML agora envia cada arquivo individualmente em paralelo.
+Cada requisição tem timeout de 28s — garantindo link em < 30s.
+O campo "gravar:true" só vem no primeiro arquivo para evitar
+linhas duplicadas na planilha.
+
+O campo "gravar:false" nos demais = só faz upload, sem appendRow.
+
+Cole o codigo abaixo no seu Apps Script (substitua o doPost atual):
+
+─────────────────────────────────────────────────────────────────────
+
+function doPost(e) {
+  try {
+    var dados = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var aba = ss.getSheetByName('Despesas') || ss.getSheets()[0];
+    var pasta = DriveApp.getFolderById('ID_DA_SUA_PASTA_NO_DRIVE');
+
+    // Grava linha na planilha apenas no primeiro arquivo (gravar:true)
+    // Isso evita linhas duplicadas quando vários arquivos são enviados
+    if (dados.gravar !== false) {
+      aba.appendRow([
+        dados.data || '',
+        dados.cadastradoPor || '',
+        dados.cliente || '',
+        dados.proposta || '',
+        dados.colaborador || '',
+        dados.cidade || '',
+        dados.ida || '',
+        dados.volta || '',
+        dados.dias || '',
+        dados.cc || '',
+        (dados.tipos || []).map(function(t){ return t.tipo + ' R$ ' + t.valor; }).join(' | '),
+        dados.valorTotal || dados.valor || '',
+        dados.competencia || '',
+        dados.obs || '',
+      ]);
+    }
+
+    // Processa os anexos do request (sempre um array com 1 arquivo por requisição)
+    var linksAnexos = [];
+    var anexos = dados.anexos || [];
+
+    // Compatibilidade legado (campo único)
+    if (!anexos.length && dados.anexoBase64) {
+      anexos = [{ nome: dados.anexoNome || 'anexo', base64: dados.anexoBase64, tipo: dados.anexoTipo || 'application/pdf' }];
+    }
+
+    for (var i = 0; i < anexos.length; i++) {
+      var a = anexos[i];
+      if (!a.base64) { linksAnexos.push(''); continue; }
+      try {
+        var bytes = Utilities.base64Decode(a.base64);
+        var blob = Utilities.newBlob(bytes, a.tipo || 'application/pdf', a.nome || ('anexo_' + (i+1)));
+        var arquivo = pasta.createFile(blob);
+        arquivo.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        linksAnexos.push(arquivo.getUrl());
+      } catch(err) {
+        linksAnexos.push('');
+      }
+    }
+
+    // Resposta: array de links + primeiro link (legado)
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        ok: true,
+        linksAnexos: linksAnexos,
+        linkAnexo: linksAnexos[0] || ''
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: false, erro: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+─────────────────────────────────────────────────────────────────────
+
+IMPORTANTE: Apos colar o codigo acima no Apps Script:
+1. Salve (Ctrl+S)
+2. Clique em "Implantar" > "Gerenciar implantacoes"
+3. Edite a implantacao existente, incrementando a versao
+4. Clique em "Implantar"
+A URL do Web App permanece a mesma — nao precisa atualizar no HTML.
+
+════════════════════════════════════════════════════════════════════
+-->
+
