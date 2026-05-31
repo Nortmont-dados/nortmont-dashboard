@@ -761,7 +761,7 @@ body {
   <button class="tab-btn" onclick="switchTab('colaboradores')"><span class="tab-num">3</span> Colaboradores</button>
   <button class="tab-btn" onclick="switchTab('propostas')"><span class="tab-num">4</span> Propostas</button>
   <button class="tab-btn" onclick="switchTab('despesas')"><span class="tab-num">5</span> Lançamento de Despesas</button>
-  <button class="tab-btn" onclick="switchTab('relatorio')" id="tab-btn-relatorio"><span class="tab-num">6</span> Relatório</button>
+  <button class="tab-btn" onclick="switchTab('relatorio')" id="tab-btn-relatorio"><span class="tab-num">6</span> Relatório Financeiro</button>
   <button class="tab-btn" onclick="switchTab('custos')" id="tab-btn-custos"><span class="tab-num">7</span> Custos Orçados</button>
   <button class="tab-btn" onclick="switchTab('dashboard')" id="tab-btn-dashboard"><span class="tab-num">8</span> Dashboard</button>
 </nav>
@@ -890,7 +890,7 @@ body {
   <!-- ═══ ABA 4: DESPESAS ═══ -->
   <div id="tab-despesas" class="tab-panel">
     <div class="page-header">
-      <div class="page-eyebrow">Operacional · 04</div>
+      <div class="page-eyebrow">Cadastro 4</div>
       <h2>Lançamento de Despesas</h2>
       <p>Registre despesas vinculadas a clientes, propostas e colaboradores.</p>
     </div>
@@ -1228,7 +1228,7 @@ body {
   <!-- ═══ ABA 5: MANUAL ═══ -->
   <div id="tab-manual" class="tab-panel active">
     <div class="page-header">
-      <div class="page-eyebrow">Referência · 05</div>
+      <div class="page-eyebrow">Referência</div>
       <h2>Manual de Centro de Custo</h2>
       <p>Orientações para classificação de despesas, pagamentos e categorização financeira — Maio 2026.</p>
     </div>
@@ -1483,22 +1483,26 @@ body {
       Totais e registros consideram <strong>todos os lançamentos salvos</strong> — use os filtros abaixo para refinar por cliente, tipo, centro de custo ou período.
     </div>
 
-    <!-- FAIXA CARDS -->
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-bottom:18px;border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;background:var(--surface);box-shadow:var(--elev1);" id="rel-faixa-cards"></div>
+    <!-- CARDS PENDENTES/REALIZADOS -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;" id="rel-status-cards"></div>
 
     <!-- FILTROS -->
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:6px;box-shadow:var(--elev1);" class="no-print">
       <div style="font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 1.41 13.45"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-        O filtro de data refere-se à DATA DE IDA
+        Filtros do relatório
       </div>
-      <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr 1fr 1fr;gap:12px;align-items:end;">
+      <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;gap:12px;align-items:end;">
         <div class="form-group">
           <label>Cliente</label>
           <div style="position:relative;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="rel-cliente-txt" placeholder="Buscar cliente..." oninput="renderRelatorio()" style="padding-left:32px;">
           </div>
+        </div>
+        <div class="form-group">
+          <label>Proposta</label>
+          <select id="rel-proposta" onchange="renderRelatorio()"><option value="">Todas</option></select>
         </div>
         <div class="form-group">
           <label>Colaborador</label>
@@ -1520,6 +1524,14 @@ body {
             <option value="">Todos</option>
             <option value="Engenharia">Engenharia</option>
             <option value="Gestão">Gestão</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="rel-status" onchange="renderRelatorio()">
+            <option value="">Todos</option>
+            <option value="Realizado">Realizado</option>
+            <option value="Pendente">Pendente</option>
           </select>
         </div>
         <div class="form-group">
@@ -2132,6 +2144,7 @@ function salvarDespesa() {
     cc, competencia: comp,
     tipoLancamento: tipoLanc,
     categoria,
+    statusLancamento: 'Pendente',
     obs:         document.getElementById('desp-obs').value.trim(),
     finalidade:  document.getElementById('desp-finalidade')?.value.trim()||'',
     pdfBase64:   pdfBase64||null, pdfFileName: pdfFileName||null,
@@ -2598,16 +2611,20 @@ function fmtBRL(v) {
 function getFiltrados() {
   let lista = load(KEY.despesas);
   const fC  = (document.getElementById('rel-cliente-txt')?.value||'').toLowerCase().trim();
+  const fP  = document.getElementById('rel-proposta')?.value||'';
   const fB  = document.getElementById('rel-colaborador')?.value||'';
   const fCC = document.getElementById('rel-cc')?.value||'';
   const fT  = document.getElementById('rel-tipo')?.value||'';
+  const fSt = document.getElementById('rel-status')?.value||'';
   const fDe = document.getElementById('rel-de')?.value||'';
   const fAte= document.getElementById('rel-ate')?.value||'';
   const fComp = document.getElementById('rel-competencia')?.value||'';
   if (fC)    lista = lista.filter(d=>d.cliente.toLowerCase().includes(fC));
+  if (fP)    lista = lista.filter(d=>d.proposta===fP);
   if (fB)    lista = lista.filter(d=>d.colaborador===fB);
   if (fCC)   lista = lista.filter(d=>d.cc===fCC);
   if (fT)    lista = lista.filter(d=>d.tipo===fT);
+  if (fSt)   lista = lista.filter(d=>(d.statusLancamento||'Pendente')===fSt);
   if (fDe)   lista = lista.filter(d=>d.ida&&d.ida>=fDe);
   if (fAte)  lista = lista.filter(d=>d.ida&&d.ida<=fAte);
   if (fComp) lista = lista.filter(d=>d.competencia&&d.competencia.startsWith(fComp));
@@ -2628,6 +2645,13 @@ function renderRelatorio() {
     const cur = selColRel.value;
     selColRel.innerHTML = '<option value="">Todos</option>' + colabs.map(c=>`<option value="${esc(c.nome)}" ${cur===c.nome?'selected':''}>${esc(c.nome)}</option>`).join('');
   }
+  // populate proposta select
+  const props = load(KEY.propostas);
+  const selPropRel = document.getElementById('rel-proposta');
+  if (selPropRel) {
+    const cur = selPropRel.value;
+    selPropRel.innerHTML = '<option value="">Todas</option>' + props.map(p=>`<option value="${esc(p.num)}" ${cur===p.num?'selected':''}>${esc(p.num)}${p.desc?' – '+esc(p.desc):''}</option>`).join('');
+  }
   const lista  = getFiltrados();
   const totalAll = all.length;
   const totalAllVal = all.reduce((s,d)=>s+parseBRL(d.valor),0);
@@ -2638,23 +2662,30 @@ function renderRelatorio() {
   if(hc) hc.textContent = totalAll+' LANÇAMENTO'+(totalAll!==1?'S':'')+' · TOTAL';
   if(ht) ht.textContent = fmtBRL(totalAllVal);
 
-  // ── FAIXA CARDS (agrupados por grupo de tipo) ──
-  const cardsEl = document.getElementById('rel-faixa-cards');
+  // ── STATUS CARDS (Pendentes / Realizados) ──
+  const cardsEl = document.getElementById('rel-status-cards');
   if (cardsEl) {
-    cardsEl.innerHTML = GRUPOS.map((g,i) => {
-      const itens = all.filter(d=>g.tipos.includes(d.tipo));
-      const val   = itens.reduce((s,d)=>s+parseBRL(d.valor),0);
-      const clientes = [...new Set(itens.map(d=>d.cliente))].length;
-      const pct   = totalAllVal>0 ? (val/totalAllVal*100).toFixed(1) : '0,0';
-      const border = i<GRUPOS.length-1 ? 'border-right:1px solid #e5e7eb;' : '';
-      return `<div style="padding:18px 16px;background:${g.bg};${border}cursor:pointer;transition:filter 0.15s;" onclick="filtrarGrupo('${g.key}')" title="Filtrar por ${g.label}">
-        <div style="font-size:9px;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:${g.txt};margin-bottom:8px;border-left:3px solid ${g.border};padding-left:7px;">${g.label}</div>
-        <div style="font-size:28px;font-weight:700;color:${g.txt};line-height:1;">${itens.length}</div>
-        <div style="font-size:11px;color:${g.txt};opacity:0.75;margin-top:3px;margin-bottom:10px;">lançamentos · ${clientes} cliente${clientes!==1?'s':''}</div>
-        <div style="font-size:13px;font-weight:700;color:${g.txt};">${fmtBRL(val)}</div>
-        <div style="font-size:11px;color:${g.txt};opacity:0.7;margin-top:2px;">${pct.replace('.',',')}% do total</div>
+    const pendentes  = all.filter(d=>(d.statusLancamento||'Pendente')==='Pendente');
+    const realizados = all.filter(d=>(d.statusLancamento||'Pendente')==='Realizado');
+    const valPend = pendentes.reduce((s,d)=>s+parseBRL(d.valor),0);
+    const valReal = realizados.reduce((s,d)=>s+parseBRL(d.valor),0);
+    cardsEl.innerHTML = `
+      <div style="background:#fff8e6;border:1px solid #fde68a;border-left:4px solid #d4a017;border-radius:var(--r-lg);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--elev1);">
+        <div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#92400e;margin-bottom:6px;">⏳ Lançamentos Pendentes</div>
+          <div style="font-size:32px;font-weight:700;color:#92400e;line-height:1;">${pendentes.length}</div>
+          <div style="font-size:12px;color:#b07a00;margin-top:4px;">${fmtBRL(valPend)}</div>
+        </div>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fde68a" stroke-width="1.5" style="opacity:0.6"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div style="background:#e6f4ef;border:1px solid #a7d7c5;border-left:4px solid #2F8F6E;border-radius:var(--r-lg);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--elev1);">
+        <div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#1a7a55;margin-bottom:6px;">✓ Lançamentos Realizados</div>
+          <div style="font-size:32px;font-weight:700;color:#1a7a55;line-height:1;">${realizados.length}</div>
+          <div style="font-size:12px;color:#2F8F6E;margin-top:4px;">${fmtBRL(valReal)}</div>
+        </div>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#a7d7c5" stroke-width="1.5" style="opacity:0.6"><polyline points="20 6 9 17 4 12"/></svg>
       </div>`;
-    }).join('');
   }
 
   // ── COUNT BAR ──
@@ -2673,7 +2704,7 @@ function renderRelatorio() {
   const fmtDate = v => v ? v.split('-').reverse().join('/') : '—';
   const sorted = [...lista].sort((a,b)=>{ if(a.tipo<b.tipo) return -1; if(a.tipo>b.tipo) return 1; return 0; });
 
-  el.innerHTML = `<table class="data-table" style="min-width:900px">
+  el.innerHTML = `<table class="data-table" style="min-width:980px">
     <thead><tr>
       <th style="width:140px">Categoria</th>
       <th>Cliente</th>
@@ -2686,6 +2717,7 @@ function renderRelatorio() {
       <th>C. Custo</th>
       <th>Competência</th>
       <th>Veículo</th>
+      <th>Status</th>
       <th class="no-print"></th>
     </tr></thead>
     <tbody>`+
@@ -2704,6 +2736,10 @@ function renderRelatorio() {
       const valorHtml = d.valor
         ? `<span style="font-weight:700;color:${valorNum>500?'#b83030':'var(--teal)'};">${fmtBRL(valorNum)}</span>`
         : '<span style="color:var(--text-muted)">—</span>';
+      const statusLanc = d.statusLancamento||'Pendente';
+      const statusBadge = statusLanc==='Realizado'
+        ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#e6f4ef;color:#1a7a55;border:1px solid #a7d7c5;font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill)">✓ Realizado</span>`
+        : `<span style="display:inline-flex;align-items:center;gap:4px;background:#fff8e6;color:#92400e;border:1px solid #fde68a;font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill)">⏳ Pendente</span>`;
       return `<tr>
         <td>${pill}</td>
         <td style="font-weight:600;font-size:12px">${esc(d.cliente)}</td>
@@ -2716,7 +2752,11 @@ function renderRelatorio() {
         <td>${ccPill}</td>
         <td class="muted" style="font-size:11px">${d.competencia ? d.competencia.split('-').reverse().join('/') : '—'}</td>
         <td style="font-size:11px">${veiculo}</td>
+        <td>${statusBadge}</td>
         <td class="no-print" style="white-space:nowrap;display:flex;gap:4px;padding:7px 6px;">
+          <button class="btn btn-edit" onclick="alternarStatusRel(${d.id})" title="Alternar Status" style="font-size:10px;">
+            ⇄ Status
+          </button>
           <button class="btn btn-edit" onclick="editarDespesa(${d.id})" title="Editar">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
@@ -2727,9 +2767,20 @@ function renderRelatorio() {
     `<tr style="border-top:2px solid var(--border);background:var(--surface-2)">
       <td colspan="7" style="padding:10px 12px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);text-align:right">Total filtrado</td>
       <td style="padding:10px 12px;font-size:14px;font-weight:700;color:var(--navy);text-align:right">${fmtBRL(totalFilVal)}</td>
-      <td colspan="3" class="no-print"></td>
+      <td colspan="4" class="no-print"></td>
     </tr>`+
     '</tbody></table>';
+}
+
+function alternarStatusRel(id) {
+  let lista = load(KEY.despesas);
+  lista = lista.map(d => {
+    if (d.id !== id) return d;
+    const cur = d.statusLancamento||'Pendente';
+    return {...d, statusLancamento: cur==='Pendente' ? 'Realizado' : 'Pendente'};
+  });
+  save(KEY.despesas, lista);
+  renderRelatorio();
 }
 
 function filtrarGrupo(key) {
@@ -2756,7 +2807,7 @@ function removerDespesaRel(id) {
 }
 
 function limparFiltros() {
-  const ids = ['rel-cliente-txt','rel-colaborador','rel-cc','rel-tipo','rel-de','rel-ate','rel-competencia'];
+  const ids = ['rel-cliente-txt','rel-proposta','rel-colaborador','rel-cc','rel-tipo','rel-status','rel-de','rel-ate','rel-competencia'];
   ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   renderRelatorio();
 }
@@ -2952,10 +3003,13 @@ function renderDashboard() {
     if (!d.proposta) return;
     if (!projMap[d.proposta]) projMap[d.proposta] = { num:d.proposta, desc:'', orcado:0, realizado:0, tipos:{}, hasOrç:false, hasExp:false };
     const val = parseBRLd(d.valor);
-    projMap[d.proposta].realizado += val;
+    // Devolução subtrai do realizado
+    const sinal = (d.tipoLancamento||d.tipo_lancamento||'') === 'Devolução' ? -1 : 1;
+    projMap[d.proposta].realizado += sinal * val;
     projMap[d.proposta].hasExp = true;
     if (val > 0) {
-      projMap[d.proposta].tipos[d.tipo] = (projMap[d.proposta].tipos[d.tipo]||0) + val;
+      const tipoKey = d.tipo + (sinal===-1?' (Dev.)':'');
+      projMap[d.proposta].tipos[tipoKey] = (projMap[d.proposta].tipos[tipoKey]||0) + sinal * val;
     }
   });
 
@@ -2981,10 +3035,15 @@ function renderDashboard() {
   const nOver     = allProjs.filter(p=>p.status==='over').length;
   const nOk       = allProjs.filter(p=>p.status==='ok').length;
 
+  const nPend = despesas.filter(d=>(d.statusLancamento||'Pendente')==='Pendente').length;
+  const nReal = despesas.filter(d=>(d.statusLancamento||'Pendente')==='Realizado').length;
+
   document.getElementById('dash-kpis').innerHTML = `
     <div class="dash-kpi"><div class="kpi-label">Projetos</div><div class="kpi-val">${allProjs.length}</div><div class="kpi-sub">${nOk} dentro · ${nOver} acima</div></div>
     <div class="dash-kpi teal"><div class="kpi-label">Total Orçado</div><div class="kpi-val" style="font-size:16px">${fmtBRLd(totalOrc)}</div><div class="kpi-sub">${custos.length} projetos com orçamento</div></div>
-    <div class="dash-kpi" style="background:#1a5c60"><div class="kpi-label">Total Realizado</div><div class="kpi-val" style="font-size:16px">${fmtBRLd(totalReal)}</div><div class="kpi-sub">${despesas.length} lançamentos</div></div>`;
+    <div class="dash-kpi" style="background:#1a5c60"><div class="kpi-label">Total Realizado</div><div class="kpi-val" style="font-size:16px">${fmtBRLd(totalReal)}</div><div class="kpi-sub">${despesas.length} lançamentos</div></div>
+    <div class="dash-kpi amber"><div class="kpi-label">⏳ Pendentes</div><div class="kpi-val">${nPend}</div><div class="kpi-sub">lançamentos pendentes</div></div>
+    <div class="dash-kpi ok"><div class="kpi-label">✓ Realizados</div><div class="kpi-val">${nReal}</div><div class="kpi-sub">lançamentos realizados</div></div>`;
 
   // Project cards
   const el = document.getElementById('dash-projetos');
