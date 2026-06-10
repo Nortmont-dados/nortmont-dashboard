@@ -919,6 +919,7 @@ body {
             <option value="">— Selecione —</option>
             <option value="Projeto">Projeto</option>
             <option value="Visita">Visita</option>
+            <option value="Despesas Administrativas">Despesas Administrativas</option>
           </select>
         </div>
         <div class="form-group" id="grupo-proposta" style="display:none;">
@@ -1068,13 +1069,13 @@ body {
           </select>
         </div>
         <div class="form-group">
-          <label for="desp-competencia">Data de Competência *</label>
+          <label for="desp-competencia">Data de Competência</label>
           <input type="date" id="desp-competencia">
         </div>
       </div>
 
       <div style="font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px;">
-        Tipo de Despesa e Valor — preencha os tipos que se aplicam a esta viagem
+        Tipo de Despesa e Valor
       </div>
       <div class="tipo-required" id="tipo-required" style="margin-bottom:6px;">Informe pelo menos um tipo de despesa com valor.</div>
       <div style="border:1.5px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--surface);">
@@ -1124,6 +1125,15 @@ body {
                   <input type="text" id="desp-finalidade" placeholder="Finalidade *" style="font-family:'Montserrat',sans-serif;font-size:12px;border:1.5px solid var(--border-strong);border-radius:8px;padding:6px 10px;width:100%">
                 </div>
               </td></tr>
+            <tr><td class="td-label">🔧 Equipamento</td>
+              <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Equipamento" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this)"></td>
+              <td class="td-extra"></td></tr>
+            <tr><td class="td-label">☕ Copa e Café</td>
+              <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Copa e Café" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this)"></td>
+              <td class="td-extra"></td></tr>
+            <tr><td class="td-label">📜 Cartório</td>
+              <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Cartório" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this)"></td>
+              <td class="td-extra"></td></tr>
           </tbody>
         </table>
       </div>
@@ -1191,6 +1201,10 @@ body {
       <div class="list-header">
         <span>Despesas lançadas</span>
         <span class="badge" id="badge-despesas">0</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:9px;background:#f0f6ff;border:1px solid #bfdbfe;border-left:3px solid #3F598C;border-radius:0 var(--r-md) var(--r-md) 0;padding:9px 14px;margin-bottom:14px;font-size:11px;color:#1a3060;line-height:1.5;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3F598C" stroke-width="2.5" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>Exibindo apenas os lançamentos registrados por <strong id="msg-usuario-filtro">você</strong>.</span>
       </div>
       <div style="overflow-x:auto;">
         <div id="lista-despesas">
@@ -1502,6 +1516,7 @@ body {
             <option>Aluguel de Carro</option><option>Combustível</option><option>Estacionamento</option>
             <option>Pedágio</option><option>Hospedagem</option><option>Alimentação</option>
             <option>Hora Extra</option><option>Outros</option>
+            <option>Equipamento</option><option>Copa e Café</option><option>Cartório</option>
           </select>
         </div>
         <div class="form-group">
@@ -1726,6 +1741,9 @@ function renderizarUsuario(nome, foto, email) {
       border-radius:999px;cursor:pointer;letter-spacing:0.05em;
     ">Sair</button>
   `;
+  // Atualiza o texto de filtro na aba de lançamento
+  const msgFiltro = document.getElementById('msg-usuario-filtro');
+  if (msgFiltro) msgFiltro.textContent = nome;
 }
 
 function logout() {
@@ -2622,7 +2640,7 @@ function confirmarEnvioEmail() {
     : (d.linkDrive ? [d.linkDrive] : []);
 
   const assunto = encodeURIComponent(
-    `Lançamento de Despesa – ${d.cliente} | ${d.proposta||d.categoria||'s/proposta'} | ${tipos.map(t=>t.tipo).join('+')} | ${d.data}`
+    `${d.tipoLancamento||'Despesa'} | ${d.cliente} | ${d.proposta||d.categoria||'s/proposta'} | Total: R$ ${d.valorTotal||d.valor||'—'}`
   );
 
   const linhas = [
@@ -2755,11 +2773,15 @@ function removerDespesa(id) {
 }
 
 /* ══════════════ RENDER DESPESAS ══════════════ */
-const tipoIcon = { 'Adiantamento':'💰','Táxi/Uber':'🚗','Passagem Aérea':'✈️','Aluguel de Carro':'🚙','Combustível':'⛽','Estacionamento':'🅿️','Pedágio':'🛣️','Hospedagem':'🏨','Alimentação':'🍽️','Outros':'📋','Hora Extra':'⏰' };
+const tipoIcon = { 'Adiantamento':'💰','Táxi/Uber':'🚗','Passagem Aérea':'✈️','Aluguel de Carro':'🚙','Combustível':'⛽','Estacionamento':'🅿️','Pedágio':'🛣️','Hospedagem':'🏨','Alimentação':'🍽️','Outros':'📋','Hora Extra':'⏰','Equipamento':'🔧','Copa e Café':'☕','Cartório':'📜' };
 const tipoIconRel = tipoIcon;
 
 function renderDespesas() {
-  const lista = load(KEY.despesas);
+  const todasDespesas = load(KEY.despesas);
+  // Filtra para mostrar apenas os lançamentos do usuário logado
+  const lista = usuarioLogado
+    ? todasDespesas.filter(d => (d.cadastradoPor||'').toLowerCase() === usuarioLogado.email.toLowerCase())
+    : todasDespesas;
   document.getElementById('badge-despesas').textContent = lista.length;
   const el = document.getElementById('lista-despesas');
   if (!lista.length) { el.innerHTML='<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Nenhuma despesa registrada ainda.</div>'; return; }
@@ -2880,8 +2902,9 @@ function renderDespesas() {
 const GRUPOS = [
   { key:'viagem',      label:'Viagem',      tipos:['Táxi/Uber','Passagem Aérea','Aluguel de Carro','Combustível','Estacionamento','Pedágio'],  bg:'#fef9ec', border:'#d4a017', txt:'#7c5200' },
   { key:'hospedagem',  label:'Hospedagem',  tipos:['Hospedagem'],                                                                              bg:'#fef9ec', border:'#c8960e', txt:'#6b4500' },
-  { key:'alimentacao', label:'Alimentação', tipos:['Alimentação'],                                                                             bg:'#fff0f0', border:'#e07070', txt:'#8b2020' },
+  { key:'alimentacao', label:'Alimentação', tipos:['Alimentação','Copa e Café'],                                                              bg:'#fff0f0', border:'#e07070', txt:'#8b2020' },
   { key:'adiantamento',label:'Adiantamento',tipos:['Adiantamento'],                                                                           bg:'#fff0f0', border:'#c85050', txt:'#7a1a1a' },
+  { key:'administrativo', label:'Administrativo', tipos:['Equipamento','Cartório'],                                                          bg:'#f0f4ff', border:'#6080c0', txt:'#1a3080' },
   { key:'outros',      label:'H. Extra / Outros', tipos:['Hora Extra','Outros'],                                                              bg:'#fff0f0', border:'#b83030', txt:'#6e1010' },
 ];
 
@@ -3987,15 +4010,4 @@ function doPost(e) {
   }
 }
 
-─────────────────────────────────────────────────────────────────────
-
-IMPORTANTE: Apos colar o codigo acima no Apps Script:
-1. Salve (Ctrl+S)
-2. Clique em "Implantar" > "Gerenciar implantacoes"
-3. Edite a implantacao existente, incrementando a versao
-4. Clique em "Implantar"
-A URL do Web App permanece a mesma — nao precisa atualizar no HTML.
-
-════════════════════════════════════════════════════════════════════
--->
 
