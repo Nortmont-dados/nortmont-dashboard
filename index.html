@@ -1756,6 +1756,7 @@ function logout() {
 
 const KEY = { clientes:'gd_clientes', colaboradores:'gd_colaboradores', propostas:'gd_propostas', despesas:'gd_despesas', custos:'gd_custos' };
 const EMAIL_DESTINO = 'contasapagar@electricservice.com.br';
+const EMAIL_DESTINO_2 = 'paulo@electricservice.com.br';
 
 /* ══════════════════════════════════════════════════════════════
    GOOGLE SHEETS — banco de dados principal
@@ -2610,7 +2611,7 @@ function abrirGmail(d) {
 
   // Injeta no modal e abre
   document.getElementById('email-modal-subtitle').textContent =
-    `Para: ${EMAIL_DESTINO}`;
+    `Para: ${EMAIL_DESTINO} · CC: ${EMAIL_DESTINO_2}`;
   document.getElementById('email-modal-body').innerHTML = html;
   document.getElementById('email-modal-overlay').classList.add('open');
 }
@@ -2640,13 +2641,16 @@ function confirmarEnvioEmail() {
     : (d.linkDrive ? [d.linkDrive] : []);
 
   const assunto = encodeURIComponent(
-    `${d.tipoLancamento||'Despesa'} | ${d.cliente} | ${d.proposta||d.categoria||'s/proposta'} | Total: R$ ${d.valorTotal||d.valor||'—'}`
+    `${d.tipoLancamento||'Despesa'} | ${d.cliente} | ${d.proposta||d.categoria||'s/proposta'}`
   );
 
   const linhas = [
     '═══════════════════════════════════',
     '  LANÇAMENTO DE DESPESA – NORTMONT',
     '═══════════════════════════════════',
+    '',
+    `💰 VALOR TOTAL: R$ ${d.valorTotal||d.valor||'—'}`,
+    '───────────────────────────────────',
     '',
     '📋 IDENTIFICAÇÃO',
     `   Cliente:         ${d.cliente||'—'}`,
@@ -2705,7 +2709,7 @@ function confirmarEnvioEmail() {
   );
 
   const corpo = encodeURIComponent(linhas.join('\n'));
-  const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(EMAIL_DESTINO)}&su=${assunto}&body=${corpo}`;
+  const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(EMAIL_DESTINO)}&cc=${encodeURIComponent(EMAIL_DESTINO_2)}&su=${assunto}&body=${corpo}`;
   window.open(url, '_blank');
 
   fecharEmailModal();
@@ -4010,4 +4014,15 @@ function doPost(e) {
   }
 }
 
+─────────────────────────────────────────────────────────────────────
+
+IMPORTANTE: Apos colar o codigo acima no Apps Script:
+1. Salve (Ctrl+S)
+2. Clique em "Implantar" > "Gerenciar implantacoes"
+3. Edite a implantacao existente, incrementando a versao
+4. Clique em "Implantar"
+A URL do Web App permanece a mesma — nao precisa atualizar no HTML.
+
+════════════════════════════════════════════════════════════════════
+-->
 
