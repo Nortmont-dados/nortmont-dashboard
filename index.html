@@ -1097,10 +1097,18 @@ body {
                   <select id="desp-tipo-veiculo" style="font-family:'Montserrat',sans-serif;font-size:12px;border:1.5px solid var(--border-strong);border-radius:8px;padding:6px 10px;margin-bottom:6px;width:100%">
                     <option value="">Tipo do veículo *</option>
                     <option value="Alugado">Alugado</option>
-                    <option value="Elétrico">Elétrico</option>
+                    <option value="Electric">Electric</option>
                   </select>
-                  <input type="text" id="desp-placa" placeholder="Placa (ex: ABC1D23)" maxlength="8">
-                  <input type="text" id="desp-modelo" placeholder="Modelo do veículo">
+                  <input type="text" id="desp-placa" placeholder="Placa (ex: ABC1D23)" maxlength="8" list="placas-list">
+                  <datalist id="placas-list">
+                    <option value="TRC9B52">
+                    <option value="JBN3C36">
+                  </datalist>
+                  <input type="text" id="desp-modelo" placeholder="Modelo do veículo" list="modelos-list">
+                  <datalist id="modelos-list">
+                    <option value="ONIX">
+                    <option value="YARIS">
+                  </datalist>
                 </div>
               </td></tr>
             <tr><td class="td-label">🅿️ Estacionamento</td>
@@ -1133,6 +1141,9 @@ body {
               <td class="td-extra"></td></tr>
             <tr><td class="td-label">📜 Cartório</td>
               <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Cartório" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this)"></td>
+              <td class="td-extra"></td></tr>
+            <tr><td class="td-label">🚌 Passagem de Ônibus</td>
+              <td class="td-valor"><input type="text" class="tipo-valor-input" data-tipo="Passagem de Ônibus" placeholder="0,00" inputmode="decimal" oninput="maskTipoValor(this)"></td>
               <td class="td-extra"></td></tr>
           </tbody>
         </table>
@@ -1517,6 +1528,7 @@ body {
             <option>Pedágio</option><option>Hospedagem</option><option>Alimentação</option>
             <option>Hora Extra</option><option>Outros</option>
             <option>Equipamento</option><option>Copa e Café</option><option>Cartório</option>
+            <option>Passagem de Ônibus</option>
           </select>
         </div>
         <div class="form-group">
@@ -2798,7 +2810,7 @@ function removerDespesa(id) {
 }
 
 /* ══════════════ RENDER DESPESAS ══════════════ */
-const tipoIcon = { 'Adiantamento':'💰','Táxi/Uber':'🚗','Passagem Aérea':'✈️','Aluguel de Carro':'🚙','Combustível':'⛽','Estacionamento':'🅿️','Pedágio':'🛣️','Hospedagem':'🏨','Alimentação':'🍽️','Outros':'📋','Hora Extra':'⏰','Equipamento':'🔧','Copa e Café':'☕','Cartório':'📜' };
+const tipoIcon = { 'Adiantamento':'💰','Táxi/Uber':'🚗','Passagem Aérea':'✈️','Aluguel de Carro':'🚙','Combustível':'⛽','Estacionamento':'🅿️','Pedágio':'🛣️','Hospedagem':'🏨','Alimentação':'🍽️','Outros':'📋','Hora Extra':'⏰','Equipamento':'🔧','Copa e Café':'☕','Cartório':'📜','Passagem de Ônibus':'🚌' };
 const tipoIconRel = tipoIcon;
 
 function renderDespesas() {
@@ -3208,7 +3220,7 @@ function imprimirRelatorio() {
   const subtitulo = partes.join(' · ') || 'Todos os lançamentos';
   const fmtDate = v => v ? v.split('-').reverse().join('/') : '—';
 
-  const tipoIconsPrint = { 'Adiantamento':'💰','Táxi/Uber':'🚗','Passagem Aérea':'✈️','Aluguel de Carro':'🚙','Combustível':'⛽','Estacionamento':'🅿️','Pedágio':'🛣️','Hospedagem':'🏨','Alimentação':'🍽️','Outros':'📋','Hora Extra':'⏰' };
+  const tipoIconsPrint = { 'Adiantamento':'💰','Táxi/Uber':'🚗','Passagem Aérea':'✈️','Aluguel de Carro':'🚙','Combustível':'⛽','Estacionamento':'🅿️','Pedágio':'🛣️','Hospedagem':'🏨','Alimentação':'🍽️','Outros':'📋','Hora Extra':'⏰','Passagem de Ônibus':'🚌' };
 
   const rows = lista.map(d => {
     const cc = d.cc||'—';
@@ -4046,4 +4058,3 @@ A URL do Web App permanece a mesma — nao precisa atualizar no HTML.
 
 ════════════════════════════════════════════════════════════════════
 -->
-
