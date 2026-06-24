@@ -582,6 +582,41 @@ body {
 .btn-confirm-no  { background:none;color:var(--text-muted);border:1px solid var(--border-strong);padding:3px 10px;font-size:11px;font-family:'Montserrat',sans-serif;font-weight:600;border-radius:var(--r-pill);cursor:pointer; }
 
 
+/* ─── DEVOLUÇÃO SECTION ─── */
+.devolucao-section {
+  display: none;
+  margin-bottom: 14px;
+  padding: 16px 18px;
+  background: #fff5f5;
+  border: 1.5px solid #f5b8b8;
+  border-radius: var(--r-lg);
+  animation: fadeIn 0.2s ease;
+}
+.devolucao-section.show { display: block; }
+.devolucao-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #b33a3a;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.saldo-box {
+  font-size: 16px;
+  font-weight: 700;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--teal);
+  font-family: 'Montserrat', monospace;
+  letter-spacing: 0.02em;
+}
+.saldo-box.negativo { color: var(--danger); border-color: rgba(179,58,58,0.4); background: var(--danger-bg); }
+
 /* ─── PRINT ─── */
 @media print {
   .app-header, .tabs-nav, .no-print { display:none !important; }
@@ -906,7 +941,7 @@ body {
       <div class="form-grid cols-3" style="margin-bottom:16px;">
         <div class="form-group">
           <label for="desp-tipo-lancamento">Tipo *</label>
-          <select id="desp-tipo-lancamento">
+          <select id="desp-tipo-lancamento" onchange="toggleDevolucaoSection()">
             <option value="">— Selecione —</option>
             <option value="Adiantamento">Adiantamento</option>
             <option value="Ressarcimento">Ressarcimento</option>
@@ -1077,6 +1112,30 @@ body {
       <div style="font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px;">
         Tipo de Despesa e Valor
       </div>
+
+      <!-- SEÇÃO DEVOLUÇÃO: aparece apenas quando Tipo = Devolução -->
+      <div class="devolucao-section" id="devolucao-section">
+        <div class="devolucao-label">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Valor do Adiantamento Recebido
+        </div>
+        <div class="form-grid cols-2" style="margin-bottom:10px;">
+          <div class="form-group">
+            <label for="desp-valor-adiantamento">Valor Adiantamento *</label>
+            <input type="text" id="desp-valor-adiantamento" placeholder="0,00" inputmode="decimal"
+              oninput="maskValorAdiantamento(this)"
+              style="font-size:15px;font-weight:700;letter-spacing:0.02em;">
+          </div>
+          <div class="form-group">
+            <label>Saldo a Devolver (Adiantamento − Despesas)</label>
+            <div class="saldo-box" id="desp-saldo-devolucao">R$ 0,00</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:#b33a3a;font-style:italic;line-height:1.5;">
+          💡 Preencha abaixo as despesas realizadas. O <strong>Valor Total</strong> gravado será o saldo: <em>Adiantamento − Despesas</em>.
+        </div>
+      </div>
+
       <div class="tipo-required" id="tipo-required" style="margin-bottom:6px;">Informe pelo menos um tipo de despesa com valor.</div>
       <div style="border:1.5px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--surface);">
         <table class="tipo-table">
@@ -2049,8 +2108,50 @@ function maskValor(v) {
 /* ── Multi-tipo row helpers ── */
 function maskTipoValor(input) {
   let v = input.value.replace(/\D/g,'');
-  if (!v) { input.value=''; return; }
+  if (!v) { input.value=''; atualizarSaldoDevolucao(); return; }
   input.value = (parseInt(v,10)/100).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  atualizarSaldoDevolucao();
+}
+
+/* ── Devolução: toggle section, mask and saldo ── */
+function toggleDevolucaoSection() {
+  const tipo = document.getElementById('desp-tipo-lancamento').value;
+  const section = document.getElementById('devolucao-section');
+  if (!section) return;
+  const isDev = tipo === 'Devolução';
+  section.classList.toggle('show', isDev);
+  if (!isDev) {
+    const inp = document.getElementById('desp-valor-adiantamento');
+    if (inp) inp.value = '';
+    const saldo = document.getElementById('desp-saldo-devolucao');
+    if (saldo) { saldo.textContent = 'R$ 0,00'; saldo.className = 'saldo-box'; }
+  } else {
+    atualizarSaldoDevolucao();
+  }
+}
+
+function maskValorAdiantamento(input) {
+  let v = input.value.replace(/\D/g,'');
+  if (!v) { input.value = ''; atualizarSaldoDevolucao(); return; }
+  input.value = (parseInt(v,10)/100).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  atualizarSaldoDevolucao();
+}
+
+function atualizarSaldoDevolucao() {
+  const tipoLanc = document.getElementById('desp-tipo-lancamento');
+  if (!tipoLanc || tipoLanc.value !== 'Devolução') return;
+  const adiantEl = document.getElementById('desp-valor-adiantamento');
+  const saldoEl  = document.getElementById('desp-saldo-devolucao');
+  if (!adiantEl || !saldoEl) return;
+  const adiant = parseFloat(adiantEl.value.replace(/\./g,'').replace(',','.')) || 0;
+  let totalDesp = 0;
+  document.querySelectorAll('.tipo-valor-input').forEach(inp => {
+    totalDesp += (parseFloat(inp.value.replace(/\./g,'').replace(',','.')) || 0);
+  });
+  const saldo = adiant - totalDesp;
+  const saldoFmt = 'R$ ' + Math.abs(saldo).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  saldoEl.textContent = saldo < 0 ? '−' + saldoFmt : saldoFmt;
+  saldoEl.className = 'saldo-box' + (saldo < 0 ? ' negativo' : '');
 }
 
 function toggleVeiculoInline(input) {
@@ -2298,7 +2399,15 @@ function editarDespesa(id) {
   document.getElementById('desp-dias').value  = d.dias||'';
   document.getElementById('desp-cc').value    = d.cc||'';
   document.getElementById('desp-competencia').value  = d.competencia||'';
-  if (d.tipoLancamento) document.getElementById('desp-tipo-lancamento').value = d.tipoLancamento;
+  if (d.tipoLancamento) {
+    document.getElementById('desp-tipo-lancamento').value = d.tipoLancamento;
+    toggleDevolucaoSection();
+  }
+  // Restore valorAdiantamento se for Devolução
+  if (d.tipoLancamento === 'Devolução' && d.valorAdiantamento) {
+    const adEl = document.getElementById('desp-valor-adiantamento');
+    if (adEl) { adEl.value = d.valorAdiantamento; atualizarSaldoDevolucao(); }
+  }
   if (d.categoria) { document.getElementById('desp-categoria').value = d.categoria; togglePropostaField(); }
   // fill the tipo row
   document.querySelectorAll('.tipo-valor-input').forEach(inp=>{
@@ -2351,12 +2460,14 @@ function removerAnexo() {
 }
 
 function limparFormDespesa() {
-  ['desp-cliente','desp-proposta','desp-colaborador','desp-cidade','desp-ida','desp-volta','desp-dias','desp-cc','desp-competencia','desp-obs','desp-pdf','desp-tipo-lancamento','desp-categoria','desp-finalidade','desp-tipo-veiculo'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  ['desp-cliente','desp-proposta','desp-colaborador','desp-cidade','desp-ida','desp-volta','desp-dias','desp-cc','desp-competencia','desp-obs','desp-pdf','desp-tipo-lancamento','desp-categoria','desp-finalidade','desp-tipo-veiculo','desp-valor-adiantamento'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.querySelectorAll('.tipo-valor-input').forEach(i=>i.value='');
   const vi = document.getElementById('veiculo-inline'); if(vi) vi.classList.remove('show');
   document.getElementById('desp-placa').value=''; document.getElementById('desp-modelo').value='';
   const of = document.getElementById('outros-finalidade'); if(of) of.style.display='none';
   document.getElementById('tipo-required').classList.remove('show');
+  const devSection = document.getElementById('devolucao-section'); if(devSection) devSection.classList.remove('show');
+  const saldoEl = document.getElementById('desp-saldo-devolucao'); if(saldoEl){ saldoEl.textContent='R$ 0,00'; saldoEl.className='saldo-box'; }
   const anexosLista = document.getElementById('anexos-lista'); if(anexosLista) anexosLista.style.display='none';
   togglePropostaField();
   removerAnexo();
@@ -2382,11 +2493,24 @@ function salvarDespesa() {
     if (raw) tipoRows.push({ tipo: inp.dataset.tipo, valor: inp.value });
   });
 
+  // Valor adiantamento (apenas para Devolução)
+  const valorAdiantamentoRaw = document.getElementById('desp-valor-adiantamento')?.value || '';
+  const valorAdiantamento = parseFloat(valorAdiantamentoRaw.replace(/\./g,'').replace(',','.')) || 0;
+
   // Validation
   const tipReq = document.getElementById('tipo-required');
-  if (tipoRows.length === 0) { tipReq.classList.add('show'); }
-  if (!cid||!bid||!cc||!tipoLanc||!categoria||tipoRows.length===0) return showAlert('alert-despesa','Preencha todos os campos obrigatórios (*).','danger');
-  tipReq.classList.remove('show');
+  const isDevolucao = tipoLanc === 'Devolução';
+
+  if (isDevolucao) {
+    // Para Devolução: exige valorAdiantamento; despesas opcionais
+    if (!valorAdiantamentoRaw) return showAlert('alert-despesa','Informe o Valor Adiantamento para Devolução.','danger');
+    if (!cid||!bid||!cc||!tipoLanc||!categoria) return showAlert('alert-despesa','Preencha todos os campos obrigatórios (*).','danger');
+    tipReq.classList.remove('show');
+  } else {
+    if (tipoRows.length === 0) { tipReq.classList.add('show'); }
+    if (!cid||!bid||!cc||!tipoLanc||!categoria||tipoRows.length===0) return showAlert('alert-despesa','Preencha todos os campos obrigatórios (*).','danger');
+    tipReq.classList.remove('show');
+  }
 
   const combustivelRow = tipoRows.find(r=>r.tipo==='Combustível');
   if (combustivelRow) {
@@ -2419,6 +2543,7 @@ function salvarDespesa() {
     statusLancamento: 'Pendente',
     obs:         document.getElementById('desp-obs').value.trim(),
     finalidade:  document.getElementById('desp-finalidade')?.value.trim()||'',
+    valorAdiantamento: isDevolucao ? valorAdiantamentoRaw : '',
     pdfBase64:   pdfBase64||null, pdfFileName: pdfFileName||null,
     anexosMultiplos: anexosMultiplos.length > 1 ? anexosMultiplos.map(a=>a.name) : [],
   };
@@ -2438,7 +2563,14 @@ function salvarDespesa() {
   }));
 
   // Valor total
-  const valorTotal = tipoRows.reduce((s,r) => s + (parseFloat(String(r.valor).replace(/\./g,'').replace(',','.'))||0), 0);
+  let valorTotal;
+  if (isDevolucao) {
+    // Para Devolução: saldo = adiantamento - despesas
+    const totalDesp = tipoRows.reduce((s,r) => s + (parseFloat(String(r.valor).replace(/\./g,'').replace(',','.'))||0), 0);
+    valorTotal = valorAdiantamento - totalDesp;
+  } else {
+    valorTotal = tipoRows.reduce((s,r) => s + (parseFloat(String(r.valor).replace(/\./g,'').replace(',','.'))||0), 0);
+  }
   const valorTotalFmt = valorTotal.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
 
   // Comprovantes: array de {name, base64}
