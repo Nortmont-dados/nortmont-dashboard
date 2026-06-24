@@ -210,8 +210,7 @@ body {
 }
 .form-group input:focus,
 .form-group select:focus,
-.form-group textarea:focus,
-#desp-cidade-busca:focus {
+.form-group textarea:focus {
   border-color: var(--teal-mid);
   box-shadow: 0 0 0 2px rgba(15,66,69,0.15);
 }
@@ -990,19 +989,89 @@ body {
       <div class="form-grid cols-4">
         <div class="form-group">
           <label for="desp-cidade">Cidade / UF</label>
-          <input
-            type="text"
-            id="desp-cidade-busca"
-            placeholder="🔍 Buscar cidade ou UF…"
-            autocomplete="off"
-            oninput="filtrarCidadesSelect(this.value)"
-            onfocus="filtrarCidadesSelect(this.value)"
-            style="margin-bottom:6px;font-family:'Montserrat',sans-serif;font-size:13px;
-                   color:var(--ink);background:var(--white);border:1.5px solid var(--border-strong);
-                   border-radius:10px;padding:10px 14px;outline:none;
-                   transition:border-color 0.15s,box-shadow 0.15s;width:100%;">
           <select id="desp-cidade">
-            <option value="">Carregando cidades…</option>
+            <option value="">— Selecione —</option>
+            <optgroup label="Acre (AC)">
+              <option>Rio Branco / AC</option><option>Acrelândia / AC</option><option>Assis Brasil / AC</option><option>Brasiléia / AC</option><option>Bujari / AC</option><option>Capixaba / AC</option><option>Cruzeiro do Sul / AC</option><option>Epitaciolândia / AC</option><option>Feijó / AC</option><option>Jordão / AC</option><option>Mâncio Lima / AC</option><option>Manoel Urbano / AC</option><option>Marechal Thaumaturgo / AC</option><option>Plácido de Castro / AC</option><option>Porto Acre / AC</option><option>Porto Walter / AC</option><option>Rodrigues Alves / AC</option><option>Santa Rosa do Purus / AC</option><option>Sena Madureira / AC</option><option>Senador Guiomard / AC</option><option>Tarauacá / AC</option><option>Xapuri / AC</option>
+            </optgroup>
+            <optgroup label="Alagoas (AL)">
+              <option>Maceió / AL</option><option>Arapiraca / AL</option><option>Palmeira dos Índios / AL</option><option>União dos Palmares / AL</option><option>Penedo / AL</option><option>Rio Largo / AL</option><option>Santana do Ipanema / AL</option><option>São Miguel dos Campos / AL</option><option>Delmiro Gouveia / AL</option><option>Coruripe / AL</option><option>Água Branca / AL</option><option>Anadia / AL</option><option>Atalaia / AL</option><option>Barra de Santo Antônio / AL</option><option>Batalha / AL</option><option>Cajueiro / AL</option><option>Campo Alegre / AL</option><option>Campo Grande / AL</option><option>Canapi / AL</option><option>Capela / AL</option><option>Craíbas / AL</option><option>Feira Grande / AL</option><option>Girau do Ponciano / AL</option><option>Igreja Nova / AL</option><option>Inhapi / AL</option><option>Jaramataia / AL</option><option>Junqueiro / AL</option><option>Limoeiro de Anadia / AL</option><option>Maravilha / AL</option><option>Marechal Deodoro / AL</option><option>Maribondo / AL</option><option>Mata Grande / AL</option><option>Messias / AL</option><option>Murici / AL</option><option>Olho d'Água das Flores / AL</option><option>Ouro Branco / AL</option><option>Pilar / AL</option><option>Piranhas / AL</option><option>Porto Calvo / AL</option><option>Porto Real do Colégio / AL</option><option>Quebrangulo / AL</option><option>Roteiro / AL</option><option>São Brás / AL</option><option>São José da Laje / AL</option><option>São Luís do Quitunde / AL</option><option>São Sebastião / AL</option><option>Teotônio Vilela / AL</option><option>Traipu / AL</option><option>Viçosa / AL</option>
+            </optgroup>
+            <optgroup label="Amapá (AP)">
+              <option>Macapá / AP</option><option>Santana / AP</option><option>Laranjal do Jari / AP</option><option>Oiapoque / AP</option><option>Amapá / AP</option><option>Calçoene / AP</option><option>Cutias / AP</option><option>Ferreira Gomes / AP</option><option>Itaubal / AP</option><option>Mazagão / AP</option><option>Pedra Branca do Amapari / AP</option><option>Porto Grande / AP</option><option>Pracuúba / AP</option><option>Serra do Navio / AP</option><option>Tartarugalzinho / AP</option><option>Vitória do Jari / AP</option>
+            </optgroup>
+            <optgroup label="Amazonas (AM)">
+              <option>Manaus / AM</option><option>Parintins / AM</option><option>Itacoatiara / AM</option><option>Manacapuru / AM</option><option>Coari / AM</option><option>Tefé / AM</option><option>Tabatinga / AM</option><option>Maués / AM</option><option>Humaitá / AM</option><option>Lábrea / AM</option><option>Barcelos / AM</option><option>Borba / AM</option><option>Carauari / AM</option><option>Eirunepé / AM</option><option>Iranduba / AM</option><option>Manicoré / AM</option><option>Novo Airão / AM</option><option>Presidente Figueiredo / AM</option><option>Rio Preto da Eva / AM</option><option>São Gabriel da Cachoeira / AM</option><option>São Paulo de Olivença / AM</option><option>Santo Antônio do Içá / AM</option><option>Tonantins / AM</option><option>Urucará / AM</option><option>Urucurituba / AM</option>
+            </optgroup>
+            <optgroup label="Bahia (BA)">
+              <option>Salvador / BA</option><option>Feira de Santana / BA</option><option>Vitória da Conquista / BA</option><option>Camaçari / BA</option><option>Juazeiro / BA</option><option>Ilhéus / BA</option><option>Lauro de Freitas / BA</option><option>Jequié / BA</option><option>Teixeira de Freitas / BA</option><option>Paulo Afonso / BA</option><option>Barreiras / BA</option><option>Alagoinhas / BA</option><option>Porto Seguro / BA</option><option>Simões Filho / BA</option><option>Eunápolis / BA</option><option>Serrinha / BA</option><option>Itabuna / BA</option><option>Senhor do Bonfim / BA</option><option>Santo Antônio de Jesus / BA</option><option>Brumado / BA</option><option>Amargosa / BA</option><option>Bom Jesus da Lapa / BA</option><option>Cruz das Almas / BA</option><option>Cachoeira / BA</option><option>Conceição do Coité / BA</option><option>Euclides da Cunha / BA</option><option>Guanambi / BA</option><option>Irecê / BA</option><option>Itaberaba / BA</option><option>Itapetinga / BA</option><option>Jacobina / BA</option><option>Luís Eduardo Magalhães / BA</option><option>Morro do Chapéu / BA</option><option>Pojuca / BA</option><option>Seabra / BA</option><option>Valença / BA</option>
+            </optgroup>
+            <optgroup label="Ceará (CE)">
+              <option>Fortaleza / CE</option><option>Caucaia / CE</option><option>Juazeiro do Norte / CE</option><option>Maracanaú / CE</option><option>Sobral / CE</option><option>Crato / CE</option><option>Itapipoca / CE</option><option>Maranguape / CE</option><option>Iguatu / CE</option><option>Quixadá / CE</option><option>Canindé / CE</option><option>Aquiraz / CE</option><option>Pacatuba / CE</option><option>Crateús / CE</option><option>Russas / CE</option><option>Aracati / CE</option><option>Barbalha / CE</option><option>Cascavel / CE</option><option>Horizonte / CE</option><option>Limoeiro do Norte / CE</option><option>Morada Nova / CE</option><option>Pacajus / CE</option><option>Quixeramobim / CE</option><option>Tianguá / CE</option><option>Tauá / CE</option>
+            </optgroup>
+            <optgroup label="Distrito Federal (DF)">
+              <option>Brasília / DF</option><option>Águas Claras / DF</option><option>Ceilândia / DF</option><option>Gama / DF</option><option>Guará / DF</option><option>Planaltina / DF</option><option>Samambaia / DF</option><option>Santa Maria / DF</option><option>Sobradinho / DF</option><option>Taguatinga / DF</option>
+            </optgroup>
+            <optgroup label="Espírito Santo (ES)">
+              <option>Vitória / ES</option><option>Vila Velha / ES</option><option>Cariacica / ES</option><option>Serra / ES</option><option>Cachoeiro de Itapemirim / ES</option><option>Linhares / ES</option><option>São Mateus / ES</option><option>Colatina / ES</option><option>Guarapari / ES</option><option>Aracruz / ES</option><option>Barra de São Francisco / ES</option><option>Castelo / ES</option><option>Conceição da Barra / ES</option><option>Domingos Martins / ES</option><option>Ecoporanga / ES</option><option>Guaçuí / ES</option><option>Ibiraçu / ES</option><option>Itapemirim / ES</option><option>Marataízes / ES</option><option>Nova Venécia / ES</option><option>Santa Teresa / ES</option><option>São Gabriel da Palha / ES</option><option>Viana / ES</option>
+            </optgroup>
+            <optgroup label="Goiás (GO)">
+              <option>Goiânia / GO</option><option>Aparecida de Goiânia / GO</option><option>Anápolis / GO</option><option>Rio Verde / GO</option><option>Luziânia / GO</option><option>Águas Lindas de Goiás / GO</option><option>Valparaíso de Goiás / GO</option><option>Trindade / GO</option><option>Formosa / GO</option><option>Novo Gama / GO</option><option>Itumbiara / GO</option><option>Senador Canedo / GO</option><option>Catalão / GO</option><option>Jataí / GO</option><option>Planaltina / GO</option><option>Caldas Novas / GO</option><option>Cidade Ocidental / GO</option><option>Mineiros / GO</option><option>Quirinópolis / GO</option><option>São Luís de Montes Belos / GO</option><option>Uruaçu / GO</option>
+            </optgroup>
+            <optgroup label="Maranhão (MA)">
+              <option>São Luís / MA</option><option>Imperatriz / MA</option><option>São José de Ribamar / MA</option><option>Timon / MA</option><option>Caxias / MA</option><option>Codó / MA</option><option>Açailândia / MA</option><option>Bacabal / MA</option><option>Balsas / MA</option><option>Pinheiro / MA</option><option>Barra do Corda / MA</option><option>Coroatá / MA</option><option>Paço do Lumiar / MA</option><option>Pedreiras / MA</option><option>Santa Inês / MA</option><option>Chapadinha / MA</option><option>Grajaú / MA</option><option>Pinheiro / MA</option><option>Rosário / MA</option><option>Viana / MA</option>
+            </optgroup>
+            <optgroup label="Mato Grosso (MT)">
+              <option>Cuiabá / MT</option><option>Várzea Grande / MT</option><option>Rondonópolis / MT</option><option>Sinop / MT</option><option>Tangará da Serra / MT</option><option>Cáceres / MT</option><option>Sorriso / MT</option><option>Lucas do Rio Verde / MT</option><option>Primavera do Leste / MT</option><option>Alta Floresta / MT</option><option>Barra do Garças / MT</option><option>Colíder / MT</option><option>Juína / MT</option><option>Nova Mutum / MT</option><option>Nova Xavantina / MT</option><option>Pontes e Lacerda / MT</option>
+            </optgroup>
+            <optgroup label="Mato Grosso do Sul (MS)">
+              <option>Campo Grande / MS</option><option>Dourados / MS</option><option>Três Lagoas / MS</option><option>Corumbá / MS</option><option>Ponta Porã / MS</option><option>Naviraí / MS</option><option>Nova Andradina / MS</option><option>Aquidauana / MS</option><option>Coxim / MS</option><option>Sidrolândia / MS</option><option>Cassilândia / MS</option><option>Maracaju / MS</option><option>Rio Brilhante / MS</option>
+            </optgroup>
+            <optgroup label="Minas Gerais (MG)">
+              <option>Belo Horizonte / MG</option><option>Uberlândia / MG</option><option>Contagem / MG</option><option>Juiz de Fora / MG</option><option>Betim / MG</option><option>Montes Claros / MG</option><option>Ribeirão das Neves / MG</option><option>Uberaba / MG</option><option>Governador Valadares / MG</option><option>Ipatinga / MG</option><option>Sete Lagoas / MG</option><option>Divinópolis / MG</option><option>Santa Luzia / MG</option><option>Ibirité / MG</option><option>Poços de Caldas / MG</option><option>Patos de Minas / MG</option><option>Pouso Alegre / MG</option><option>Teófilo Otoni / MG</option><option>Barbacena / MG</option><option>Caratinga / MG</option><option>Coronel Fabriciano / MG</option><option>Itabira / MG</option><option>Itabirito / MG</option><option>Lavras / MG</option><option>Manhuaçu / MG</option><option>Muriaé / MG</option><option>Nova Lima / MG</option><option>Ouro Preto / MG</option><option>Sabará / MG</option><option>Timóteo / MG</option><option>Varginha / MG</option><option>Viçosa / MG</option>
+            </optgroup>
+            <optgroup label="Pará (PA)">
+              <option>Belém / PA</option><option>Ananindeua / PA</option><option>Santarém / PA</option><option>Marabá / PA</option><option>Castanhal / PA</option><option>Parauapebas / PA</option><option>Altamira / PA</option><option>Abaetetuba / PA</option><option>Cametá / PA</option><option>Itaituba / PA</option><option>Barcarena / PA</option><option>Bragança / PA</option><option>Redenção / PA</option><option>Tucuruí / PA</option><option>Marituba / PA</option>
+            </optgroup>
+            <optgroup label="Paraíba (PB)">
+              <option>João Pessoa / PB</option><option>Campina Grande / PB</option><option>Santa Rita / PB</option><option>Patos / PB</option><option>Bayeux / PB</option><option>Sousa / PB</option><option>Caruaru / PB</option><option>Cajazeiras / PB</option><option>Guarabira / PB</option><option>Cabedelo / PB</option>
+            </optgroup>
+            <optgroup label="Paraná (PR)">
+              <option>Curitiba / PR</option><option>Londrina / PR</option><option>Maringá / PR</option><option>Ponta Grossa / PR</option><option>Cascavel / PR</option><option>São José dos Pinhais / PR</option><option>Foz do Iguaçu / PR</option><option>Colombo / PR</option><option>Guarapuava / PR</option><option>Paranaguá / PR</option><option>Araucária / PR</option><option>Toledo / PR</option><option>Apucarana / PR</option><option>Pinhais / PR</option><option>Campo Largo / PR</option><option>Almirante Tamandaré / PR</option><option>Francisco Beltrão / PR</option><option>Umuarama / PR</option><option>Sarandi / PR</option>
+            </optgroup>
+            <optgroup label="Pernambuco (PE)">
+              <option>Recife / PE</option><option>Caruaru / PE</option><option>Olinda / PE</option><option>Petrolina / PE</option><option>Paulista / PE</option><option>Jaboatão dos Guararapes / PE</option><option>Cabo de Santo Agostinho / PE</option><option>Garanhuns / PE</option><option>Igarassu / PE</option><option>Camaragibe / PE</option><option>Gravatá / PE</option><option>Vitória de Santo Antão / PE</option>
+            </optgroup>
+            <optgroup label="Piauí (PI)">
+              <option>Teresina / PI</option><option>Parnaíba / PI</option><option>Picos / PI</option><option>Piripiri / PI</option><option>Floriano / PI</option><option>Campo Maior / PI</option><option>Barras / PI</option><option>União / PI</option><option>Uruçuí / PI</option>
+            </optgroup>
+            <optgroup label="Rio de Janeiro (RJ)">
+              <option>Rio de Janeiro / RJ</option><option>São Gonçalo / RJ</option><option>Duque de Caxias / RJ</option><option>Nova Iguaçu / RJ</option><option>Niterói / RJ</option><option>Belford Roxo / RJ</option><option>Campos dos Goytacazes / RJ</option><option>São João de Meriti / RJ</option><option>Petrópolis / RJ</option><option>Volta Redonda / RJ</option><option>Magé / RJ</option><option>Itaboraí / RJ</option><option>Mesquita / RJ</option><option>Nova Friburgo / RJ</option><option>Macaé / RJ</option><option>Queimados / RJ</option><option>Nilópolis / RJ</option><option>Barra Mansa / RJ</option><option>Angra dos Reis / RJ</option><option>Cabo Frio / RJ</option>
+            </optgroup>
+            <optgroup label="Rio Grande do Norte (RN)">
+              <option>Natal / RN</option><option>Mossoró / RN</option><option>Parnamirim / RN</option><option>São Gonçalo do Amarante / RN</option><option>Macaíba / RN</option><option>Ceará-Mirim / RN</option><option>Caicó / RN</option><option>Açu / RN</option><option>Currais Novos / RN</option>
+            </optgroup>
+            <optgroup label="Rio Grande do Sul (RS)">
+              <option>Porto Alegre / RS</option><option>Caxias do Sul / RS</option><option>Pelotas / RS</option><option>Canoas / RS</option><option>Santa Maria / RS</option><option>Gravataí / RS</option><option>Viamão / RS</option><option>Novo Hamburgo / RS</option><option>São Leopoldo / RS</option><option>Rio Grande / RS</option><option>Alvorada / RS</option><option>Passo Fundo / RS</option><option>Sapucaia do Sul / RS</option><option>Uruguaiana / RS</option><option>Santa Cruz do Sul / RS</option><option>Cachoeirinha / RS</option><option>Bagé / RS</option><option>Bento Gonçalves / RS</option><option>Erechim / RS</option><option>Guaíba / RS</option>
+            </optgroup>
+            <optgroup label="Rondônia (RO)">
+              <option>Porto Velho / RO</option><option>Ji-Paraná / RO</option><option>Ariquemes / RO</option><option>Vilhena / RO</option><option>Cacoal / RO</option><option>Rolim de Moura / RO</option><option>Guajará-Mirim / RO</option><option>Jaru / RO</option><option>Ouro Preto do Oeste / RO</option><option>Pimenta Bueno / RO</option>
+            </optgroup>
+            <optgroup label="Roraima (RR)">
+              <option>Boa Vista / RR</option><option>Caracaraí / RR</option><option>Alto Alegre / RR</option><option>Mucajaí / RR</option><option>Pacaraima / RR</option><option>Rorainópolis / RR</option>
+            </optgroup>
+            <optgroup label="Santa Catarina (SC)">
+              <option>Florianópolis / SC</option><option>Joinville / SC</option><option>Blumenau / SC</option><option>São José / SC</option><option>Criciúma / SC</option><option>Chapecó / SC</option><option>Itajaí / SC</option><option>Jaraguá do Sul / SC</option><option>Lages / SC</option><option>Palhoça / SC</option><option>Balneário Camboriu / SC</option><option>Biguaçu / SC</option><option>São Bento do Sul / SC</option><option>Caçador / SC</option><option>Concórdia / SC</option><option>Tubarão / SC</option><option>Araranguá / SC</option><option>Camboriú / SC</option><option>Canoinhas / SC</option><option>Navegantes / SC</option>
+            </optgroup>
+            <optgroup label="São Paulo (SP)">
+              <option>São Paulo / SP</option><option>Guarulhos / SP</option><option>Campinas / SP</option><option>São Bernardo do Campo / SP</option><option>Santo André / SP</option><option>São José dos Campos / SP</option><option>Ribeirão Preto / SP</option><option>Osasco / SP</option><option>Sorocaba / SP</option><option>Mauá / SP</option><option>São José do Rio Preto / SP</option><option>Santos / SP</option><option>Mogi das Cruzes / SP</option><option>Diadema / SP</option><option>Jundiaí / SP</option><option>Piracicaba / SP</option><option>Carapicuíba / SP</option><option>Bauru / SP</option><option>São Vicente / SP</option><option>Franca / SP</option><option>Itaquaquecetuba / SP</option><option>Guarujá / SP</option><option>Praia Grande / SP</option><option>Limeira / SP</option><option>Suzano / SP</option><option>Taubaté / SP</option><option>Americana / SP</option><option>Araraquara / SP</option><option>Barueri / SP</option><option>Indaiatuba / SP</option><option>São Caetano do Sul / SP</option><option>Betim / SP</option><option>São Carlos / SP</option><option>Marília / SP</option><option>Araçatuba / SP</option><option>Cotia / SP</option><option>Presidente Prudente / SP</option><option>Atibaia / SP</option><option>Taboão da Serra / SP</option><option>Jacareí / SP</option><option>Botucatu / SP</option><option>Itapevi / SP</option><option>Hortolândia / SP</option><option>Embu das Artes / SP</option><option>Itu / SP</option><option>Barueri / SP</option>
+            </optgroup>
+            <optgroup label="Sergipe (SE)">
+              <option>Aracaju / SE</option><option>Nossa Senhora do Socorro / SE</option><option>Lagarto / SE</option><option>Itabaiana / SE</option><option>São Cristóvão / SE</option><option>Estância / SE</option><option>Nossa Senhora da Glória / SE</option><option>Tobias Barreto / SE</option><option>Simão Dias / SE</option>
+            </optgroup>
+            <optgroup label="Tocantins (TO)">
+              <option>Palmas / TO</option><option>Araguaína / TO</option><option>Gurupi / TO</option><option>Porto Nacional / TO</option><option>Paraíso do Tocantins / TO</option><option>Colinas do Tocantins / TO</option><option>Guaraí / TO</option><option>Tocantinópolis / TO</option><option>Dianópolis / TO</option>
+            </optgroup>
           </select>
         </div>
         <div class="form-group">
@@ -1438,6 +1507,26 @@ body {
           <summary style="padding:12px 16px;font-size:13px;font-weight:600;color:var(--navy);cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;">Preciso informar centro de custo para valores pequenos? <span style="font-size:18px;color:var(--teal)">+</span></summary>
           <div style="padding:0 16px 14px;font-size:12px;color:var(--text-secondary);line-height:1.65;border-top:1px solid var(--border);">Sim. Toda despesa, independentemente do valor, deve ser identificada com o centro de custo correto. Não há valor mínimo isento desta obrigação.</div>
         </details>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 09 — ITENS NÃO ELEGÍVEIS -->
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <div style="width:32px;height:32px;background:var(--navy);border-radius:var(--r-pill);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <span style="font-size:10px;font-weight:700;color:var(--sage);letter-spacing:0.05em;">09</span>
+        </div>
+        <div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);">Seção 09</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);letter-spacing:-0.01em;">Itens Não Elegíveis para Reembolso</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;background:var(--danger-bg);border:1.5px solid #f5c6c6;border-radius:var(--r-md);padding:14px 16px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2.5" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--danger);margin-bottom:6px;">Atenção — Despesas Não Reembolsáveis</div>
+          <p style="font-size:13px;color:#7a2222;line-height:1.7;font-weight:500;">Despesas com bebidas alcoólicas e energéticos de qualquer marca não são elegíveis para reembolso. Portanto, esses itens não deverão ser incluídos nas prestações de contas, pois não serão aceitos para ressarcimento.</p>
+        </div>
       </div>
     </div>
 
@@ -2324,16 +2413,7 @@ function editarDespesa(id) {
   if(cObj) document.getElementById('desp-cliente').value = cObj.id;
   if(pObj) document.getElementById('desp-proposta').value = pObj.id;
   if(bObj) document.getElementById('desp-colaborador').value = bObj.id;
-  (function(){
-    var sc = document.getElementById('desp-cidade');
-    if (!sc) return;
-    if (_cidadeLoaded) {
-      sc.value = d.cidade||'';
-    } else {
-      // Cidades ainda carregando: salva o valor como atributo e será restaurado após load
-      sc.setAttribute('data-pending-cidade', d.cidade||'');
-    }
-  })();
+  document.getElementById('desp-cidade').value = d.cidade||'';
   document.getElementById('desp-ida').value   = d.ida||'';
   document.getElementById('desp-volta').value = d.volta||'';
   document.getElementById('desp-dias').value  = d.dias||'';
@@ -2401,7 +2481,6 @@ function removerAnexo() {
 
 function limparFormDespesa() {
   ['desp-cliente','desp-proposta','desp-colaborador','desp-cidade','desp-ida','desp-volta','desp-dias','desp-cc','desp-competencia','desp-obs','desp-pdf','desp-tipo-lancamento','desp-categoria','desp-finalidade','desp-tipo-veiculo','desp-valor-adiantamento'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  const buscaEl = document.getElementById('desp-cidade-busca'); if(buscaEl) { buscaEl.value=''; filtrarCidadesSelect(''); }
   document.querySelectorAll('.tipo-valor-input').forEach(i=>i.value='');
   const vi = document.getElementById('veiculo-inline'); if(vi) vi.classList.remove('show');
   document.getElementById('desp-placa').value=''; document.getElementById('desp-modelo').value='';
@@ -3416,114 +3495,7 @@ function imprimirRelatorio() {
         <td colspan="3"></td>
       </tr></tfoot>
     </table>
-  
-<script>
-// ══════════════════════════════════════════════════════════════════════
-//  MUNICÍPIOS BRASIL — Carregamento via API IBGE
-// ══════════════════════════════════════════════════════════════════════
-var _ibgeCidades = [];        // [{v, n, uf, nu}] — preenchido pela API
-var _cidadeLoaded = false;    // flag: já carregou?
-
-async function carregarCidadesIBGE() {
-  var sel = document.getElementById('desp-cidade');
-  if (!sel) return;
-
-  // Evita carregar mais de uma vez
-  if (_cidadeLoaded) return;
-
-  try {
-    var resp = await fetch(
-      'https://servicodados.ibge.gov.br/api/v1/localidades/municipios?orderBy=nome'
-    );
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    var data = await resp.json();
-
-    _ibgeCidades = data.map(function(m) {
-      var uf   = m.microrregiao.mesorregiao.UF.sigla;
-      var nUf  = m.microrregiao.mesorregiao.UF.nome;
-      return { v: m.nome + ' / ' + uf, n: m.nome, uf: uf, nu: nUf };
-    });
-
-    _cidadeLoaded = true;
-    _renderCidades(_ibgeCidades);
-
-    // Se houver valor pendente (edição em andamento), restaura
-    var pending = sel.getAttribute('data-pending-cidade');
-    if (pending) {
-      sel.value = pending;
-      sel.removeAttribute('data-pending-cidade');
-      // Sincroniza campo de busca
-      var busca = document.getElementById('desp-cidade-busca');
-      if (busca && pending) busca.value = '';
-    }
-  } catch(err) {
-    console.warn('[IBGE] Falha ao carregar municípios:', err);
-    if (sel) sel.innerHTML = '<option value="">⚠ Sem conexão — recarregue a página</option>';
-  }
-}
-
-function _renderCidades(lista) {
-  var sel = document.getElementById('desp-cidade');
-  if (!sel) return;
-
-  // Agrupa por estado preservando a ordem de chegada (já vem orderBy=nome)
-  var grupos = {};
-  var ordemGrupos = [];
-  lista.forEach(function(c) {
-    var k = c.nu + ' (' + c.uf + ')';
-    if (!grupos[k]) { grupos[k] = []; ordemGrupos.push(k); }
-    grupos[k].push(c);
-  });
-
-  // Ordena os grupos alfabeticamente pelo nome do estado
-  ordemGrupos.sort(function(a, b) { return a.localeCompare(b, 'pt-BR'); });
-
-  var h = '<option value="">— Selecione —</option>';
-  if (lista.length === 0) {
-    h = '<option value="">Nenhuma cidade encontrada</option>';
-  } else {
-    ordemGrupos.forEach(function(g) {
-      h += '<optgroup label="' + g + '">';
-      grupos[g].forEach(function(c) {
-        h += '<option value="' + c.v + '">' + c.v + '</option>';
-      });
-      h += '</optgroup>';
-    });
-  }
-  sel.innerHTML = h;
-}
-
-function filtrarCidadesSelect(q) {
-  if (!_cidadeLoaded) return; // ainda carregando, aguarda
-  if (!q || !q.trim()) {
-    _renderCidades(_ibgeCidades);
-    return;
-  }
-  var norm = function(s) {
-    return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  };
-  var busca = norm(q);
-  var filtradas = _ibgeCidades.filter(function(c) {
-    return norm(c.n).indexOf(busca) !== -1
-        || c.uf.toLowerCase().indexOf(busca.toUpperCase()) !== -1
-        || norm(c.nu).indexOf(busca) !== -1;
-  });
-  _renderCidades(filtradas);
-
-  // Auto-seleciona se só restar 1 resultado
-  if (filtradas.length === 1) {
-    var sel = document.getElementById('desp-cidade');
-    if (sel) sel.value = filtradas[0].v;
-  }
-}
-
-// Inicializa quando a página estiver pronta
-document.addEventListener('DOMContentLoaded', function() {
-  carregarCidadesIBGE();
-});
-</script>
-
-</body></html>`;
+  </body></html>`;
 
   const w = window.open('','_blank','width=1200,height=800');
   w.document.write(html);
