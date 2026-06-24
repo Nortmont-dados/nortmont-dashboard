@@ -2574,13 +2574,18 @@ function salvarDespesa() {
   const modelo2    = document.getElementById('desp-modelo').value.trim();
   const finalidade2= (document.getElementById('desp-finalidade')?.value||'').trim();
 
-  const tiposDetalhados = tipoRows.map(r => ({
+  const tiposBase = tipoRows.map(r => ({
     tipo: r.tipo, valor: r.valor,
     tipoVeiculo: r.tipo==='Combustível' ? tipoVeic2 : '',
     placa:        r.tipo==='Combustível' ? placa2    : '',
     modelo:       r.tipo==='Combustível' ? modelo2   : '',
     finalidade:   r.tipo==='Outros'      ? finalidade2 : '',
   }));
+
+  // Para Devolução: inclui Valor Adiantamento como PRIMEIRO item do array de tipos
+  const tiposDetalhados = (isDevolucao && valorAdiantamentoRaw)
+    ? [{ tipo: 'Valor Adiantamento', valor: valorAdiantamentoRaw }, ...tiposBase]
+    : tiposBase;
 
   // Valor total
   let valorTotal;
@@ -2604,12 +2609,12 @@ function salvarDespesa() {
     const existente = lista.find(x=>x.id===editingId)||{};
     const upd = { ...base, id: editingId,
       tipos: tiposDetalhados,
-      tipo:  tiposDetalhados[0]?.tipo  || '',
-      valor: tiposDetalhados[0]?.valor || '',
-      tipoVeiculo: tiposDetalhados[0]?.tipoVeiculo || '',
-      placa:       tiposDetalhados[0]?.placa || '',
-      modelo:      tiposDetalhados[0]?.modelo || '',
-      finalidade:  tiposDetalhados[0]?.finalidade || '',
+      tipo:  tiposBase[0]?.tipo  || '',
+      valor: tiposBase[0]?.valor || '',
+      tipoVeiculo: tiposBase[0]?.tipoVeiculo || '',
+      placa:       tiposBase[0]?.placa || '',
+      modelo:      tiposBase[0]?.modelo || '',
+      finalidade:  tiposBase[0]?.finalidade || '',
       valorTotal: valorTotalFmt,
       anexos: anexosArr.map(a=>({name:a.name, base64:a.base64})),
       pdfBase64:   anexosArr[0]?.base64 || null,
@@ -2640,6 +2645,7 @@ function salvarDespesa() {
       Categoria: upd.categoria||'', 'Status Lançamento': upd.statusLancamento||'Pendente',
       Observações: upd.obs||'', Competência: upd.competencia||'',
       'Valor Total': upd.valorTotal||'',
+      'Valor Adiantamento': upd.valorAdiantamento||'',
       'Tipos JSON': upd.tiposJson || JSON.stringify(upd.tipos||[]),
     };
     sheetsPost(payloadUpd).catch(()=>{});
@@ -2649,12 +2655,12 @@ function salvarDespesa() {
   } else {
     const novaDesp = { ...base, id: Date.now(),
       tipos: tiposDetalhados,
-      tipo:  tiposDetalhados[0]?.tipo  || '',
-      valor: tiposDetalhados[0]?.valor || '',
-      tipoVeiculo: tiposDetalhados[0]?.tipoVeiculo || '',
-      placa:       tiposDetalhados[0]?.placa || '',
-      modelo:      tiposDetalhados[0]?.modelo || '',
-      finalidade:  tiposDetalhados[0]?.finalidade || '',
+      tipo:  tiposBase[0]?.tipo  || '',
+      valor: tiposBase[0]?.valor || '',
+      tipoVeiculo: tiposBase[0]?.tipoVeiculo || '',
+      placa:       tiposBase[0]?.placa || '',
+      modelo:      tiposBase[0]?.modelo || '',
+      finalidade:  tiposBase[0]?.finalidade || '',
       valorTotal: valorTotalFmt,
       tiposJson: JSON.stringify(tiposDetalhados), // para o Sheets
       anexos: anexosArr.map(a=>({name:a.name, base64:a.base64})),
@@ -2691,6 +2697,7 @@ function salvarDespesa() {
       obs:              novaDesp.obs              || '',
       competencia:      novaDesp.competencia      || '',
       valorTotal:       novaDesp.valorTotal       || '',
+      valorAdiantamento: novaDesp.valorAdiantamento || '',
       tipos:            novaDesp.tipos            || [],
       tiposJson:        novaDesp.tiposJson        || JSON.stringify(novaDesp.tipos||[]),
       emailStatus:      '',
@@ -2978,7 +2985,7 @@ function removerDespesa(id) {
 }
 
 /* ══════════════ RENDER DESPESAS ══════════════ */
-const tipoIcon = { 'Adiantamento':'💰','Táxi/Uber':'🚗','Passagem Aérea':'✈️','Aluguel de Carro':'🚙','Combustível':'⛽','Estacionamento':'🅿️','Pedágio':'🛣️','Hospedagem':'🏨','Alimentação':'🍽️','Outros':'📋','Hora Extra':'⏰','Equipamento':'🔧','Copa e Café':'☕','Cartório':'📜','Passagem de Ônibus':'🚌' };
+const tipoIcon = { 'Adiantamento':'💰','Valor Adiantamento':'💰','Táxi/Uber':'🚗','Passagem Aérea':'✈️','Aluguel de Carro':'🚙','Combustível':'⛽','Estacionamento':'🅿️','Pedágio':'🛣️','Hospedagem':'🏨','Alimentação':'🍽️','Outros':'📋','Hora Extra':'⏰','Equipamento':'🔧','Copa e Café':'☕','Cartório':'📜','Passagem de Ônibus':'🚌' };
 const tipoIconRel = tipoIcon;
 
 function renderDespesas() {
@@ -3006,15 +3013,13 @@ function renderDespesas() {
 
       const tiposCell = (() => {
         let html = '';
-        // Devolução: mostra valor adiantamento como primeira linha
-        if (d.tipoLancamento === 'Devolução' && d.valorAdiantamento) {
-          html += `<div style="padding:2px 0;border-bottom:1px dashed var(--border);">💰 <span style="font-size:12px;color:var(--text-secondary)">Valor Adiantamento</span> <span style="font-family:Montserrat,monospace;font-size:12px;font-weight:700;color:#b33a3a">R$ ${esc(d.valorAdiantamento)}</span></div>`;
-        }
         html += tipos.filter(t=>t.valor&&t.valor!=='0,00'&&t.valor!=='').map(t => {
+          const isAdiant = t.tipo === 'Valor Adiantamento';
+          const valorColor = isAdiant ? '#b33a3a' : 'var(--teal)';
           let extra = '';
           if (t.tipo==='Combustível' && t.placa) extra = `<div style="font-size:10px;color:var(--text-muted)">${esc(t.tipoVeiculo||'')} · ${esc(t.placa)}</div>`;
           if (t.tipo==='Outros' && t.finalidade) extra = `<div style="font-size:10px;color:var(--text-muted)">${esc(t.finalidade)}</div>`;
-          return `<div style="padding:2px 0;border-bottom:1px dashed var(--border);last-child:border:none">${tipoIcon[t.tipo]||''} <span style="font-size:12px">${esc(t.tipo)}</span> <span style="font-family:Montserrat,monospace;font-size:12px;font-weight:600;color:var(--teal)">R$ ${esc(t.valor)}</span>${extra}</div>`;
+          return `<div style="padding:2px 0;border-bottom:1px dashed var(--border);last-child:border:none">${tipoIcon[t.tipo]||''} <span style="font-size:12px">${esc(t.tipo)}</span> <span style="font-family:Montserrat,monospace;font-size:12px;font-weight:600;color:${valorColor}">R$ ${esc(t.valor)}</span>${extra}</div>`;
         }).join('');
         return html || '<span style="color:var(--text-muted)">—</span>';
       })();
@@ -3255,23 +3260,17 @@ function renderRelatorio() {
 
       const tiposDiscriminados = (() => {
         let html = '';
-        // Devolução: mostra valor adiantamento como primeira linha
-        if (d.tipoLancamento === 'Devolução' && d.valorAdiantamento) {
-          html += `<div style="display:flex;align-items:center;gap:5px;padding:3px 0;border-bottom:1px dashed var(--border);">
-            <span style="font-size:13px;flex-shrink:0;">💰</span>
-            <span style="font-size:11px;color:var(--text-secondary);flex:1;">Valor Adiantamento</span>
-            <span style="font-family:'Montserrat',monospace;font-size:11px;font-weight:700;color:#b33a3a;white-space:nowrap;">R$ ${esc(d.valorAdiantamento)}</span>
-          </div>`;
-        }
         html += tiposArr.filter(t=>t.valor&&t.valor!=='0,00'&&t.valor!=='').map(t => {
+          const isAdiant = t.tipo === 'Valor Adiantamento';
           const icon = tipoIconRel[t.tipo]||'📋';
+          const valorColor = isAdiant ? '#b33a3a' : 'var(--teal)';
           let extra = '';
           if (t.tipo==='Combustível' && t.placa) extra = `<span style="font-size:9px;color:var(--text-muted);margin-left:4px;">${esc(t.tipoVeiculo||'')} ${esc(t.placa)}</span>`;
           if (t.tipo==='Outros' && t.finalidade) extra = `<span style="font-size:9px;color:var(--text-muted);margin-left:4px;">${esc(t.finalidade)}</span>`;
           return `<div style="display:flex;align-items:center;gap:5px;padding:3px 0;border-bottom:1px dashed var(--border);">
             <span style="font-size:13px;flex-shrink:0;">${icon}</span>
             <span style="font-size:11px;color:var(--text-secondary);flex:1;">${esc(t.tipo)}${extra}</span>
-            <span style="font-family:'Montserrat',monospace;font-size:11px;font-weight:700;color:var(--teal);white-space:nowrap;">R$ ${esc(t.valor)}</span>
+            <span style="font-family:'Montserrat',monospace;font-size:11px;font-weight:700;color:${valorColor};white-space:nowrap;">R$ ${esc(t.valor)}</span>
           </div>`;
         }).join('');
         return html;
@@ -3408,7 +3407,7 @@ function imprimirRelatorio() {
   const subtitulo = partes.join(' · ') || 'Todos os lançamentos';
   const fmtDate = v => v ? v.split('-').reverse().join('/') : '—';
 
-  const tipoIconsPrint = { 'Adiantamento':'💰','Táxi/Uber':'🚗','Passagem Aérea':'✈️','Aluguel de Carro':'🚙','Combustível':'⛽','Estacionamento':'🅿️','Pedágio':'🛣️','Hospedagem':'🏨','Alimentação':'🍽️','Outros':'📋','Hora Extra':'⏰','Passagem de Ônibus':'🚌' };
+  const tipoIconsPrint = { 'Adiantamento':'💰','Valor Adiantamento':'💰','Táxi/Uber':'🚗','Passagem Aérea':'✈️','Aluguel de Carro':'🚙','Combustível':'⛽','Estacionamento':'🅿️','Pedágio':'🛣️','Hospedagem':'🏨','Alimentação':'🍽️','Outros':'📋','Hora Extra':'⏰','Passagem de Ônibus':'🚌' };
 
   const rows = lista.map(d => {
     const cc = d.cc||'—';
@@ -3418,16 +3417,14 @@ function imprimirRelatorio() {
       : (d.tipo ? [{ tipo: d.tipo, valor: d.valor, placa: d.placa, tipoVeiculo: d.tipoVeiculo, finalidade: d.finalidade }] : []);
     const tiposHtml = (() => {
       let html = '';
-      // Devolução: mostra valor adiantamento como primeira linha
-      if (d.tipoLancamento === 'Devolução' && d.valorAdiantamento) {
-        html += `<div style="padding:2px 0;border-bottom:1px dashed #e5e5e5;font-size:10px;">💰 Valor Adiantamento: <strong style="color:#b33a3a">R$ ${esc(d.valorAdiantamento)}</strong></div>`;
-      }
       html += tiposArr.filter(t=>t.valor&&t.valor!=='0,00'&&t.valor!=='').map(t => {
         const icon = tipoIconsPrint[t.tipo]||'📋';
+        const isAdiant = t.tipo === 'Valor Adiantamento';
+        const color = isAdiant ? 'color:#b33a3a' : '';
         let extra = '';
         if (t.tipo==='Combustível' && t.placa) extra = ` (${t.tipoVeiculo||''} ${t.placa})`;
         if (t.tipo==='Outros' && t.finalidade) extra = ` — ${t.finalidade}`;
-        return `<div style="padding:2px 0;border-bottom:1px dashed #e5e5e5;font-size:10px;">${icon} ${esc(t.tipo)}${extra}: <strong>R$ ${esc(t.valor)}</strong></div>`;
+        return `<div style="padding:2px 0;border-bottom:1px dashed #e5e5e5;font-size:10px;">${icon} ${esc(t.tipo)}${extra}: <strong style="${color}">R$ ${esc(t.valor)}</strong></div>`;
       }).join('');
       return html;
     })();
