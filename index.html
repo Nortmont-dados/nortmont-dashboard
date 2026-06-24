@@ -1980,6 +1980,13 @@ function normalizarLista(arr) {
 
 function normalizarDespesas(arr) {
   return normalizarLista(arr).map(d => {
+    // Normaliza campos de valor que o Sheets pode retornar como número
+    // Ex: 53.4 (JS number) → "53,40" (string BRL)
+    ['valor','valorTotal','valorAdiantamento'].forEach(campo => {
+      if (typeof d[campo] === 'number') {
+        d[campo] = d[campo].toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+      }
+    });
     // Reconstrói array de tipos a partir do campo 'Tipos' do Sheets se necessário
     if (!d.tipos || !d.tipos.length) {
       if (d.tiposJson) {
@@ -3126,7 +3133,7 @@ const GRUPOS = [
   { key:'outros',      label:'H. Extra / Outros', tipos:['Hora Extra','Outros'],                                                              bg:'#fff0f0', border:'#b83030', txt:'#6e1010' },
 ];
 
-function parseBRL(v) { if(!v) return 0; return parseFloat(String(v).replace(/\./g,'').replace(',','.'))||0; }
+function parseBRL(v) { if(!v && v!==0) return 0; if(typeof v==='number') return v; return parseFloat(String(v).replace(/\./g,'').replace(',','.'))||0; }
 
 function fmtBRL(v) {
   return 'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
@@ -3180,7 +3187,7 @@ function renderRelatorio() {
   }
   const lista  = getFiltrados();
   const totalAll = all.length;
-  const totalAllVal = all.reduce((s,d)=>s+parseBRL(d.valor),0);
+  const totalAllVal = all.reduce((s,d)=>s+parseBRL(d.valorTotal||d.valor),0);
 
   // header totals (all records)
   const hc = document.getElementById('rel-header-count');
@@ -3193,8 +3200,8 @@ function renderRelatorio() {
   if (cardsEl) {
     const pendentes  = all.filter(d=>(d.statusLancamento||'Pendente')==='Pendente');
     const realizados = all.filter(d=>(d.statusLancamento||'Pendente')==='Realizado');
-    const valPend = pendentes.reduce((s,d)=>s+parseBRL(d.valor),0);
-    const valReal = realizados.reduce((s,d)=>s+parseBRL(d.valor),0);
+    const valPend = pendentes.reduce((s,d)=>s+parseBRL(d.valorTotal||d.valor),0);
+    const valReal = realizados.reduce((s,d)=>s+parseBRL(d.valorTotal||d.valor),0);
     cardsEl.innerHTML = `
       <div style="background:#fff8e6;border:1px solid #fde68a;border-left:4px solid #d4a017;border-radius:var(--r-lg);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--elev1);">
         <div>
@@ -3216,7 +3223,7 @@ function renderRelatorio() {
 
   // ── COUNT BAR ──
   const totalFil = lista.length;
-  const totalFilVal = lista.reduce((s,d)=>s+parseBRL(d.valor),0);
+  const totalFilVal = lista.reduce((s,d)=>s+parseBRL(d.valorTotal||d.valor),0);
   const cl = document.getElementById('rel-count-label');
   if (cl) cl.textContent = `${totalFil} registro${totalFil!==1?'s':''} · ${fmtBRL(totalFilVal)}`;
 
@@ -3570,7 +3577,7 @@ function renderCustos() {
 }
 
 /* ══════════════ DASHBOARD ══════════════ */
-function parseBRLd(v) { if(!v) return 0; return parseFloat(String(v).replace(/\./g,'').replace(',','.'))||0; }
+function parseBRLd(v) { if(!v && v!==0) return 0; if(typeof v==='number') return v; return parseFloat(String(v).replace(/\./g,'').replace(',','.'))||0; }
 function fmtBRLd(v) { return 'R$ '+Math.abs(v).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
 
 function renderDashboard() {
