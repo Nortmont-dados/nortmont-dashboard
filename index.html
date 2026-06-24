@@ -2984,12 +2984,20 @@ function renderDespesas() {
         ? d.tipos
         : [{ tipo: d.tipo, valor: d.valor, placa: d.placa, modelo: d.modelo, tipoVeiculo: d.tipoVeiculo, finalidade: d.finalidade }];
 
-      const tiposCell = tipos.map(t => {
-        let extra = '';
-        if (t.tipo==='Combustível' && t.placa) extra = `<div style="font-size:10px;color:var(--text-muted)">${esc(t.tipoVeiculo||'')} · ${esc(t.placa)}</div>`;
-        if (t.tipo==='Outros' && t.finalidade) extra = `<div style="font-size:10px;color:var(--text-muted)">${esc(t.finalidade)}</div>`;
-        return `<div style="padding:2px 0;border-bottom:1px dashed var(--border);last-child:border:none">${tipoIcon[t.tipo]||''} <span style="font-size:12px">${esc(t.tipo)}</span> <span style="font-family:Montserrat,monospace;font-size:12px;font-weight:600;color:var(--teal)">R$ ${esc(t.valor)}</span>${extra}</div>`;
-      }).join('');
+      const tiposCell = (() => {
+        let html = '';
+        // Devolução: mostra valor adiantamento como primeira linha
+        if (d.tipoLancamento === 'Devolução' && d.valorAdiantamento) {
+          html += `<div style="padding:2px 0;border-bottom:1px dashed var(--border);">💰 <span style="font-size:12px;color:var(--text-secondary)">Valor Adiantamento</span> <span style="font-family:Montserrat,monospace;font-size:12px;font-weight:700;color:#b33a3a">R$ ${esc(d.valorAdiantamento)}</span></div>`;
+        }
+        html += tipos.filter(t=>t.valor&&t.valor!=='0,00'&&t.valor!=='').map(t => {
+          let extra = '';
+          if (t.tipo==='Combustível' && t.placa) extra = `<div style="font-size:10px;color:var(--text-muted)">${esc(t.tipoVeiculo||'')} · ${esc(t.placa)}</div>`;
+          if (t.tipo==='Outros' && t.finalidade) extra = `<div style="font-size:10px;color:var(--text-muted)">${esc(t.finalidade)}</div>`;
+          return `<div style="padding:2px 0;border-bottom:1px dashed var(--border);last-child:border:none">${tipoIcon[t.tipo]||''} <span style="font-size:12px">${esc(t.tipo)}</span> <span style="font-family:Montserrat,monospace;font-size:12px;font-weight:600;color:var(--teal)">R$ ${esc(t.valor)}</span>${extra}</div>`;
+        }).join('');
+        return html || '<span style="color:var(--text-muted)">—</span>';
+      })();
 
       const valorExib = d.valorTotal
         ? `<span style="font-family:'Montserrat',monospace;font-size:12px;font-weight:700;color:var(--teal)">R$ ${esc(d.valorTotal)}</span>`
@@ -3225,17 +3233,29 @@ function renderRelatorio() {
         ? d.tipos
         : (d.tipo ? [{ tipo: d.tipo, valor: d.valor, placa: d.placa, modelo: d.modelo, tipoVeiculo: d.tipoVeiculo, finalidade: d.finalidade }] : []);
 
-      const tiposDiscriminados = tiposArr.filter(t=>t.valor&&t.valor!=='0,00'&&t.valor!=='').map(t => {
-        const icon = tipoIconRel[t.tipo]||'📋';
-        let extra = '';
-        if (t.tipo==='Combustível' && t.placa) extra = `<span style="font-size:9px;color:var(--text-muted);margin-left:4px;">${esc(t.tipoVeiculo||'')} ${esc(t.placa)}</span>`;
-        if (t.tipo==='Outros' && t.finalidade) extra = `<span style="font-size:9px;color:var(--text-muted);margin-left:4px;">${esc(t.finalidade)}</span>`;
-        return `<div style="display:flex;align-items:center;gap:5px;padding:3px 0;border-bottom:1px dashed var(--border);">
-          <span style="font-size:13px;flex-shrink:0;">${icon}</span>
-          <span style="font-size:11px;color:var(--text-secondary);flex:1;">${esc(t.tipo)}${extra}</span>
-          <span style="font-family:'Montserrat',monospace;font-size:11px;font-weight:700;color:var(--teal);white-space:nowrap;">R$ ${esc(t.valor)}</span>
-        </div>`;
-      }).join('');
+      const tiposDiscriminados = (() => {
+        let html = '';
+        // Devolução: mostra valor adiantamento como primeira linha
+        if (d.tipoLancamento === 'Devolução' && d.valorAdiantamento) {
+          html += `<div style="display:flex;align-items:center;gap:5px;padding:3px 0;border-bottom:1px dashed var(--border);">
+            <span style="font-size:13px;flex-shrink:0;">💰</span>
+            <span style="font-size:11px;color:var(--text-secondary);flex:1;">Valor Adiantamento</span>
+            <span style="font-family:'Montserrat',monospace;font-size:11px;font-weight:700;color:#b33a3a;white-space:nowrap;">R$ ${esc(d.valorAdiantamento)}</span>
+          </div>`;
+        }
+        html += tiposArr.filter(t=>t.valor&&t.valor!=='0,00'&&t.valor!=='').map(t => {
+          const icon = tipoIconRel[t.tipo]||'📋';
+          let extra = '';
+          if (t.tipo==='Combustível' && t.placa) extra = `<span style="font-size:9px;color:var(--text-muted);margin-left:4px;">${esc(t.tipoVeiculo||'')} ${esc(t.placa)}</span>`;
+          if (t.tipo==='Outros' && t.finalidade) extra = `<span style="font-size:9px;color:var(--text-muted);margin-left:4px;">${esc(t.finalidade)}</span>`;
+          return `<div style="display:flex;align-items:center;gap:5px;padding:3px 0;border-bottom:1px dashed var(--border);">
+            <span style="font-size:13px;flex-shrink:0;">${icon}</span>
+            <span style="font-size:11px;color:var(--text-secondary);flex:1;">${esc(t.tipo)}${extra}</span>
+            <span style="font-family:'Montserrat',monospace;font-size:11px;font-weight:700;color:var(--teal);white-space:nowrap;">R$ ${esc(t.valor)}</span>
+          </div>`;
+        }).join('');
+        return html;
+      })();
 
       const totalNum = parseBRL(d.valorTotal||d.valor||'0');
       const totalHtml = (d.valorTotal||d.valor)
@@ -3376,13 +3396,21 @@ function imprimirRelatorio() {
     const tiposArr = (d.tipos && d.tipos.length)
       ? d.tipos
       : (d.tipo ? [{ tipo: d.tipo, valor: d.valor, placa: d.placa, tipoVeiculo: d.tipoVeiculo, finalidade: d.finalidade }] : []);
-    const tiposHtml = tiposArr.filter(t=>t.valor&&t.valor!=='0,00'&&t.valor!=='').map(t => {
-      const icon = tipoIconsPrint[t.tipo]||'📋';
-      let extra = '';
-      if (t.tipo==='Combustível' && t.placa) extra = ` (${t.tipoVeiculo||''} ${t.placa})`;
-      if (t.tipo==='Outros' && t.finalidade) extra = ` — ${t.finalidade}`;
-      return `<div style="padding:2px 0;border-bottom:1px dashed #e5e5e5;font-size:10px;">${icon} ${esc(t.tipo)}${extra}: <strong>R$ ${esc(t.valor)}</strong></div>`;
-    }).join('');
+    const tiposHtml = (() => {
+      let html = '';
+      // Devolução: mostra valor adiantamento como primeira linha
+      if (d.tipoLancamento === 'Devolução' && d.valorAdiantamento) {
+        html += `<div style="padding:2px 0;border-bottom:1px dashed #e5e5e5;font-size:10px;">💰 Valor Adiantamento: <strong style="color:#b33a3a">R$ ${esc(d.valorAdiantamento)}</strong></div>`;
+      }
+      html += tiposArr.filter(t=>t.valor&&t.valor!=='0,00'&&t.valor!=='').map(t => {
+        const icon = tipoIconsPrint[t.tipo]||'📋';
+        let extra = '';
+        if (t.tipo==='Combustível' && t.placa) extra = ` (${t.tipoVeiculo||''} ${t.placa})`;
+        if (t.tipo==='Outros' && t.finalidade) extra = ` — ${t.finalidade}`;
+        return `<div style="padding:2px 0;border-bottom:1px dashed #e5e5e5;font-size:10px;">${icon} ${esc(t.tipo)}${extra}: <strong>R$ ${esc(t.valor)}</strong></div>`;
+      }).join('');
+      return html;
+    })();
     const totalVal = d.valorTotal||d.valor||'—';
     const statusLanc = d.statusLancamento||'Pendente';
     return `<tr>
