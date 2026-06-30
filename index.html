@@ -4158,6 +4158,432 @@ function atualizarCelulaDrive(d) {
   </div>
 </div>
 </div><!-- /app-root -->
+
+<!-- ===== CALCULADORA DE SOMA POR TIPO DE DESPESA ===== -->
+<style>
+  /* Reorganiza td-valor para acomodar o botão + ao lado do input */
+  .tipo-table .td-valor { display:flex; align-items:center; gap:6px; }
+  .tipo-table .td-valor input.tipo-valor-input { flex:1; min-width:0; }
+  .calc-add-btn {
+    flex:none;
+    width:30px; height:30px;
+    border:1.5px solid var(--border-strong);
+    background:var(--surface-2);
+    border-radius:8px;
+    color:var(--teal);
+    font-size:18px; font-weight:700; line-height:1;
+    cursor:pointer;
+    display:inline-flex; align-items:center; justify-content:center;
+    transition:background 0.15s, border-color 0.15s, transform 0.1s;
+    font-family:'Montserrat',sans-serif;
+    padding:0;
+  }
+  .calc-add-btn:hover { background:var(--teal-light); border-color:var(--teal-mid); }
+  .calc-add-btn:active { transform:scale(0.94); }
+  .calc-add-btn.has-items {
+    background:var(--teal); color:#fff; border-color:var(--teal);
+  }
+  .calc-add-btn .calc-badge {
+    position:absolute;
+    margin-top:-22px; margin-left:18px;
+    background:var(--danger); color:#fff;
+    font-size:9px; font-weight:700;
+    min-width:14px; height:14px; padding:0 3px;
+    border-radius:7px;
+    display:inline-flex; align-items:center; justify-content:center;
+    pointer-events:none;
+  }
+
+  /* Modal overlay */
+  .calc-overlay {
+    position:fixed; inset:0;
+    background:rgba(1,30,60,0.55);
+    backdrop-filter:blur(2px);
+    display:none;
+    align-items:center; justify-content:center;
+    z-index:9999;
+    padding:16px;
+  }
+  .calc-overlay.show { display:flex; }
+  .calc-modal {
+    background:var(--white);
+    border-radius:var(--r-lg);
+    box-shadow:var(--elev3);
+    width:100%; max-width:460px;
+    max-height:90vh;
+    display:flex; flex-direction:column;
+    font-family:'Montserrat',sans-serif;
+    overflow:hidden;
+  }
+  .calc-header {
+    padding:16px 20px;
+    background:var(--teal);
+    color:#fff;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .calc-header-title { font-size:15px; font-weight:600; display:flex; align-items:center; gap:8px; }
+  .calc-header-sub { font-size:11px; opacity:0.85; margin-top:2px; font-weight:400; }
+  .calc-close {
+    background:transparent; border:none; color:#fff;
+    font-size:22px; cursor:pointer; line-height:1;
+    width:28px; height:28px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:6px;
+    transition:background 0.15s;
+  }
+  .calc-close:hover { background:rgba(255,255,255,0.18); }
+
+  .calc-body {
+    padding:14px 20px;
+    overflow-y:auto;
+    flex:1;
+  }
+  .calc-rows { display:flex; flex-direction:column; gap:8px; }
+  .calc-row {
+    display:flex; align-items:center; gap:8px;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:8px 10px;
+  }
+  .calc-row-num {
+    font-size:11px; font-weight:700; color:var(--text-muted);
+    min-width:22px; text-align:center;
+  }
+  .calc-row input.calc-desc {
+    flex:1.2; min-width:0;
+    font-family:'Montserrat',sans-serif;
+    font-size:12px;
+    border:1px solid var(--border-strong);
+    border-radius:6px;
+    padding:6px 8px;
+    background:#fff;
+    color:var(--ink);
+    outline:none;
+  }
+  .calc-row input.calc-val {
+    flex:1; min-width:0;
+    font-family:'Montserrat',monospace;
+    font-size:13px; font-weight:600;
+    border:1.5px solid var(--border-strong);
+    border-radius:6px;
+    padding:6px 10px;
+    background:#fff;
+    color:var(--ink);
+    outline:none;
+    text-align:right;
+  }
+  .calc-row input.calc-desc:focus,
+  .calc-row input.calc-val:focus { border-color:var(--teal-mid); box-shadow:0 0 0 2px rgba(15,66,69,0.12); }
+  .calc-row-del {
+    flex:none;
+    width:26px; height:26px;
+    border:1px solid var(--border);
+    background:#fff;
+    border-radius:6px;
+    color:var(--danger);
+    cursor:pointer;
+    font-size:14px; line-height:1;
+    display:inline-flex; align-items:center; justify-content:center;
+    transition:background 0.15s;
+  }
+  .calc-row-del:hover { background:var(--danger-bg); }
+
+  .calc-add-row {
+    margin-top:10px;
+    width:100%;
+    background:#fff;
+    border:1.5px dashed var(--border-strong);
+    color:var(--teal);
+    font-family:'Montserrat',sans-serif;
+    font-size:12px; font-weight:600;
+    padding:9px 12px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:background 0.15s, border-color 0.15s;
+  }
+  .calc-add-row:hover { background:var(--teal-light); border-color:var(--teal-mid); }
+
+  .calc-footer {
+    border-top:1px solid var(--border);
+    padding:12px 20px 16px;
+    background:var(--surface-2);
+  }
+  .calc-total-line {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:12px;
+  }
+  .calc-total-label { font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.05em; }
+  .calc-total-value {
+    font-family:'Montserrat',monospace;
+    font-size:18px; font-weight:700;
+    color:var(--teal);
+  }
+  .calc-actions { display:flex; gap:8px; }
+  .calc-btn {
+    flex:1;
+    padding:10px 14px;
+    border-radius:8px;
+    font-family:'Montserrat',sans-serif;
+    font-size:13px; font-weight:600;
+    cursor:pointer;
+    border:1.5px solid var(--border-strong);
+    transition:background 0.15s, transform 0.1s;
+  }
+  .calc-btn:active { transform:scale(0.98); }
+  .calc-btn-secondary { background:#fff; color:var(--text-secondary); }
+  .calc-btn-secondary:hover { background:var(--surface-2); }
+  .calc-btn-primary {
+    background:var(--teal); color:#fff; border-color:var(--teal);
+  }
+  .calc-btn-primary:hover { background:var(--teal-mid); border-color:var(--teal-mid); }
+
+  @media (max-width:480px) {
+    .calc-modal { max-height:95vh; }
+    .calc-row { flex-wrap:wrap; }
+    .calc-row input.calc-desc { flex-basis:100%; order:3; }
+  }
+</style>
+
+<div class="calc-overlay" id="calc-overlay" role="dialog" aria-modal="true" aria-labelledby="calc-title">
+  <div class="calc-modal">
+    <div class="calc-header">
+      <div>
+        <div class="calc-header-title" id="calc-title">
+          <span id="calc-icon">🧮</span>
+          <span id="calc-tipo-nome">Calculadora</span>
+        </div>
+        <div class="calc-header-sub">Adicione vários valores — o total preenche o campo</div>
+      </div>
+      <button type="button" class="calc-close" onclick="closeCalc()" aria-label="Fechar">×</button>
+    </div>
+    <div class="calc-body">
+      <div class="calc-rows" id="calc-rows"></div>
+      <button type="button" class="calc-add-row" onclick="addCalcRow()">+ Adicionar valor</button>
+    </div>
+    <div class="calc-footer">
+      <div class="calc-total-line">
+        <span class="calc-total-label">Total</span>
+        <span class="calc-total-value" id="calc-total">R$ 0,00</span>
+      </div>
+      <div class="calc-actions">
+        <button type="button" class="calc-btn calc-btn-secondary" onclick="closeCalc()">Cancelar</button>
+        <button type="button" class="calc-btn calc-btn-primary" onclick="applyCalc()">Aplicar total</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Armazena os itens da calculadora por data-tipo (persiste entre aberturas, mesmo lançamento)
+  const calcStore = {};
+  let calcCurrentInput = null;
+
+  function fmtBR(n) {
+    return (n||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  }
+  function parseBR(str) {
+    if (!str) return 0;
+    const clean = String(str).replace(/\./g,'').replace(',','.');
+    const n = parseFloat(clean);
+    return isNaN(n) ? 0 : n;
+  }
+  function maskValInput(el) {
+    let v = el.value.replace(/\D/g,'');
+    if (!v) { el.value=''; return; }
+    el.value = (parseInt(v,10)/100).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  }
+
+  function renderCalcRows() {
+    const tipo = calcCurrentInput ? calcCurrentInput.dataset.tipo : '';
+    const items = calcStore[tipo] || [];
+    const box = document.getElementById('calc-rows');
+    box.innerHTML = '';
+    if (items.length === 0) {
+      // Garante pelo menos 1 linha vazia
+      items.push({desc:'', val:''});
+      calcStore[tipo] = items;
+    }
+    items.forEach((it, idx) => {
+      const row = document.createElement('div');
+      row.className = 'calc-row';
+      row.innerHTML = `
+        <span class="calc-row-num">${idx+1}</span>
+        <input type="text" class="calc-desc" placeholder="Descrição (opcional)" value="${(it.desc||'').replace(/"/g,'&quot;')}">
+        <input type="text" class="calc-val" inputmode="decimal" placeholder="0,00" value="${it.val||''}">
+        <button type="button" class="calc-row-del" title="Remover" aria-label="Remover">✕</button>
+      `;
+      const descEl = row.querySelector('.calc-desc');
+      const valEl  = row.querySelector('.calc-val');
+      const delBtn = row.querySelector('.calc-row-del');
+
+      descEl.addEventListener('input', () => { items[idx].desc = descEl.value; });
+      valEl.addEventListener('input', () => {
+        maskValInput(valEl);
+        items[idx].val = valEl.value;
+        updateCalcTotal();
+      });
+      delBtn.addEventListener('click', () => {
+        items.splice(idx,1);
+        renderCalcRows();
+        updateCalcTotal();
+      });
+      box.appendChild(row);
+    });
+  }
+
+  function updateCalcTotal() {
+    const tipo = calcCurrentInput ? calcCurrentInput.dataset.tipo : '';
+    const items = calcStore[tipo] || [];
+    const total = items.reduce((s,it)=> s + parseBR(it.val), 0);
+    document.getElementById('calc-total').textContent = 'R$ ' + fmtBR(total);
+  }
+
+  window.addCalcRow = function() {
+    const tipo = calcCurrentInput ? calcCurrentInput.dataset.tipo : '';
+    if (!calcStore[tipo]) calcStore[tipo] = [];
+    calcStore[tipo].push({desc:'', val:''});
+    renderCalcRows();
+    updateCalcTotal();
+    // Foca o último input de valor
+    const rows = document.querySelectorAll('#calc-rows .calc-row .calc-val');
+    if (rows.length) rows[rows.length-1].focus();
+  };
+
+  window.closeCalc = function() {
+    document.getElementById('calc-overlay').classList.remove('show');
+    calcCurrentInput = null;
+  };
+
+  window.applyCalc = function() {
+    if (!calcCurrentInput) return closeCalc();
+    const tipo = calcCurrentInput.dataset.tipo;
+    const items = (calcStore[tipo]||[]).filter(it => parseBR(it.val) > 0);
+    const total = items.reduce((s,it)=> s + parseBR(it.val), 0);
+    calcStore[tipo] = items.length ? items : [];
+    if (total > 0) {
+      calcCurrentInput.value = fmtBR(total);
+    } else {
+      calcCurrentInput.value = '';
+    }
+    // Dispara os handlers existentes (maskTipoValor, toggleVeiculoInline, toggleFinalidade, etc.)
+    calcCurrentInput.dispatchEvent(new Event('input', {bubbles:true}));
+    updatePlusBtnState(calcCurrentInput);
+    closeCalc();
+  };
+
+  function openCalcFor(input) {
+    calcCurrentInput = input;
+    const tipo = input.dataset.tipo || 'Despesa';
+    document.getElementById('calc-tipo-nome').textContent = tipo;
+    // Pega ícone do label da linha
+    const tr = input.closest('tr');
+    const label = tr ? tr.querySelector('.td-label') : null;
+    if (label) {
+      const txt = label.textContent.trim();
+      const firstChar = Array.from(txt)[0] || '🧮';
+      document.getElementById('calc-icon').textContent = firstChar;
+    } else {
+      document.getElementById('calc-icon').textContent = '🧮';
+    }
+    if (!calcStore[tipo] || calcStore[tipo].length === 0) {
+      calcStore[tipo] = [{desc:'', val:''}];
+    }
+    renderCalcRows();
+    updateCalcTotal();
+    document.getElementById('calc-overlay').classList.add('show');
+  }
+
+  function updatePlusBtnState(input) {
+    const tipo = input.dataset.tipo;
+    const items = (calcStore[tipo]||[]).filter(it => parseBR(it.val) > 0);
+    const btn = input.parentElement.querySelector('.calc-add-btn');
+    if (!btn) return;
+    // Limpa badge antiga
+    const old = btn.querySelector('.calc-badge');
+    if (old) old.remove();
+    if (items.length > 0) {
+      btn.classList.add('has-items');
+      btn.title = `${items.length} valor(es) somado(s) — clique para editar`;
+      const badge = document.createElement('span');
+      badge.className = 'calc-badge';
+      badge.textContent = items.length;
+      btn.appendChild(badge);
+    } else {
+      btn.classList.remove('has-items');
+      btn.title = 'Somar vários valores';
+    }
+  }
+
+  // Injeta o botão "+" ao lado de cada input de valor
+  function injectPlusButtons() {
+    const inputs = document.querySelectorAll('.tipo-valor-input');
+    inputs.forEach(inp => {
+      if (inp.parentElement.querySelector('.calc-add-btn')) return; // já injetado
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'calc-add-btn';
+      btn.title = 'Somar vários valores';
+      btn.setAttribute('aria-label', 'Abrir calculadora para somar vários valores');
+      btn.textContent = '+';
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openCalcFor(inp);
+      });
+      // Insere logo após o input
+      inp.insertAdjacentElement('afterend', btn);
+
+      // Se o usuário editar o input manualmente, limpa a memória da calculadora
+      // (assim a próxima abertura começa do zero e não fica "fantasma")
+      inp.addEventListener('input', () => {
+        // Só limpa se a edição não veio de applyCalc (que já cuida do store)
+        if (calcCurrentInput === inp) return;
+        // Se o valor agora difere do total armazenado, descarta o histórico
+        const tipo = inp.dataset.tipo;
+        const items = calcStore[tipo] || [];
+        const total = items.reduce((s,it)=> s + parseBR(it.val), 0);
+        if (Math.abs(parseBR(inp.value) - total) > 0.001) {
+          calcStore[tipo] = [];
+          updatePlusBtnState(inp);
+        }
+      });
+    });
+  }
+
+  // Fecha modal com ESC
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.getElementById('calc-overlay').classList.contains('show')) {
+      closeCalc();
+    }
+  });
+
+  // Fecha ao clicar fora do modal
+  document.getElementById('calc-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'calc-overlay') closeCalc();
+  });
+
+  // Inicializa
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', injectPlusButtons);
+  } else {
+    injectPlusButtons();
+  }
+
+  // Limpa o store quando o formulário de lançamento é resetado/limpo
+  // (escuta o botão "Limpar" se existir)
+  document.addEventListener('click', (e) => {
+    const t = e.target;
+    if (!t) return;
+    const txt = (t.textContent || '').trim().toLowerCase();
+    if (t.tagName === 'BUTTON' && (txt === 'limpar' || txt === 'limpar campos' || txt === 'novo lançamento')) {
+      Object.keys(calcStore).forEach(k => delete calcStore[k]);
+      document.querySelectorAll('.tipo-valor-input').forEach(updatePlusBtnState);
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
 
