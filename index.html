@@ -402,6 +402,7 @@ body {
 }
 .cc-eng  { background: var(--mint); color: var(--teal); border: 1px solid var(--mint-dark); }
 .cc-gest { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.cc-geral{ background: var(--teal-light); color: var(--teal); border: 1px solid var(--mint-dark); }
 
 
 
@@ -1101,11 +1102,12 @@ body {
             <option value="">— Selecione —</option>
             <option value="Engenharia">Engenharia</option>
             <option value="Gestão">Gestão</option>
+            <option value="Geral">Geral</option>
           </select>
         </div>
         <div class="form-group">
-          <label for="desp-competencia">Data de Competência</label>
-          <input type="date" id="desp-competencia">
+          <label for="desp-competencia">Mês de Competência</label>
+          <input type="month" id="desp-competencia">
         </div>
       </div>
 
@@ -1616,6 +1618,7 @@ body {
             <option value="">Todos</option>
             <option value="Engenharia">Engenharia</option>
             <option value="Gestão">Gestão</option>
+            <option value="Geral">Geral</option>
           </select>
         </div>
         <div class="form-group">
@@ -2142,11 +2145,12 @@ function maskTipoValor(input) {
 }
 
 /* ── Devolução: toggle section, mask and saldo ── */
-function toggleDevolucaoSection() {
+function toggleDevolucaoSection(silent) {
   const tipo = document.getElementById('desp-tipo-lancamento').value;
   const section = document.getElementById('devolucao-section');
   if (!section) return;
   const isDev = tipo === 'Devolução';
+  const wasShowing = section.classList.contains('show');
   section.classList.toggle('show', isDev);
   if (!isDev) {
     const inp = document.getElementById('desp-valor-adiantamento');
@@ -2155,6 +2159,10 @@ function toggleDevolucaoSection() {
     if (saldo) { saldo.textContent = 'R$ 0,00'; saldo.className = 'saldo-box'; }
   } else {
     atualizarSaldoDevolucao();
+    if (!wasShowing && !silent) {
+      // Avisa o usuário apenas quando Devolução é recém-selecionado pelo usuário
+      setTimeout(() => alert('Pix para conta Electric'), 0);
+    }
   }
 }
 
@@ -2429,7 +2437,7 @@ function editarDespesa(id) {
   document.getElementById('desp-competencia').value  = d.competencia||'';
   if (d.tipoLancamento) {
     document.getElementById('desp-tipo-lancamento').value = d.tipoLancamento;
-    toggleDevolucaoSection();
+    toggleDevolucaoSection(true);
   }
   // Restore valorAdiantamento se for Devolução
   if (d.tipoLancamento === 'Devolução' && d.valorAdiantamento) {
@@ -3012,7 +3020,9 @@ function renderDespesas() {
     [...lista].reverse().map(d => {
       const ccPill = d.cc==='Engenharia'
         ? `<span class="cc-pill cc-eng">Engenharia</span>`
-        : `<span class="cc-pill cc-gest">Gestão</span>`;
+        : d.cc==='Geral'
+          ? `<span class="cc-pill cc-geral">Geral</span>`
+          : `<span class="cc-pill cc-gest">Gestão</span>`;
 
       // Tipos: suporta array (novo) e legado (string)
       const tipos = d.tipos && d.tipos.length
@@ -3259,7 +3269,9 @@ function renderRelatorio() {
     sorted.map(d=>{
       const ccPill = d.cc==='Engenharia'
         ? `<span class="cc-pill cc-eng">Eng.</span>`
-        : `<span class="cc-pill cc-gest">Gest.</span>`;
+        : d.cc==='Geral'
+          ? `<span class="cc-pill cc-geral">Geral</span>`
+          : `<span class="cc-pill cc-gest">Gest.</span>`;
 
       // Build tipos array — supports new multi-tipo and legacy single-tipo
       const tiposArr = (d.tipos && d.tipos.length)
