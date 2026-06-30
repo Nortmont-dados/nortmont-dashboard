@@ -643,65 +643,6 @@ body {
 }
 
 /* ─── EMAIL MODAL ─── */
-/* ── Modal de Edição Rápida de Categorias ─────────────── */
-.cat-modal-overlay {
-  display:none; position:fixed; inset:0;
-  background:rgba(1,30,60,0.55); z-index:9999;
-  align-items:center; justify-content:center;
-  padding:20px; backdrop-filter:blur(3px);
-}
-.cat-modal-overlay.open { display:flex; }
-.cat-modal {
-  background:#fff; border-radius:16px;
-  width:100%; max-width:460px;
-  box-shadow:0 20px 60px rgba(1,30,60,0.35);
-  overflow:hidden; display:flex; flex-direction:column;
-  border:1px solid var(--border);
-  animation:catModalIn .18s ease-out;
-}
-@keyframes catModalIn { from{opacity:0;transform:translateY(8px) scale(.98)} to{opacity:1;transform:none} }
-.cat-modal-header {
-  background:linear-gradient(135deg,#011E3C 0%,#0a3470 100%);
-  color:#A8CCA8; padding:16px 20px;
-  display:flex; align-items:center; justify-content:space-between;
-}
-.cat-modal-header h3 { font-size:14px; font-weight:700; letter-spacing:-0.01em; margin:0; }
-.cat-modal-header p  { font-size:11px; color:rgba(168,204,168,0.7); margin-top:2px; }
-.cat-modal-close {
-  background:rgba(255,255,255,0.12); color:#A8CCA8; border:none;
-  width:28px; height:28px; border-radius:8px; cursor:pointer;
-  font-size:14px; display:flex; align-items:center; justify-content:center;
-  transition:background .15s;
-}
-.cat-modal-close:hover { background:rgba(255,255,255,0.22); }
-.cat-modal-body { padding:20px 22px; display:flex; flex-direction:column; gap:14px; }
-.cat-modal-info {
-  background:var(--surface-2); border:1px solid var(--border);
-  border-radius:10px; padding:10px 12px; font-size:11px; color:var(--text-muted);
-  line-height:1.45;
-}
-.cat-modal-info strong { color:var(--navy); font-weight:700; }
-.cat-modal-field { display:flex; flex-direction:column; gap:6px; }
-.cat-modal-field label {
-  font-size:11px; font-weight:700; color:var(--navy);
-  text-transform:uppercase; letter-spacing:0.06em;
-}
-.cat-modal-field select {
-  padding:10px 12px; border:1.5px solid var(--border);
-  border-radius:8px; font-size:13px; font-family:inherit;
-  background:#fff; color:var(--navy); transition:border-color .15s;
-  cursor:pointer;
-}
-.cat-modal-field select:focus {
-  outline:none; border-color:var(--teal);
-  box-shadow:0 0 0 3px rgba(26,122,85,0.12);
-}
-.cat-modal-footer {
-  padding:14px 22px 18px; display:flex; gap:8px; justify-content:flex-end;
-  background:var(--surface-2); border-top:1px solid var(--border);
-}
-.cat-modal-footer .btn { font-size:12px; padding:8px 16px; }
-
 .email-modal-overlay {
   display:none; position:fixed; inset:0; z-index:10000;
   background:rgba(1,30,60,0.55); backdrop-filter:blur(3px);
@@ -2504,22 +2445,47 @@ function editarDespesa(id) {
     if (adEl) { adEl.value = d.valorAdiantamento; atualizarSaldoDevolucao(); }
   }
   if (d.categoria) { document.getElementById('desp-categoria').value = d.categoria; togglePropostaField(); }
-  // fill the tipo row
-  document.querySelectorAll('.tipo-valor-input').forEach(inp=>{
-    if(inp.dataset.tipo===d.tipo) { inp.value=d.valor||''; }
-    else inp.value='';
+
+  // === FIX: preenche TODOS os tipos lançados (não apenas o primeiro) ===
+  // Monta array unificado: suporta formato novo (d.tipos) e legado (d.tipo/d.valor)
+  const tiposParaEdicao = (d.tipos && d.tipos.length)
+    ? d.tipos
+    : [{ tipo: d.tipo, valor: d.valor, tipoVeiculo: d.tipoVeiculo, placa: d.placa, modelo: d.modelo, finalidade: d.finalidade }];
+
+  // Filtra "Valor Adiantamento" — esse vai no campo separado, não nos tipos
+  const tiposReais = tiposParaEdicao.filter(t => t && t.tipo && t.tipo !== 'Valor Adiantamento');
+
+  // Zera todos os inputs de tipo e depois preenche os que existem no lançamento
+  document.querySelectorAll('.tipo-valor-input').forEach(inp => { inp.value = ''; });
+  tiposReais.forEach(t => {
+    const inp = document.querySelector(`.tipo-valor-input[data-tipo="${t.tipo}"]`);
+    if (inp) inp.value = t.valor || '';
   });
-  if(d.tipo==='Combustível' && d.valor) {
-    const vi=document.getElementById('veiculo-inline'); if(vi) vi.classList.add('show');
-    if(d.tipoVeiculo) document.getElementById('desp-tipo-veiculo').value = d.tipoVeiculo;
+
+  // Combustível: pega dados do tipo Combustível (busca no array, com fallback legado)
+  const tComb = tiposReais.find(t => t.tipo === 'Combustível');
+  if (tComb) {
+    const vi = document.getElementById('veiculo-inline'); if (vi) vi.classList.add('show');
+    document.getElementById('desp-tipo-veiculo').value = tComb.tipoVeiculo || d.tipoVeiculo || '';
+    document.getElementById('desp-placa').value       = tComb.placa       || d.placa       || '';
+    document.getElementById('desp-modelo').value      = tComb.modelo      || d.modelo      || '';
+  } else {
+    const vi = document.getElementById('veiculo-inline'); if (vi) vi.classList.remove('show');
+    document.getElementById('desp-placa').value = '';
+    document.getElementById('desp-modelo').value = '';
+    document.getElementById('desp-tipo-veiculo').value = '';
   }
-  if(d.tipo==='Outros' && d.finalidade) {
-    const of=document.getElementById('outros-finalidade'); if(of) of.style.display='block';
-    document.getElementById('desp-finalidade').value = d.finalidade;
+
+  // Outros: pega finalidade do tipo Outros
+  const tOutros = tiposReais.find(t => t.tipo === 'Outros');
+  if (tOutros) {
+    const of = document.getElementById('outros-finalidade'); if (of) of.style.display = 'block';
+    document.getElementById('desp-finalidade').value = tOutros.finalidade || d.finalidade || '';
+  } else {
+    const of = document.getElementById('outros-finalidade'); if (of) of.style.display = 'none';
+    document.getElementById('desp-finalidade').value = '';
   }
-  document.getElementById('desp-valor').value = d.valor||'';
-  document.getElementById('desp-placa').value = d.placa||'';
-  document.getElementById('desp-modelo').value= d.modelo||'';
+
   document.getElementById('desp-obs').value = d.obs||'';
   if(d.pdfBase64){ pdfBase64=d.pdfBase64; pdfFileName=d.pdfFileName; document.getElementById('pdf-name-text').textContent=d.pdfFileName||''; document.getElementById('pdf-name-display').classList.add('show'); }
   onTipoChange();
@@ -2534,72 +2500,6 @@ function cancelarEdicao() {
   limparFormDespesa();
   document.getElementById('edit-banner').classList.remove('show');
   document.getElementById('card-eyebrow-despesa').textContent = 'Nova despesa';
-}
-
-/* ── Edição rápida de categorias (modal) ─────────────────── */
-let _catEditingId = null;
-
-function abrirEdicaoCategorias(id) {
-  const d = load(KEY.despesas).find(x => x.id === id);
-  if (!d) return;
-  _catEditingId = id;
-
-  // Preenche os selects com os valores atuais
-  document.getElementById('cat-edit-cc').value         = d.cc || '';
-  document.getElementById('cat-edit-categoria').value  = d.categoria || '';
-  document.getElementById('cat-edit-tipo-lanc').value  = d.tipoLancamento || '';
-
-  // Resumo do lançamento para o usuário se localizar
-  const resumo = `<strong>${esc(d.cliente||'—')}</strong> · ${esc(d.colaborador||'—')} · ${esc(d.data||'')}<br>
-                  <span style="color:var(--text-muted)">Valor: R$ ${esc(d.valorTotal||d.valor||'0,00')}</span>`;
-  document.getElementById('cat-edit-info').innerHTML = resumo;
-
-  document.getElementById('cat-modal-overlay').classList.add('open');
-}
-
-function fecharEdicaoCategorias() {
-  document.getElementById('cat-modal-overlay').classList.remove('open');
-  _catEditingId = null;
-}
-
-function salvarEdicaoCategorias() {
-  if (!_catEditingId) return fecharEdicaoCategorias();
-
-  const novoCC        = document.getElementById('cat-edit-cc').value;
-  const novaCategoria = document.getElementById('cat-edit-categoria').value;
-  const novoTipoLanc  = document.getElementById('cat-edit-tipo-lanc').value;
-
-  if (!novoCC || !novaCategoria || !novoTipoLanc) {
-    mostrarToast('⚠ Preencha todos os campos antes de salvar.', 'warning', 3500);
-    return;
-  }
-
-  const id = _catEditingId;
-  let lista = load(KEY.despesas);
-  lista = lista.map(d => d.id === id
-    ? { ...d, cc: novoCC, categoria: novaCategoria, tipoLancamento: novoTipoLanc }
-    : d);
-  save(KEY.despesas, lista);
-
-  // Re-renderiza ambas as telas para refletir a mudança
-  if (typeof renderDespesas === 'function')  renderDespesas();
-  if (typeof renderRelatorio === 'function') renderRelatorio();
-
-  fecharEdicaoCategorias();
-  mostrarToast('✓ Categorias atualizadas localmente. Sincronizando…', 'info', 2500);
-
-  // Sincroniza com Google Sheets (mesmo padrão do alternarStatusRel)
-  sheetsPost({
-    aba: 'Despesas',
-    id: String(id),
-    acao: 'atualizar',
-    'Centro de Custo':  novoCC,
-    'Categoria':        novaCategoria,
-    'Tipo Lançamento':  novoTipoLanc,
-  }).then(r => {
-    if (r.ok) mostrarToast('✓ Categorias salvas no Google Sheets', 'success', 2800);
-    else      mostrarToast('⚠ Erro ao salvar no Sheets: ' + (r.erro||''), 'error', 4500);
-  }).catch(e => mostrarToast('⚠ Falha de conexão: ' + e.message, 'error', 4500));
 }
 
 function removerAnexo() {
@@ -3250,7 +3150,6 @@ function renderDespesas() {
         <td style="padding:8px 6px;">
           <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;">
             <button class="btn btn-edit" onclick="editarDespesa(${d.id})" title="Editar"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar</button>
-            <button class="btn btn-edit" onclick="abrirEdicaoCategorias(${d.id})" title="Editar categorias rapidamente" style="background:#fef3c7;border-color:#fcd34d;color:#92400e;">🏷️ Categorias</button>
             <button class="btn btn-email" onclick="enviarEmail(${d.id})" title="Enviar por Gmail"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Gmail</button>
             <button class="btn btn-danger" onclick="confirmarExclusao(${d.id}, this)">🗑 Excluir</button>
           </div>
@@ -3458,7 +3357,6 @@ function renderRelatorio() {
         <td class="no-print" style="white-space:nowrap;vertical-align:middle;">
           <div style="display:flex;flex-wrap:wrap;gap:4px;">
             <button class="btn btn-edit" onclick="alternarStatusRel(${d.id})" title="Alternar Status" style="font-size:10px;">⇄ Status</button>
-            <button class="btn btn-edit" onclick="abrirEdicaoCategorias(${d.id})" title="Editar categorias rapidamente" style="font-size:10px;background:#fef3c7;border-color:#fcd34d;color:#92400e;">🏷️ Categorias</button>
             <button class="btn btn-edit" onclick="editarDespesa(${d.id})" title="Editar">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
@@ -4259,55 +4157,6 @@ function atualizarCelulaDrive(d) {
     </div>
   </div>
 </div>
-<!-- ═══════ MODAL: EDIÇÃO RÁPIDA DE CATEGORIAS ═══════ -->
-<div class="cat-modal-overlay" id="cat-modal-overlay" onclick="if(event.target===this)fecharEdicaoCategorias()">
-  <div class="cat-modal">
-    <div class="cat-modal-header">
-      <div>
-        <h3>🏷️ Editar categorias</h3>
-        <p>Altere a classificação sem abrir o formulário completo</p>
-      </div>
-      <button class="cat-modal-close" onclick="fecharEdicaoCategorias()">✕</button>
-    </div>
-    <div class="cat-modal-body">
-      <div class="cat-modal-info" id="cat-edit-info">—</div>
-
-      <div class="cat-modal-field">
-        <label for="cat-edit-cc">Centro de Custo</label>
-        <select id="cat-edit-cc">
-          <option value="">— Selecione —</option>
-          <option value="Geral">Geral</option>
-          <option value="Engenharia">Engenharia</option>
-        </select>
-      </div>
-
-      <div class="cat-modal-field">
-        <label for="cat-edit-categoria">Categoria</label>
-        <select id="cat-edit-categoria">
-          <option value="">— Selecione —</option>
-          <option value="Projeto">Projeto</option>
-          <option value="Visita">Visita</option>
-          <option value="Despesas Administrativas">Despesas Administrativas</option>
-        </select>
-      </div>
-
-      <div class="cat-modal-field">
-        <label for="cat-edit-tipo-lanc">Tipo de Lançamento</label>
-        <select id="cat-edit-tipo-lanc">
-          <option value="">— Selecione —</option>
-          <option value="Adiantamento">💰 Adiantamento</option>
-          <option value="Ressarcimento">↩ Ressarcimento</option>
-          <option value="Devolução">↵ Devolução</option>
-        </select>
-      </div>
-    </div>
-    <div class="cat-modal-footer">
-      <button class="btn btn-secondary" onclick="fecharEdicaoCategorias()">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarEdicaoCategorias()">Salvar alterações</button>
-    </div>
-  </div>
-</div>
-
 </div><!-- /app-root -->
 </body>
 </html>
