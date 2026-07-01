@@ -1787,7 +1787,9 @@ body {
         </div>
         <div class="form-group">
           <label for="parc-parceiro">Parceiro / Beneficiário *</label>
-          <input type="text" id="parc-parceiro" placeholder="Ex.: Clínica Vida Plena">
+          <select id="parc-parceiro" onchange="onParcParceiroChange()">
+            <option value="">— Selecione —</option>
+          </select>
         </div>
       </div>
 
@@ -1860,7 +1862,7 @@ body {
     <!-- LISTA DE RESSARCIMENTOS LANÇADOS -->
     <div class="card" style="margin-top:20px;">
       <div class="card-header">
-        <span>Ressarcimentos lançados</span>
+        <span>Repasses Lançados</span>
         <span class="badge" id="badge-parc">0</span>
       </div>
       <div class="user-filter-info" style="background:#eef4fa;border-left:3px solid #4a7ba7;border-radius:0 var(--r-md) var(--r-md) 0;padding:10px 14px;font-size:12px;color:#2a4a70;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
@@ -1872,6 +1874,44 @@ body {
           <div class="empty-state">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             Nenhum ressarcimento registrado ainda.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CADASTRO DE PARCEIROS -->
+    <div class="card" style="margin-top:20px;">
+      <div class="card-header">
+        <span>Cadastro de Parceiros</span>
+        <span class="badge" id="badge-parceiros">0</span>
+      </div>
+      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:14px;line-height:1.55;">
+        Os parceiros cadastrados aqui aparecem automaticamente na lista suspensa <strong>Parceiro / Beneficiário</strong> acima. Ao selecionar um parceiro no formulário, a <strong>% Comissão</strong> é preenchida com o valor cadastrado.
+      </p>
+
+      <div class="form-grid cols-3" style="margin-bottom:14px;align-items:end;">
+        <div class="form-group">
+          <label for="pcad-nome">Nome do Parceiro *</label>
+          <input type="text" id="pcad-nome" placeholder="Ex.: Clínica Vida Plena">
+        </div>
+        <div class="form-group">
+          <label for="pcad-comissao">% Comissão *</label>
+          <input type="text" id="pcad-comissao" placeholder="Ex.: 10" inputmode="decimal" oninput="maskParcPercent(this)" style="font-family:'Montserrat',monospace;font-weight:600;">
+        </div>
+        <div>
+          <button class="btn btn-teal" onclick="salvarParceiroCad()" style="width:100%;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span id="btn-parc-cad-txt">Adicionar parceiro</span>
+          </button>
+        </div>
+      </div>
+      <div class="alert" id="alert-parc-cad"></div>
+
+      <div style="overflow-x:auto;">
+        <div id="lista-parceiros-cad">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            Nenhum parceiro cadastrado ainda.
           </div>
         </div>
       </div>
@@ -2012,7 +2052,7 @@ function logout() {
   google.accounts.id.disableAutoSelect();
 }
 
-const KEY = { clientes:'gd_clientes', colaboradores:'gd_colaboradores', propostas:'gd_propostas', despesas:'gd_despesas', custos:'gd_custos', parcerias:'gd_parcerias' };
+const KEY = { clientes:'gd_clientes', colaboradores:'gd_colaboradores', propostas:'gd_propostas', despesas:'gd_despesas', custos:'gd_custos', parcerias:'gd_parcerias', parceirosCad:'gd_parceirosCad' };
 const EMAIL_DESTINO = 'contasapagar@electricservice.com.br';
 const EMAIL_DESTINO_2 = 'paulo@electricservice.com.br';
 
@@ -2023,7 +2063,7 @@ const EMAIL_DESTINO_2 = 'paulo@electricservice.com.br';
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFf3t_iSkx-PKbGHSUp6n402VCZHaMN3iKETaavSAq0Ebngm9KWCCTirXvxYWV3VM/exec';
 
 // Cache em memória — substituído quando o Sheets carrega
-const _db = { clientes:[], colaboradores:[], propostas:[], despesas:[], custos:[], parcerias:[] };
+const _db = { clientes:[], colaboradores:[], propostas:[], despesas:[], custos:[], parcerias:[], parceirosCad:[] };
 
 function load(k) {
   const nome = k.replace('gd_','');
@@ -2048,7 +2088,7 @@ function save(k, d) {
 
 // Carrega fallback do localStorage enquanto Sheets não responde
 function loadLocalFallback() {
-  ['clientes','colaboradores','propostas','despesas','custos','parcerias'].forEach(nome => {
+  ['clientes','colaboradores','propostas','despesas','custos','parcerias','parceirosCad'].forEach(nome => {
     try {
       const raw = localStorage.getItem('gd_'+nome);
       if (raw) _db[nome] = JSON.parse(raw) || [];
@@ -2072,9 +2112,10 @@ async function carregarDoSheets() {
     if (json.custos)        _db.custos        = normalizarLista(json.custos);
     if (json.despesas)      _db.despesas      = normalizarDespesas(json.despesas);
     if (json.parcerias)     _db.parcerias     = normalizarLista(json.parcerias);
+    if (json.parceirosCad)  _db.parceirosCad  = normalizarLista(json.parceirosCad);
 
     // Atualiza cache local
-    ['clientes','colaboradores','propostas','despesas','custos','parcerias'].forEach(nome => {
+    ['clientes','colaboradores','propostas','despesas','custos','parcerias','parceirosCad'].forEach(nome => {
       try { localStorage.setItem('gd_'+nome, JSON.stringify(_db[nome])); } catch(e){}
     });
 
@@ -4384,8 +4425,17 @@ function editarParceria(id) {
   const p = load(KEY.parcerias).find(x=>x.id===id);
   if (!p) return;
   editingIdParc = id;
+  populateParceirosSelect();
+  const selP = document.getElementById('parc-parceiro');
+  // Se o parceiro do registro não está mais cadastrado, adiciona opção "solta" só para exibir
+  if (p.parceiro && !Array.from(selP.options).some(o => o.value === p.parceiro)) {
+    const opt = document.createElement('option');
+    opt.value = p.parceiro;
+    opt.textContent = p.parceiro + ' (não cadastrado)';
+    selP.appendChild(opt);
+  }
   document.getElementById('parc-tipo').value        = p.tipo || '';
-  document.getElementById('parc-parceiro').value    = p.parceiro || '';
+  selP.value                                        = p.parceiro || '';
   document.getElementById('parc-descricao').value   = p.descricao || '';
   document.getElementById('parc-cc').value          = p.cc || '';
   document.getElementById('parc-valor-bruto').value = p.valorBruto || '';
@@ -4424,7 +4474,7 @@ function enviarEmailParc(id) {
   const fmtComp = v => v ? v.split('-').reverse().join('/') : '—';
 
   const assunto = encodeURIComponent(
-    `${p.tipo||'Repasse'} | ${p.parceiro||'Parceiro'} | ${p.cc||'s/CC'}`
+    `Repasse Parceiro | ${p.parceiro||'Parceiro'} | ${p.cc||'s/CC'}`
   );
 
   const linhas = [
@@ -4507,8 +4557,129 @@ function definirStatusEmailParc(id, status) {
   sheetsPost({ aba: 'Parcerias', id: String(id), acao: 'atualizar', 'Status Email': status });
 }
 
+/* ── CADASTRO DE PARCEIROS ────────────────────────────────────── */
+let editingParceiroCadId = null;
+
+function populateParceirosSelect() {
+  const sel = document.getElementById('parc-parceiro');
+  if (!sel) return;
+  const atual = sel.value;
+  const lista = load(KEY.parceirosCad) || [];
+  sel.innerHTML = '<option value="">— Selecione —</option>' +
+    lista.map(p => `<option value="${esc(p.nome)}" data-comissao="${esc(p.comissao||'')}">${esc(p.nome)}${p.comissao ? ` (${esc(p.comissao)}%)` : ''}</option>`).join('');
+  // Mantém seleção atual se ainda existe
+  if (atual && lista.some(p => p.nome === atual)) sel.value = atual;
+}
+
+function onParcParceiroChange() {
+  const sel = document.getElementById('parc-parceiro');
+  const opt = sel.selectedOptions[0];
+  const comis = opt ? (opt.getAttribute('data-comissao') || '') : '';
+  if (comis) {
+    document.getElementById('parc-comissao').value = comis;
+    calcParcValores();
+  }
+}
+
+function salvarParceiroCad() {
+  const nome = document.getElementById('pcad-nome').value.trim();
+  const comissao = document.getElementById('pcad-comissao').value.trim();
+  if (!nome || !comissao) {
+    return showAlert('alert-parc-cad','Informe nome e % comissão do parceiro.','danger');
+  }
+
+  let lista = load(KEY.parceirosCad) || [];
+
+  if (editingParceiroCadId) {
+    lista = lista.map(p => p.id === editingParceiroCadId ? {...p, nome, comissao} : p);
+    save(KEY.parceirosCad, lista);
+    sheetsPost({ aba: 'ParceirosCad', id: String(editingParceiroCadId), acao: 'atualizar', nome, comissao });
+    showAlert('alert-parc-cad','Parceiro atualizado com sucesso!','success');
+    editingParceiroCadId = null;
+    document.getElementById('btn-parc-cad-txt').textContent = 'Adicionar parceiro';
+  } else {
+    // Impede duplicidade por nome
+    if (lista.some(p => (p.nome||'').toLowerCase() === nome.toLowerCase())) {
+      return showAlert('alert-parc-cad','Já existe um parceiro com esse nome.','danger');
+    }
+    const id = Date.now();
+    const novo = { id, nome, comissao, cadastradoPor: usuarioLogado ? usuarioLogado.email : '' };
+    lista.push(novo);
+    save(KEY.parceirosCad, lista);
+    sheetsPost({ aba: 'ParceirosCad', id: String(id), acao: 'inserir', ...novo });
+    showAlert('alert-parc-cad','Parceiro adicionado com sucesso!','success');
+  }
+
+  document.getElementById('pcad-nome').value = '';
+  document.getElementById('pcad-comissao').value = '';
+  renderParceirosCad();
+  populateParceirosSelect();
+}
+
+function editarParceiroCad(id) {
+  const p = load(KEY.parceirosCad).find(x => x.id === id);
+  if (!p) return;
+  editingParceiroCadId = id;
+  document.getElementById('pcad-nome').value = p.nome || '';
+  document.getElementById('pcad-comissao').value = p.comissao || '';
+  document.getElementById('btn-parc-cad-txt').textContent = 'Salvar alterações';
+  document.getElementById('pcad-nome').focus();
+}
+
+function confirmarExclusaoParceiroCad(id, btn) {
+  const cell = btn.closest('td');
+  cell.innerHTML = `<div class="confirm-delete">
+    <span>Tem certeza que quer excluir?</span>
+    <button class="btn-confirm-yes" onclick="removerParceiroCad(${id})">Sim, excluir</button>
+    <button class="btn-confirm-no"  onclick="renderParceirosCad()">Não</button>
+  </div>`;
+}
+
+function removerParceiroCad(id) {
+  save(KEY.parceirosCad, load(KEY.parceirosCad).filter(p => p.id !== id));
+  sheetsPost({ aba: 'ParceirosCad', id: String(id), acao: 'deletar' });
+  renderParceirosCad();
+  populateParceirosSelect();
+}
+
+function renderParceirosCad() {
+  const el = document.getElementById('lista-parceiros-cad');
+  const badge = document.getElementById('badge-parceiros');
+  if (!el || !badge) return;
+
+  const lista = load(KEY.parceirosCad) || [];
+  badge.textContent = lista.length;
+
+  if (!lista.length) {
+    el.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      Nenhum parceiro cadastrado ainda.
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = '<table class="data-table"><thead><tr>' +
+    '<th>#</th><th>Nome do Parceiro</th><th>% Comissão</th><th></th>' +
+    '</tr></thead><tbody>' +
+    lista.map((p, i) => `<tr>
+      <td class="muted" style="width:50px;">${i+1}</td>
+      <td style="font-weight:600;">${esc(p.nome||'—')}</td>
+      <td style="font-family:'Montserrat',monospace;font-weight:700;color:var(--teal);">${esc(p.comissao||'—')}%</td>
+      <td style="padding:8px 6px;text-align:right;">
+        <div style="display:flex;gap:5px;justify-content:flex-end;">
+          <button class="btn btn-edit" onclick="editarParceiroCad(${p.id})" title="Editar"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar</button>
+          <button class="btn btn-danger" onclick="confirmarExclusaoParceiroCad(${p.id}, this)">🗑 Excluir</button>
+        </div>
+      </td>
+    </tr>`).join('') + '</tbody></table>';
+}
+
 /* Render lista */
 function renderParcerias() {
+  // Popula lista suspensa de parceiros + lista de cadastros
+  populateParceirosSelect();
+  renderParceirosCad();
+
   const el = document.getElementById('lista-parc');
   const badge = document.getElementById('badge-parc');
   if (!el || !badge) return;
