@@ -800,6 +800,7 @@ body {
   <button class="tab-btn" onclick="switchTab('relatorio')" id="tab-btn-relatorio"><span class="tab-num">6</span> Relatório Financeiro</button>
   <button class="tab-btn" onclick="switchTab('custos')" id="tab-btn-custos"><span class="tab-num">7</span> Custos Orçados</button>
   <button class="tab-btn" onclick="switchTab('dashboard')" id="tab-btn-dashboard"><span class="tab-num">8</span> Dashboard</button>
+  <button class="tab-btn" onclick="switchTab('parcerias')" id="tab-btn-parcerias"><span class="tab-num">9</span> Parcerias</button>
 </nav>
 
 <main class="main">
@@ -1756,6 +1757,127 @@ body {
     <div id="dash-projetos"></div>
   </div>
 
+  <!-- ═══ ABA 9: PARCERIAS ═══ -->
+  <div id="tab-parcerias" class="tab-panel">
+    <div class="page-header">
+      <div class="page-eyebrow">Cadastro 9</div>
+      <h2>Repasse Parcerias</h2>
+      <p>Lance despesas vinculadas a parceiros, registre o valor e acompanhe os repasses pendentes.</p>
+    </div>
+    <div class="card">
+      <div class="edit-banner" id="edit-banner-parc">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Modo edição — alterando repasse existente
+        <button class="btn btn-cancel" onclick="cancelarEdicaoParc()">✕ Cancelar edição</button>
+      </div>
+      <div class="card-eyebrow" id="card-eyebrow-parc">Novo lançamento</div>
+
+      <!-- CLASSIFICAÇÃO -->
+      <div class="section-badge">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Classificação
+      </div>
+      <div class="form-grid cols-2" style="margin-bottom:16px;">
+        <div class="form-group">
+          <label for="parc-tipo">Tipo *</label>
+          <select id="parc-tipo">
+            <option value="">— Selecione —</option>
+            <option value="Repasse">Repasse</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="parc-parceiro">Parceiro / Beneficiário *</label>
+          <input type="text" id="parc-parceiro" placeholder="Ex.: Clínica Vida Plena">
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <!-- DESPESA -->
+      <div class="section-badge">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Despesa
+      </div>
+      <div class="form-grid cols-2" style="margin-bottom:16px;">
+        <div class="form-group">
+          <label for="parc-descricao">Descrição da Despesa</label>
+          <input type="text" id="parc-descricao" placeholder="Ex.: Material de divulgação compartilhado">
+        </div>
+        <div class="form-group">
+          <label for="parc-cc">Centro de Custo *</label>
+          <select id="parc-cc">
+            <option value="">— Selecione —</option>
+            <option value="Engenharia">Engenharia</option>
+            <option value="Gestão">Gestão</option>
+            <option value="Geral">Geral</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <!-- CÁLCULO DO VALOR -->
+      <div class="section-badge">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Cálculo do Valor
+      </div>
+      <div class="form-grid cols-2" style="margin-bottom:16px;">
+        <div class="form-group">
+          <label for="parc-valor-bruto">Valor Bruto *</label>
+          <input type="text" id="parc-valor-bruto" placeholder="R$ 0,00" inputmode="decimal" oninput="maskParcValor(this); calcParcValores();" style="font-family:'Montserrat',monospace;font-weight:600;">
+        </div>
+        <div class="form-group">
+          <label>Valor Líquido <span style="color:var(--text-muted);font-weight:400">(bruto − 20%)</span></label>
+          <div class="saldo-box" id="parc-valor-liquido" style="background:#f4faf6;border:1.5px solid var(--border);color:var(--teal);font-weight:700;">R$ —</div>
+        </div>
+        <div class="form-group">
+          <label for="parc-comissao">% Comissão *</label>
+          <input type="text" id="parc-comissao" placeholder="Ex.: 10" inputmode="decimal" oninput="maskParcPercent(this); calcParcValores();" style="font-family:'Montserrat',monospace;font-weight:600;">
+        </div>
+        <div class="form-group">
+          <label>Valor Final <span style="color:var(--text-muted);font-weight:400">(líquido × comissão)</span></label>
+          <div class="saldo-box" id="parc-valor-final" style="background:#f4faf6;border:1.5px solid var(--border);color:var(--teal);font-weight:700;">R$ —</div>
+        </div>
+        <div class="form-group">
+          <label for="parc-competencia">Mês de Competência</label>
+          <input type="month" id="parc-competencia">
+        </div>
+        <div class="form-group">
+          <label for="parc-prazo">Prazo de Pagamento</label>
+          <input type="date" id="parc-prazo">
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;align-items:center;">
+        <button class="btn" onclick="limparFormParc()" style="background:#fff;border:1.5px solid var(--border-strong);color:var(--ink);">Limpar</button>
+        <button class="btn btn-teal" onclick="salvarParceria()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Lançar ressarcimento
+        </button>
+      </div>
+      <div class="alert" id="alert-parc"></div>
+    </div>
+
+    <!-- LISTA DE RESSARCIMENTOS LANÇADOS -->
+    <div class="card" style="margin-top:20px;">
+      <div class="card-header">
+        <span>Ressarcimentos lançados</span>
+        <span class="badge" id="badge-parc">0</span>
+      </div>
+      <div class="user-filter-info" style="background:#eef4fa;border-left:3px solid #4a7ba7;border-radius:0 var(--r-md) var(--r-md) 0;padding:10px 14px;font-size:12px;color:#2a4a70;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        Exibindo os ressarcimentos registrados nesta sessão por <strong id="msg-usuario-filtro-parc">—</strong>.
+      </div>
+      <div style="overflow-x:auto;">
+        <div id="lista-parc">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Nenhum ressarcimento registrado ainda.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <script>
@@ -1841,6 +1963,7 @@ function onGoogleLogin(response) {
     loadLocalFallback();
     renderClientes(); renderCustos(); renderColaboradores();
     renderPropostas(); renderDespesas(); renderRelatorio();
+    renderParcerias();
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-manual').classList.add('active');
@@ -1851,6 +1974,7 @@ function onGoogleLogin(response) {
       if (ok) {
         renderClientes(); renderCustos(); renderColaboradores();
         renderPropostas(); renderDespesas(); renderRelatorio();
+        renderParcerias();
       }
     });
   } else {
@@ -1876,6 +2000,8 @@ function renderizarUsuario(nome, foto, email) {
   // Atualiza o texto de filtro na aba de lançamento
   const msgFiltro = document.getElementById('msg-usuario-filtro');
   if (msgFiltro) msgFiltro.textContent = nome;
+  const msgFiltroParc = document.getElementById('msg-usuario-filtro-parc');
+  if (msgFiltroParc) msgFiltroParc.textContent = nome;
 }
 
 function logout() {
@@ -1886,7 +2012,7 @@ function logout() {
   google.accounts.id.disableAutoSelect();
 }
 
-const KEY = { clientes:'gd_clientes', colaboradores:'gd_colaboradores', propostas:'gd_propostas', despesas:'gd_despesas', custos:'gd_custos' };
+const KEY = { clientes:'gd_clientes', colaboradores:'gd_colaboradores', propostas:'gd_propostas', despesas:'gd_despesas', custos:'gd_custos', parcerias:'gd_parcerias' };
 const EMAIL_DESTINO = 'contasapagar@electricservice.com.br';
 const EMAIL_DESTINO_2 = 'paulo@electricservice.com.br';
 
@@ -1897,7 +2023,7 @@ const EMAIL_DESTINO_2 = 'paulo@electricservice.com.br';
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFf3t_iSkx-PKbGHSUp6n402VCZHaMN3iKETaavSAq0Ebngm9KWCCTirXvxYWV3VM/exec';
 
 // Cache em memória — substituído quando o Sheets carrega
-const _db = { clientes:[], colaboradores:[], propostas:[], despesas:[], custos:[] };
+const _db = { clientes:[], colaboradores:[], propostas:[], despesas:[], custos:[], parcerias:[] };
 
 function load(k) {
   const nome = k.replace('gd_','');
@@ -1922,7 +2048,7 @@ function save(k, d) {
 
 // Carrega fallback do localStorage enquanto Sheets não responde
 function loadLocalFallback() {
-  ['clientes','colaboradores','propostas','despesas','custos'].forEach(nome => {
+  ['clientes','colaboradores','propostas','despesas','custos','parcerias'].forEach(nome => {
     try {
       const raw = localStorage.getItem('gd_'+nome);
       if (raw) _db[nome] = JSON.parse(raw) || [];
@@ -1945,9 +2071,10 @@ async function carregarDoSheets() {
     if (json.propostas)     _db.propostas     = normalizarLista(json.propostas);
     if (json.custos)        _db.custos        = normalizarLista(json.custos);
     if (json.despesas)      _db.despesas      = normalizarDespesas(json.despesas);
+    if (json.parcerias)     _db.parcerias     = normalizarLista(json.parcerias);
 
     // Atualiza cache local
-    ['clientes','colaboradores','propostas','despesas','custos'].forEach(nome => {
+    ['clientes','colaboradores','propostas','despesas','custos','parcerias'].forEach(nome => {
       try { localStorage.setItem('gd_'+nome, JSON.stringify(_db[nome])); } catch(e){}
     });
 
@@ -2073,6 +2200,7 @@ async function recarregarDoSheets() {
     renderPropostas();
     renderDespesas();
     renderRelatorio();
+    renderParcerias();
   }
 }
 
@@ -2099,13 +2227,14 @@ function switchTab(name) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
-  const map = ['manual','clientes','colaboradores','propostas','despesas','relatorio','custos','dashboard'];
+  const map = ['manual','clientes','colaboradores','propostas','despesas','relatorio','custos','dashboard','parcerias'];
   const idx = map.indexOf(name);
   if (idx >= 0) document.querySelectorAll('.tab-btn')[idx].classList.add('active');
   if (name === 'despesas')  populateSelects();
   if (name === 'relatorio') renderRelatorio();
   if (name === 'custos')    renderCustos();
   if (name === 'dashboard') renderDashboard();
+  if (name === 'parcerias') renderParcerias();
 }
 
 /* ── CNPJ mask ── */
@@ -4130,6 +4259,319 @@ function atualizarCelulaDrive(d) {
     }
   }
   cell.innerHTML = html;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ABA 9 — REPASSE PARCERIAS
+══════════════════════════════════════════════════════════════ */
+let editingIdParc = null;
+
+/* Máscaras */
+function maskParcValor(inp) {
+  let v = inp.value.replace(/\D/g,'');
+  if (!v) { inp.value = ''; return; }
+  v = (parseInt(v,10) / 100).toFixed(2);
+  inp.value = v.replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+}
+function maskParcPercent(inp) {
+  let v = inp.value.replace(/[^0-9,\.]/g,'').replace(',','.');
+  // Mantém no máximo 2 casas decimais
+  const parts = v.split('.');
+  if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+  if (v.includes('.')) {
+    const [i,d] = v.split('.');
+    v = i + '.' + d.slice(0,2);
+  }
+  inp.value = v.replace('.',',');
+}
+function parseParcBRL(s) {
+  if (s==null || s==='') return 0;
+  return parseFloat(String(s).replace(/\./g,'').replace(',','.'))||0;
+}
+function fmtParcBRL(v) {
+  return 'R$ ' + (v||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+}
+
+/* Cálculo automático líquido/final */
+function calcParcValores() {
+  const bruto = parseParcBRL(document.getElementById('parc-valor-bruto').value);
+  const comisRaw = document.getElementById('parc-comissao').value.replace(',','.');
+  const comis = parseFloat(comisRaw) || 0;
+  const liquido = bruto * 0.8;
+  const final = liquido * (comis/100);
+  document.getElementById('parc-valor-liquido').textContent = bruto ? fmtParcBRL(liquido) : 'R$ —';
+  document.getElementById('parc-valor-final').textContent   = (bruto && comis) ? fmtParcBRL(final) : 'R$ —';
+}
+
+/* Limpa formulário */
+function limparFormParc() {
+  ['parc-tipo','parc-parceiro','parc-descricao','parc-cc','parc-valor-bruto','parc-comissao','parc-competencia','parc-prazo']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('parc-valor-liquido').textContent = 'R$ —';
+  document.getElementById('parc-valor-final').textContent   = 'R$ —';
+}
+
+function cancelarEdicaoParc() {
+  limparFormParc();
+  editingIdParc = null;
+  document.getElementById('edit-banner-parc').classList.remove('show');
+  document.getElementById('card-eyebrow-parc').textContent = 'Novo lançamento';
+}
+
+/* Salvar */
+function salvarParceria() {
+  const tipo      = document.getElementById('parc-tipo').value;
+  const parceiro  = document.getElementById('parc-parceiro').value.trim();
+  const descricao = document.getElementById('parc-descricao').value.trim();
+  const cc        = document.getElementById('parc-cc').value;
+  const bruto     = document.getElementById('parc-valor-bruto').value;
+  const comissao  = document.getElementById('parc-comissao').value;
+  const compet    = document.getElementById('parc-competencia').value;
+  const prazo     = document.getElementById('parc-prazo').value;
+
+  if (!tipo || !parceiro || !cc || !bruto || !comissao) {
+    return showAlert('alert-parc','Preencha todos os campos obrigatórios (*).','danger');
+  }
+
+  const brutoNum   = parseParcBRL(bruto);
+  const comisNum   = parseFloat(String(comissao).replace(',','.')) || 0;
+  const liquidoNum = brutoNum * 0.8;
+  const finalNum   = liquidoNum * (comisNum/100);
+
+  const lista = load(KEY.parcerias);
+
+  const registro = {
+    data: editingIdParc
+      ? (lista.find(x=>x.id===editingIdParc)?.data || new Date().toLocaleDateString('pt-BR'))
+      : new Date().toLocaleDateString('pt-BR'),
+    cadastradoPor: usuarioLogado ? usuarioLogado.email : '',
+    tipo,
+    parceiro,
+    descricao,
+    cc,
+    valorBruto:   brutoNum.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'),
+    comissao:     String(comissao).replace('.',','),
+    valorLiquido: liquidoNum.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'),
+    valorFinal:   finalNum.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'),
+    competencia:  compet,
+    prazoPagamento: prazo,
+  };
+
+  if (editingIdParc) {
+    const upd = { ...registro, id: editingIdParc };
+    const novaLista = lista.map(x => x.id===editingIdParc ? upd : x);
+    save(KEY.parcerias, novaLista);
+    showAlert('alert-parc','Repasse atualizado com sucesso!','success');
+    sheetsPost({ aba: 'Parcerias', id: String(upd.id), acao: 'atualizar', ...upd });
+    editingIdParc = null;
+    document.getElementById('edit-banner-parc').classList.remove('show');
+    document.getElementById('card-eyebrow-parc').textContent = 'Novo lançamento';
+  } else {
+    const id = Date.now();
+    const novo = { ...registro, id };
+    lista.push(novo);
+    save(KEY.parcerias, lista);
+    showAlert('alert-parc','Repasse lançado com sucesso!','success');
+    sheetsPost({ aba: 'Parcerias', id: String(id), acao: 'inserir', ...novo });
+  }
+
+  limparFormParc();
+  renderParcerias();
+}
+
+/* Editar */
+function editarParceria(id) {
+  const p = load(KEY.parcerias).find(x=>x.id===id);
+  if (!p) return;
+  editingIdParc = id;
+  document.getElementById('parc-tipo').value        = p.tipo || '';
+  document.getElementById('parc-parceiro').value    = p.parceiro || '';
+  document.getElementById('parc-descricao').value   = p.descricao || '';
+  document.getElementById('parc-cc').value          = p.cc || '';
+  document.getElementById('parc-valor-bruto').value = p.valorBruto || '';
+  document.getElementById('parc-comissao').value    = p.comissao || '';
+  document.getElementById('parc-competencia').value = p.competencia || '';
+  document.getElementById('parc-prazo').value       = p.prazoPagamento || '';
+  calcParcValores();
+  document.getElementById('edit-banner-parc').classList.add('show');
+  document.getElementById('card-eyebrow-parc').textContent = 'Editando repasse';
+  switchTab('parcerias');
+  document.querySelector('#tab-parcerias .card').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* Confirmar / Remover */
+function confirmarExclusaoParc(id, btn) {
+  const cell = btn.closest('td');
+  cell.innerHTML = `<div class="confirm-delete">
+    <span>Tem certeza que quer excluir?</span>
+    <button class="btn-confirm-yes" onclick="removerParceria(${id})">Sim, excluir</button>
+    <button class="btn-confirm-no"  onclick="renderParcerias()">Não</button>
+  </div>`;
+}
+
+function removerParceria(id) {
+  save(KEY.parcerias, load(KEY.parcerias).filter(p => p.id!==id));
+  renderParcerias();
+  sheetsPost({ aba: 'Parcerias', id: String(id), acao: 'deletar' });
+}
+
+/* Enviar por Gmail — usa mesmos destinatários do módulo de despesas */
+function enviarEmailParc(id) {
+  const p = load(KEY.parcerias).find(x=>x.id===id);
+  if (!p) return;
+
+  const fmtDate = v => v ? v.split('-').reverse().join('/') : '—';
+  const fmtComp = v => v ? v.split('-').reverse().join('/') : '—';
+
+  const assunto = encodeURIComponent(
+    `${p.tipo||'Repasse'} | ${p.parceiro||'Parceiro'} | ${p.cc||'s/CC'}`
+  );
+
+  const linhas = [
+    '═══════════════════════════════════',
+    '  LANÇAMENTO DE REPASSE – NORTMONT',
+    '═══════════════════════════════════',
+    '',
+    `💰 VALOR FINAL: R$ ${p.valorFinal||'—'}`,
+    '───────────────────────────────────',
+    '',
+    '📋 CLASSIFICAÇÃO',
+    `   Tipo:                ${p.tipo||'—'}`,
+    `   Parceiro/Benef.:     ${p.parceiro||'—'}`,
+    '',
+    '📝 DESPESA',
+    `   Descrição:           ${p.descricao||'—'}`,
+    `   Centro de Custo:     ${p.cc||'—'}`,
+    '',
+    '💼 CÁLCULO DO VALOR',
+    `   Valor Bruto:         R$ ${p.valorBruto||'—'}`,
+    `   Valor Líquido (-20%): R$ ${p.valorLiquido||'—'}`,
+    `   % Comissão:          ${p.comissao||'—'}%`,
+    `   Valor Final:         R$ ${p.valorFinal||'—'}`,
+    '',
+    '📅 DATAS',
+    `   Competência:         ${fmtComp(p.competencia)}`,
+    `   Prazo de Pagamento:  ${fmtDate(p.prazoPagamento)}`,
+    '',
+    '───────────────────────────────────',
+    `Data do lançamento: ${p.data}`,
+    `Cadastrado por: ${p.cadastradoPor||'—'}`,
+    'Enviado via Sistema de Gestão de Despesas – Electric · Nortmont'
+  ];
+
+  const corpo = encodeURIComponent(linhas.join('\n'));
+  const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(EMAIL_DESTINO)}&cc=${encodeURIComponent(EMAIL_DESTINO_2)}&su=${assunto}&body=${corpo}`;
+  window.open(url, '_blank');
+
+  mostrarConfirmacaoEmailParc(id);
+}
+
+function mostrarConfirmacaoEmailParc(id) {
+  const anterior = document.getElementById('email-confirm-banner');
+  if (anterior) anterior.remove();
+
+  const banner = document.createElement('div');
+  banner.id = 'email-confirm-banner';
+  banner.style.cssText = `
+    position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+    background:#fff; border:1.5px solid #fde68a; border-radius:14px;
+    box-shadow:0 8px 32px rgba(1,30,60,0.18); padding:18px 24px;
+    display:flex; flex-direction:column; gap:12px; z-index:9999;
+    min-width:340px; max-width:90vw; animation:slideUp 0.25s ease;
+  `;
+  banner.innerHTML = `
+    <div style="font-size:13px;font-weight:600;color:#92400e;display:flex;align-items:center;gap:8px;">
+      <span style="font-size:18px;">📧</span>
+      Gmail aberto — você enviou o e-mail?
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="definirStatusEmailParc(${id},'enviado');document.getElementById('email-confirm-banner').remove();"
+        style="flex:1;background:#0F4245;color:#fff;border:none;border-radius:999px;padding:9px 0;font-family:Montserrat,sans-serif;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.04em;">
+        ✓ Sim, e-mail enviado
+      </button>
+      <button onclick="definirStatusEmailParc(${id},'nao_enviado');document.getElementById('email-confirm-banner').remove();"
+        style="flex:1;background:none;color:#b33a3a;border:1.5px solid rgba(179,58,58,0.35);border-radius:999px;padding:9px 0;font-family:Montserrat,sans-serif;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.04em;">
+        ✗ Não enviei
+      </button>
+    </div>
+  `;
+  document.body.appendChild(banner);
+  setTimeout(() => { if (document.getElementById('email-confirm-banner')) banner.remove(); }, 30000);
+}
+
+function definirStatusEmailParc(id, status) {
+  let lista = load(KEY.parcerias);
+  lista = lista.map(p => p.id===id ? {...p, emailStatus: status} : p);
+  save(KEY.parcerias, lista);
+  renderParcerias();
+  sheetsPost({ aba: 'Parcerias', id: String(id), acao: 'atualizar', 'Status Email': status });
+}
+
+/* Render lista */
+function renderParcerias() {
+  const el = document.getElementById('lista-parc');
+  const badge = document.getElementById('badge-parc');
+  if (!el || !badge) return;
+
+  const todas = load(KEY.parcerias);
+  const lista = usuarioLogado
+    ? todas.filter(p => (p.cadastradoPor||'').toLowerCase() === usuarioLogado.email.toLowerCase())
+    : todas;
+
+  badge.textContent = lista.length;
+
+  if (!lista.length) {
+    el.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Nenhum ressarcimento registrado ainda.
+    </div>`;
+    return;
+  }
+
+  const fmtDate = v => v ? v.split('-').reverse().join('/') : '—';
+  const fmtComp = v => v ? v.split('-').reverse().join('/') : '—';
+
+  el.innerHTML = '<table class="data-table" style="min-width:1100px"><thead><tr>' +
+    '<th>Data</th><th>Cadastrado Por</th><th>Tipo</th><th>Parceiro</th><th>Descrição</th><th>Centro Custo</th>' +
+    '<th>Valor Bruto</th><th>Valor Líquido</th><th>% Comissão</th><th>Valor Final</th>' +
+    '<th>Competência</th><th>Prazo Pgto</th><th>Status E-mail</th><th></th>' +
+    '</tr></thead><tbody>' +
+    [...lista].reverse().map(p => {
+      const ccPill = p.cc==='Engenharia'
+        ? `<span class="cc-pill cc-eng">Engenharia</span>`
+        : p.cc==='Geral'
+          ? `<span class="cc-pill cc-geral">Geral</span>`
+          : `<span class="cc-pill cc-gest">Gestão</span>`;
+      const tipoBadge = `<span style="display:inline-flex;align-items:center;gap:4px;background:#e6f4ef;color:#1a7a55;border:1px solid #a7d7c5;font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);white-space:nowrap;">↩ ${esc(p.tipo||'—')}</span>`;
+      return `<tr>
+        <td class="muted">${esc(p.data||'—')}</td>
+        <td class="muted" style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(p.cadastradoPor||'')}">${esc(p.cadastradoPor||'—')}</td>
+        <td>${tipoBadge}</td>
+        <td style="font-weight:600;font-size:12px">${esc(p.parceiro||'—')}</td>
+        <td class="muted">${esc(p.descricao||'—')}</td>
+        <td>${ccPill}</td>
+        <td class="muted" style="font-family:'Montserrat',monospace;">R$ ${esc(p.valorBruto||'—')}</td>
+        <td class="muted" style="font-family:'Montserrat',monospace;">R$ ${esc(p.valorLiquido||'—')}</td>
+        <td class="muted" style="font-family:'Montserrat',monospace;">${esc(p.comissao||'—')}%</td>
+        <td style="font-family:'Montserrat',monospace;font-weight:700;color:var(--teal);">R$ ${esc(p.valorFinal||'—')}</td>
+        <td class="muted">${fmtComp(p.competencia)}</td>
+        <td class="muted">${fmtDate(p.prazoPagamento)}</td>
+        <td style="white-space:nowrap;">
+          ${p.emailStatus==='enviado'
+            ? '<span class="badge-email-ok">✓ E-mail enviado</span>'
+            : p.emailStatus==='nao_enviado'
+            ? '<span class="badge-email-no">✗ Não enviado</span>'
+            : '<span style="color:var(--text-muted);font-size:11px;">—</span>'}
+        </td>
+        <td style="padding:8px 6px;">
+          <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;">
+            <button class="btn btn-edit" onclick="editarParceria(${p.id})" title="Editar"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar</button>
+            <button class="btn btn-email" onclick="enviarEmailParc(${p.id})" title="Enviar por Gmail"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Gmail</button>
+            <button class="btn btn-danger" onclick="confirmarExclusaoParc(${p.id}, this)">🗑 Excluir</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('') + '</tbody></table>';
 }
 
 </script>
