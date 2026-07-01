@@ -2257,7 +2257,7 @@ function showAlert(id, msg, type) {
 function switchTab(name) {
   // Password protection for restricted tabs
   const SENHA_RESTRITA = '31072014';
-  const abasRestritas = ['relatorio','custos','dashboard'];
+  const abasRestritas = ['relatorio','custos','dashboard','parcerias'];
   if (abasRestritas.includes(name)) {
     const senha = prompt('🔒 Esta aba é restrita. Digite a senha para acessar:');
     if (senha !== SENHA_RESTRITA) {
