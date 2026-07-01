@@ -4570,17 +4570,32 @@ function atualizarCelulaDrive(d) {
     injectPlusButtons();
   }
 
-  // Limpa o store quando o formulário de lançamento é resetado/limpo
-  // (escuta o botão "Limpar" se existir)
-  document.addEventListener('click', (e) => {
-    const t = e.target;
-    if (!t) return;
-    const txt = (t.textContent || '').trim().toLowerCase();
-    if (t.tagName === 'BUTTON' && (txt === 'limpar' || txt === 'limpar campos' || txt === 'novo lançamento')) {
-      Object.keys(calcStore).forEach(k => delete calcStore[k]);
-      document.querySelectorAll('.tipo-valor-input').forEach(updatePlusBtnState);
+  // Reset de todos os contadores e do store interno
+  function resetAllCalcStores() {
+    Object.keys(calcStore).forEach(k => delete calcStore[k]);
+    document.querySelectorAll('.tipo-valor-input').forEach(updatePlusBtnState);
+  }
+  window.resetAllCalcStores = resetAllCalcStores;
+
+  // Faz wrap da função oficial de limpeza do formulário de despesa.
+  // limparFormDespesa() é chamada após Registrar Despesa com sucesso e também
+  // pelos botões de Limpar/Cancelar — então qualquer uma dessas situações
+  // já reseta os badges automaticamente.
+  function patchLimparFormDespesa() {
+    if (typeof window.limparFormDespesa !== 'function') {
+      // Ainda não carregou — tenta de novo
+      return setTimeout(patchLimparFormDespesa, 200);
     }
-  });
+    if (window.__limparFormDespesaPatched) return;
+    const original = window.limparFormDespesa;
+    window.limparFormDespesa = function() {
+      const r = original.apply(this, arguments);
+      try { resetAllCalcStores(); } catch(e) { console.warn('resetAllCalcStores erro:', e); }
+      return r;
+    };
+    window.__limparFormDespesaPatched = true;
+  }
+  patchLimparFormDespesa();
 })();
 </script>
 
