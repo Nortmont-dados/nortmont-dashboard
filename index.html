@@ -282,6 +282,7 @@ body {
 .alert.danger  { background: var(--danger-bg);  color: var(--danger);  display: inline-flex; align-items: center; gap: 5px; }
 @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
 @keyframes slideUp { from { opacity:0; transform:translateX(-50%) translateY(20px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+@keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
 
 /* ─── LIST HEADER ─── */
 .list-header {
@@ -2974,13 +2975,164 @@ function salvarDespesa() {
     });
   }
 }
+// Retorna { pendente, prontos, total } — status do upload dos anexos ao Drive
+function statusAnexosDrive(d) {
+  const anexosList = d.anexos && d.anexos.length
+    ? d.anexos
+    : (d.pdfFileName ? [{ name: d.pdfFileName }] : []);
+  const links = d.linksDrive && d.linksDrive.length
+    ? d.linksDrive
+    : (d.linkDrive ? [d.linkDrive] : []);
+  const prontos = links.filter(Boolean).length;
+  return { pendente: anexosList.length > 0 && prontos < anexosList.length, prontos, total: anexosList.length };
+}
+
+// Controla os timers de espera em andamento por despesa (evita duplicar ao clicar 2x)
+const _esperaAnexos = {};
+
 async function enviarEmail(id) {
   const d = load(KEY.despesas).find(x=>x.id===id);
   if (!d) return;
 
-  // Abre Gmail direto — os links do Drive já foram enviados ao registrar a despesa.
-  // Se ainda não chegaram, o modal exibirá aviso de "enviando" mas NÃO fará upload agora.
-  abrirGmail(d);
+  const status = statusAnexosDrive(d);
+
+  // Sem anexos pendentes: abre o Gmail normalmente
+  if (!status.pendente) {
+    abrirGmail(d);
+    return;
+  }
+
+  // Anexos ainda em processamento no Drive — não abre o e-mail ainda.
+  // Mostra aviso e aguarda automaticamente até o upload terminar.
+  aguardarAnexosEEnviar(id);
+}
+
+// Exibe aviso de processamento e faz polling até os anexos ficarem prontos,
+// abrindo o Gmail automaticamente assim que estiverem disponíveis.
+function aguardarAnexosEEnviar(id) {
+  // Já existe uma espera em andamento para esta despesa
+  if (_esperaAnexos[id]) {
+    mostrarToast('⏳ Ainda aguardando o upload dos anexos…', 'info', 3000);
+    return;
+  }
+
+  mostrarBannerAnexosProcessando(id);
+
+  const INTERVALO_MS = 2500;
+  const TIMEOUT_MS = 60000;
+  const inicio = Date.now();
+
+  const timer = setInterval(() => {
+    const atual = load(KEY.despesas).find(x => x.id === id);
+    if (!atual) { pararEspera(id); return; }
+
+    const status = statusAnexosDrive(atual);
+
+    if (!status.pendente) {
+      pararEspera(id);
+      removerBannerAnexosProcessando();
+      mostrarToast('✓ Anexos prontos — abrindo e-mail…', 'success', 2500);
+      abrirGmail(atual);
+      return;
+    }
+
+    // Atualiza contagem no banner (ex.: 1/2 comprovantes prontos)
+    atualizarBannerAnexosProcessando(status);
+
+    if (Date.now() - inicio > TIMEOUT_MS) {
+      pararEspera(id);
+      mostrarBannerAnexosDemorando(id);
+    }
+  }, INTERVALO_MS);
+
+  _esperaAnexos[id] = timer;
+
+  function pararEspera(id) {
+    clearInterval(_esperaAnexos[id]);
+    delete _esperaAnexos[id];
+  }
+}
+
+function mostrarBannerAnexosProcessando(id) {
+  removerBannerAnexosProcessando();
+  const banner = document.createElement('div');
+  banner.id = 'banner-anexos-processando';
+  banner.style.cssText = `
+    position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+    background:#fff; border:1.5px solid #fde68a; border-radius:14px;
+    box-shadow:0 8px 32px rgba(1,30,60,0.18); padding:16px 22px;
+    display:flex; flex-direction:column; gap:10px; z-index:9999;
+    min-width:340px; max-width:90vw; animation:slideUp 0.25s ease;
+  `;
+  banner.innerHTML = `
+    <div style="font-size:13px;font-weight:600;color:#92400e;display:flex;align-items:center;gap:8px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;flex-shrink:0"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+      <span id="banner-anexos-msg">Anexos ainda sendo processados…</span>
+    </div>
+    <div style="font-size:11px;color:#7a5200;">O e-mail será aberto automaticamente assim que os comprovantes terminarem de ser enviados ao Drive.</div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="cancelarEsperaAnexos()"
+        style="flex:1;background:none;color:#b33a3a;border:1.5px solid rgba(179,58,58,0.35);border-radius:999px;padding:8px 0;font-family:Montserrat,sans-serif;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.04em;">
+        Cancelar
+      </button>
+    </div>
+  `;
+  document.body.appendChild(banner);
+}
+
+function atualizarBannerAnexosProcessando(status) {
+  const msg = document.getElementById('banner-anexos-msg');
+  if (msg) msg.textContent = `Anexos sendo processados… (${status.prontos}/${status.total} prontos)`;
+}
+
+function mostrarBannerAnexosDemorando(id) {
+  removerBannerAnexosProcessando();
+  const banner = document.createElement('div');
+  banner.id = 'banner-anexos-processando';
+  banner.style.cssText = `
+    position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+    background:#fff; border:1.5px solid #f5b8b8; border-radius:14px;
+    box-shadow:0 8px 32px rgba(1,30,60,0.18); padding:16px 22px;
+    display:flex; flex-direction:column; gap:10px; z-index:9999;
+    min-width:340px; max-width:90vw; animation:slideUp 0.25s ease;
+  `;
+  banner.innerHTML = `
+    <div style="font-size:13px;font-weight:600;color:#b33a3a;">⚠ O upload dos anexos está demorando mais que o esperado</div>
+    <div style="font-size:11px;color:#7a5200;">Pode ser um arquivo grande ou uma falha de conexão. Você pode continuar aguardando, tentar novamente ou enviar o e-mail sem o link do comprovante (adicione manualmente depois).</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button onclick="aguardarAnexosEEnviar(${id})"
+        style="flex:1;background:#0F4245;color:#fff;border:none;border-radius:999px;padding:8px 0;font-family:Montserrat,sans-serif;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.04em;">
+        Continuar aguardando
+      </button>
+      <button onclick="reenviarDrive(${id})"
+        style="flex:1;background:none;color:#0F4245;border:1.5px solid rgba(15,66,69,0.3);border-radius:999px;padding:8px 0;font-family:Montserrat,sans-serif;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.04em;">
+        ↺ Tentar novamente
+      </button>
+      <button onclick="enviarMesmoSemAnexo(${id})"
+        style="flex:1;background:none;color:#b33a3a;border:1.5px solid rgba(179,58,58,0.35);border-radius:999px;padding:8px 0;font-family:Montserrat,sans-serif;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.04em;">
+        Enviar sem anexo
+      </button>
+    </div>
+  `;
+  document.body.appendChild(banner);
+}
+
+function enviarMesmoSemAnexo(id) {
+  removerBannerAnexosProcessando();
+  const d = load(KEY.despesas).find(x => x.id === id);
+  if (d) abrirGmail(d);
+}
+
+function cancelarEsperaAnexos() {
+  Object.keys(_esperaAnexos).forEach(id => clearInterval(_esperaAnexos[id]));
+  Object.keys(_esperaAnexos).forEach(id => delete _esperaAnexos[id]);
+  removerBannerAnexosProcessando();
+  mostrarToast('Envio cancelado — clique em Gmail novamente quando quiser reenviar.', 'info', 4000);
+}
+
+function removerBannerAnexosProcessando() {
+  const b = document.getElementById('banner-anexos-processando');
+  if (b) b.remove();
 }
 
 // Guarda estado do modal para uso no confirmar
