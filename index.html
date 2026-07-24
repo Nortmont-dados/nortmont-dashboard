@@ -219,6 +219,33 @@ body {
 .form-group textarea { resize: vertical; min-height: 76px; }
 .form-group select { cursor: pointer; }
 
+/* ─── SELECT COM BUSCA (digitável) ─── */
+.ss-wrap { position: relative; width: 100%; }
+.ss-wrap select.ss-native { display: none !important; }
+.ss-wrap .ss-input { cursor: text; padding-right: 34px; text-overflow: ellipsis; }
+.ss-wrap .ss-input.ss-open { border-color: var(--teal-mid); box-shadow: 0 0 0 2px rgba(15,66,69,0.15); }
+.ss-caret {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  pointer-events: none; color: var(--text-muted); display: flex; line-height: 0;
+  transition: transform 0.15s;
+}
+.ss-wrap.ss-is-open .ss-caret { transform: translateY(-50%) rotate(180deg); }
+.ss-menu {
+  position: absolute; z-index: 90; top: calc(100% + 5px); left: 0; right: 0;
+  background: var(--white); border: 1.5px solid var(--border-strong);
+  border-radius: 10px; box-shadow: 0 10px 28px rgba(1,30,60,0.16);
+  max-height: 244px; overflow-y: auto; padding: 4px; display: none;
+}
+.ss-menu.show { display: block; }
+.ss-opt {
+  padding: 8px 10px; border-radius: 8px; font-size: 13px; color: var(--ink);
+  cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ss-opt:hover, .ss-opt.ss-active { background: var(--mint); color: var(--teal); font-weight: 600; }
+.ss-opt mark { background: transparent; color: var(--teal); font-weight: 700; padding: 0; }
+.ss-opt.ss-placeholder { color: var(--text-muted); font-style: italic; }
+.ss-empty { padding: 11px 10px; font-size: 12px; color: var(--text-muted); text-align: center; }
+
 /* ─── SECTION BADGE ─── */
 .section-badge {
   display: inline-flex;
@@ -955,7 +982,7 @@ body {
           <label for="desp-categoria">Categoria *</label>
           <select id="desp-categoria" onchange="togglePropostaField()">
             <option value="">— Selecione —</option>
-            <option value="Projeto">Projeto</option>
+            <option value="Proposta">Proposta</option>
             <option value="Visita">Visita</option>
             <option value="Despesas Administrativas">Despesas Administrativas</option>
           </select>
@@ -1552,6 +1579,50 @@ body {
       </div>
     </div>
 
+    <!-- SEÇÃO 11 -->
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <div style="width:32px;height:32px;background:var(--navy);border-radius:var(--r-pill);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <span style="font-size:10px;font-weight:700;color:var(--sage);letter-spacing:0.05em;">11</span>
+        </div>
+        <div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);">Seção 11</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);letter-spacing:-0.01em;">Entrega Física dos Comprovantes e do Relatório</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:flex-start;background:#fff8e6;border:1.5px solid #fde68a;border-radius:var(--r-md);padding:14px 16px;margin-bottom:14px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2.5" style="flex-shrink:0;margin-top:1px"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#92400e;margin-bottom:6px;">Atenção — Obrigatório após o envio do e-mail</div>
+          <p style="font-size:13px;color:#7a5200;line-height:1.7;font-weight:500;">Após o envio do e-mail com o <strong>relatório de ressarcimento</strong> e os <strong>comprovantes de despesas anexados em PDF</strong> (nota fiscal ou cupom fiscal) devidamente nomeados, e com o <strong>campo Observações sempre preenchido</strong> com o motivo da despesa, o colaborador deverá entregar também os <strong>comprovantes físicos</strong> juntamente com o <strong>relatório impresso</strong> — que é a mesma página recebida pelo Contas a Receber por e-mail.</p>
+        </div>
+      </div>
+
+      <div style="background:var(--mint);border-left:3px solid var(--teal);border-radius:0 var(--r-md) var(--r-md) 0;padding:12px 16px;font-size:12px;color:var(--teal);font-weight:500;line-height:1.6;margin-bottom:16px;">
+        Essa entrega é necessária porque os documentos físicos são encaminhados à <strong>Contabilidade</strong> para compor a movimentação contábil e atender aos procedimentos internos da empresa.
+      </div>
+
+      <div style="display:grid;gap:10px;">
+        <div style="display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:11px 14px;">
+          <div style="width:20px;height:20px;border-radius:var(--r-pill);background:var(--navy);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.55;"><strong style="color:var(--navy)">Envie o e-mail</strong> com o relatório de ressarcimento e todos os comprovantes em PDF (nota fiscal ou cupom fiscal), com os arquivos devidamente nomeados.</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:11px 14px;">
+          <div style="width:20px;height:20px;border-radius:var(--r-pill);background:var(--navy);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.55;"><strong style="color:var(--navy)">Preencha o campo Observações</strong> com o motivo da despesa — o preenchimento é obrigatório em todos os lançamentos.</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:11px 14px;">
+          <div style="width:20px;height:20px;border-radius:var(--r-pill);background:var(--navy);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.55;"><strong style="color:var(--navy)">Imprima o relatório</strong> — a mesma página recebida pelo Contas a Receber por e-mail.</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:11px 14px;">
+          <div style="width:20px;height:20px;border-radius:var(--r-pill);background:var(--teal);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.55;"><strong style="color:var(--navy)">Entregue fisicamente</strong> o relatório impresso junto com os comprovantes originais, para encaminhamento à Contabilidade.</div>
+        </div>
+      </div>
+    </div>
+
     <!-- RODAPÉ DO MANUAL -->
     <div style="text-align:center;padding:20px;font-size:11px;color:var(--text-muted);font-weight:500;letter-spacing:0.05em;">
       Contamos com a colaboração de todos. — <strong style="color:var(--navy)">Nortmont · Maio 2026</strong>
@@ -1796,7 +1867,7 @@ body {
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         Classificação
       </div>
-      <div class="form-grid cols-2" style="margin-bottom:16px;">
+      <div class="form-grid cols-3" style="margin-bottom:16px;">
         <div class="form-group">
           <label for="parc-tipo">Tipo *</label>
           <select id="parc-tipo">
@@ -1807,6 +1878,12 @@ body {
         <div class="form-group">
           <label for="parc-parceiro">Parceiro / Beneficiário *</label>
           <select id="parc-parceiro" onchange="onParcParceiroChange()">
+            <option value="">— Selecione —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="parc-cliente">Cliente *</label>
+          <select id="parc-cliente">
             <option value="">— Selecione —</option>
           </select>
         </div>
@@ -2312,7 +2389,9 @@ document.getElementById('cli-cnpj').addEventListener('input', function() { this.
 function calcDias() {
   const ida = document.getElementById('desp-ida').value;
   const volta = document.getElementById('desp-volta').value;
-  if (ida && volta) { const diff = (new Date(volta)-new Date(ida))/86400000; if(diff>=0) document.getElementById('desp-dias').value = diff; }
+  // Contagem inclusiva: considera o dia de ida e o dia de volta.
+  // Ex.: ida 14 e volta 21 => 8 dias.
+  if (ida && volta) { const diff = (new Date(volta)-new Date(ida))/86400000; if(diff>=0) document.getElementById('desp-dias').value = diff + 1; }
 }
 document.getElementById('desp-ida').addEventListener('change', calcDias);
 document.getElementById('desp-volta').addEventListener('change', calcDias);
@@ -2412,7 +2491,7 @@ function toggleFinalidade(input) {
 function togglePropostaField() {
   const cat = document.getElementById('desp-categoria').value;
   const grupo = document.getElementById('grupo-proposta');
-  if (grupo) grupo.style.display = (cat === 'Projeto') ? 'flex' : 'none';
+  if (grupo) grupo.style.display = (cat === 'Proposta' || cat === 'Projeto') ? 'flex' : 'none';
 }
 
 function selectTipo(btn) { /* legacy */ }
@@ -2599,8 +2678,156 @@ function renderPropostas() {
     '</tbody></table>';
 }
 
+/* ══════════════════════════════════════════════════════════════
+   SELECT COM BUSCA — transforma um <select> em campo digitável
+   O <select> original continua no DOM: todo o código que lê ou
+   escreve .value continua funcionando normalmente.
+══════════════════════════════════════════════════════════════ */
+function _ssNorm(s) {
+  return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+
+function makeSelectSearchable(selectId, placeholder) {
+  const sel = document.getElementById(selectId);
+  if (!sel || sel.dataset.ssReady === '1') return;
+  sel.dataset.ssReady = '1';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'ss-wrap';
+  sel.parentNode.insertBefore(wrap, sel);
+  wrap.appendChild(sel);
+  sel.classList.add('ss-native');
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'ss-input';
+  input.autocomplete = 'off';
+  input.spellcheck = false;
+  input.placeholder = placeholder || 'Digite para buscar...';
+
+  const caret = document.createElement('span');
+  caret.className = 'ss-caret';
+  caret.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>';
+
+  const menu = document.createElement('div');
+  menu.className = 'ss-menu';
+
+  wrap.appendChild(input);
+  wrap.appendChild(caret);
+  wrap.appendChild(menu);
+
+  let activeIdx = -1, filtered = [];
+
+  const opts = () => Array.from(sel.options);
+  const selectedText = () => {
+    const o = sel.options[sel.selectedIndex];
+    return (o && o.value) ? o.textContent : '';
+  };
+
+  function syncInput() {
+    // Não sobrescreve enquanto o usuário está digitando (menu aberto)
+    if (!menu.classList.contains('show')) input.value = selectedText();
+  }
+
+  function renderMenu(query) {
+    const q = _ssNorm(query);
+    filtered = opts().filter(o => o.value !== '' && (!q || _ssNorm(o.textContent).includes(q)));
+    activeIdx = filtered.findIndex(o => o.value === sel.value);
+    if (!filtered.length) {
+      menu.innerHTML = '<div class="ss-empty">Nenhum resultado encontrado</div>';
+      return;
+    }
+    menu.innerHTML = filtered.map((o, i) => {
+      let label = esc(o.textContent);
+      if (q) {
+        const pos = _ssNorm(o.textContent).indexOf(q);
+        if (pos >= 0) {
+          const raw = o.textContent;
+          label = esc(raw.slice(0,pos)) + '<mark>' + esc(raw.slice(pos, pos+query.length)) + '</mark>' + esc(raw.slice(pos+query.length));
+        }
+      }
+      return `<div class="ss-opt${i===activeIdx?' ss-active':''}" data-i="${i}">${label}</div>`;
+    }).join('');
+  }
+
+  function openMenu(showAll) {
+    renderMenu(showAll ? '' : input.value);
+    menu.classList.add('show');
+    wrap.classList.add('ss-is-open');
+    input.classList.add('ss-open');
+    const act = menu.querySelector('.ss-active');
+    if (act && act.scrollIntoView) act.scrollIntoView({block:'nearest'});
+  }
+
+  function closeMenu() {
+    menu.classList.remove('show');
+    wrap.classList.remove('ss-is-open');
+    input.classList.remove('ss-open');
+    activeIdx = -1;
+  }
+
+  function pick(i) {
+    const o = filtered[i];
+    if (!o) return;
+    sel.value = o.value;
+    input.value = o.textContent;
+    closeMenu();
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  function highlight(i) {
+    activeIdx = i;
+    menu.querySelectorAll('.ss-opt').forEach(el => el.classList.toggle('ss-active', +el.dataset.i === i));
+    const act = menu.querySelector('.ss-active');
+    if (act && act.scrollIntoView) act.scrollIntoView({block:'nearest'});
+  }
+
+  input.addEventListener('focus', () => { input.select(); openMenu(true); });
+  input.addEventListener('click', () => { if (!menu.classList.contains('show')) openMenu(true); });
+  input.addEventListener('input', () => { openMenu(false); });
+  input.addEventListener('blur', () => {
+    setTimeout(() => { closeMenu(); input.value = selectedText(); }, 140);
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!menu.classList.contains('show')) return openMenu(false);
+      if (!filtered.length) return;
+      let i = activeIdx + (e.key === 'ArrowDown' ? 1 : -1);
+      if (i < 0) i = filtered.length - 1;
+      if (i >= filtered.length) i = 0;
+      highlight(i);
+    } else if (e.key === 'Enter') {
+      if (menu.classList.contains('show')) { e.preventDefault(); pick(activeIdx >= 0 ? activeIdx : 0); }
+    } else if (e.key === 'Escape') {
+      closeMenu(); input.value = selectedText(); input.blur();
+    }
+  });
+  menu.addEventListener('mousedown', e => {
+    const opt = e.target.closest('.ss-opt');
+    if (opt) { e.preventDefault(); pick(+opt.dataset.i); }
+  });
+
+  // Mantém o input sincronizado quando o código altera select.value por JS
+  const vDesc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+  Object.defineProperty(sel, 'value', {
+    configurable: true,
+    get() { return vDesc.get.call(sel); },
+    set(v) { vDesc.set.call(sel, v); syncInput(); }
+  });
+  // ...e quando as opções são recriadas (populateSelects, etc.)
+  new MutationObserver(syncInput).observe(sel, { childList: true });
+  sel.addEventListener('change', syncInput);
+
+  const lbl = document.querySelector(`label[for="${selectId}"]`);
+  if (lbl) lbl.addEventListener('click', e => { e.preventDefault(); input.focus(); });
+
+  syncInput();
+}
+
 /* ══════════════ SELECTS DESPESAS ══════════════ */
 function populateSelects() {
+  makeSelectSearchable('desp-cliente', 'Digite para buscar o cliente...');
   const clientes = load(KEY.clientes), colaboradores = load(KEY.colaboradores), propostas = load(KEY.propostas);
   const sc = document.getElementById('desp-cliente'), sp = document.getElementById('desp-proposta'), sb = document.getElementById('desp-colaborador');
   const cur = { c:sc.value, p:sp?sp.value:'', b:sb.value };
@@ -2643,7 +2870,7 @@ function editarDespesa(id) {
     const adEl = document.getElementById('desp-valor-adiantamento');
     if (adEl) { adEl.value = d.valorAdiantamento; atualizarSaldoDevolucao(); }
   }
-  if (d.categoria) { document.getElementById('desp-categoria').value = d.categoria; togglePropostaField(); }
+  if (d.categoria) { document.getElementById('desp-categoria').value = (d.categoria === 'Projeto' ? 'Proposta' : d.categoria); togglePropostaField(); }
 
   // === FIX: preenche TODOS os tipos lançados (não apenas o primeiro) ===
   // Monta array unificado: suporta formato novo (d.tipos) e legado (d.tipo/d.valor)
@@ -2742,9 +2969,10 @@ function salvarDespesa() {
   const tipoLanc = document.getElementById('desp-tipo-lancamento').value;
   const categoria = document.getElementById('desp-categoria').value;
 
-  // Proposta só obrigatória se categoria = Projeto
+  // Proposta só obrigatória se categoria = Proposta
   const pid = document.getElementById('desp-proposta')?.value || '';
-  if (categoria === 'Projeto' && !pid) return showAlert('alert-despesa','Selecione a proposta para o projeto.','danger');
+  const catProposta = (categoria === 'Proposta' || categoria === 'Projeto');
+  if (catProposta && !pid) return showAlert('alert-despesa','Selecione a proposta.','danger');
 
   // Collect all tipo rows with values
   const tipoRows = [];
@@ -2791,7 +3019,7 @@ function salvarDespesa() {
     data: editingId ? (load(KEY.despesas).find(x=>x.id===editingId)?.data||new Date().toLocaleDateString('pt-BR')) : new Date().toLocaleDateString('pt-BR'),
     cadastradoPor: usuarioLogado ? usuarioLogado.email : '',
     cliente:     clientes.find(x=>x.id==cid)?.nome||'',
-    proposta:    categoria === 'Projeto' ? (propostas.find(x=>x.id==pid)?.num||'') : '',
+    proposta:    catProposta ? (propostas.find(x=>x.id==pid)?.num||'') : '',
     colaborador: colaboradores.find(x=>x.id==bid)?.nome||'',
     cidade:      document.getElementById('desp-cidade').value.trim(),
     ida:         document.getElementById('desp-ida').value,
@@ -3623,11 +3851,12 @@ function renderRelatorio() {
   const fmtDate = v => v ? v.split('-').reverse().join('/') : '—';
   const sorted = [...lista].sort((a,b)=>{ if(a.cliente<b.cliente) return -1; if(a.cliente>b.cliente) return 1; return (a.ida||'') < (b.ida||'') ? -1 : 1; });
 
-  el.innerHTML = `<table class="data-table" style="min-width:1160px">
+  el.innerHTML = `<table class="data-table" style="min-width:1260px">
     <thead><tr>
       <th>Cliente</th>
       <th>Proposta</th>
       <th>Colaborador</th>
+      <th>Data Lançamento</th>
       <th>Cidade/UF</th>
       <th>Ida</th>
       <th>Volta</th>
@@ -3694,6 +3923,7 @@ function renderRelatorio() {
         <td style="font-weight:600;font-size:12px">${esc(d.cliente)}</td>
         <td class="muted" style="font-family:'Montserrat',monospace;font-size:11px;">${esc(d.proposta)||'—'}</td>
         <td style="font-size:12px">${esc(d.colaborador)}</td>
+        <td class="muted" style="white-space:nowrap;font-size:11px;">${esc(d.data)||'—'}</td>
         <td style="font-size:12px">${esc(d.cidade)||'—'}</td>
         <td class="muted" style="white-space:nowrap;">${fmtDate(d.ida)}</td>
         <td class="muted" style="white-space:nowrap;">${fmtDate(d.volta)}</td>
@@ -3716,9 +3946,10 @@ function renderRelatorio() {
       </tr>`;
     }).join('') +
     `<tr style="border-top:2px solid var(--border);background:var(--surface-2)">
-      <td colspan="9" style="padding:10px 12px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);text-align:right">Total filtrado</td>
+      <td colspan="10" style="padding:10px 12px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);text-align:right">Total filtrado</td>
       <td style="padding:10px 12px;font-size:14px;font-weight:700;color:var(--navy);text-align:right">${fmtBRL(totalFilVal)}</td>
-      <td colspan="3" class="no-print"></td>
+      <td colspan="3"></td>
+      <td class="no-print"></td>
     </tr>`+
     '</tbody></table>';
 }
@@ -3829,6 +4060,7 @@ function imprimirRelatorio() {
       <td>${esc(d.cliente)}</td>
       <td>${esc(d.proposta)||'—'}</td>
       <td>${esc(d.colaborador)}</td>
+      <td style="white-space:nowrap">${esc(d.data)||'—'}</td>
       <td>${esc(d.cidade)||'—'}</td>
       <td style="white-space:nowrap">${fmtDate(d.ida)}</td>
       <td style="white-space:nowrap">${fmtDate(d.volta)}</td>
@@ -3875,14 +4107,14 @@ function imprimirRelatorio() {
     </div>
     <table>
       <thead><tr>
-        <th>Cliente</th><th>Proposta</th><th>Colaborador</th><th>Cidade/UF</th>
+        <th>Cliente</th><th>Proposta</th><th>Colaborador</th><th>Data Lançamento</th><th>Cidade/UF</th>
         <th>Ida</th><th>Volta</th><th>Dias</th><th>Tipo Lançamento</th>
         <th>Despesas (discriminado)</th><th>Total</th>
         <th>C. Custo</th><th>Competência</th><th>Status</th>
       </tr></thead>
       <tbody>${rows}</tbody>
       <tfoot><tr class="foot">
-        <td colspan="9" style="text-align:right;font-size:10px;">Total filtrado</td>
+        <td colspan="10" style="text-align:right;font-size:10px;">Total filtrado</td>
         <td style="white-space:nowrap">R$ ${totalFilVal.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.')}</td>
         <td colspan="3"></td>
       </tr></tfoot>
@@ -4526,7 +4758,7 @@ function calcParcValores() {
 
 /* Limpa formulário */
 function limparFormParc() {
-  ['parc-tipo','parc-parceiro','parc-descricao','parc-cc','parc-valor-bruto','parc-comissao','parc-competencia','parc-prazo']
+  ['parc-tipo','parc-parceiro','parc-cliente','parc-descricao','parc-cc','parc-valor-bruto','parc-comissao','parc-competencia','parc-prazo']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   document.getElementById('parc-valor-liquido').textContent = 'R$ —';
   document.getElementById('parc-valor-final').textContent   = 'R$ —';
@@ -4543,6 +4775,7 @@ function cancelarEdicaoParc() {
 function salvarParceria() {
   const tipo      = document.getElementById('parc-tipo').value;
   const parceiro  = document.getElementById('parc-parceiro').value.trim();
+  const cliente   = document.getElementById('parc-cliente').value.trim();
   const descricao = document.getElementById('parc-descricao').value.trim();
   const cc        = document.getElementById('parc-cc').value;
   const bruto     = document.getElementById('parc-valor-bruto').value;
@@ -4550,7 +4783,7 @@ function salvarParceria() {
   const compet    = document.getElementById('parc-competencia').value;
   const prazo     = document.getElementById('parc-prazo').value;
 
-  if (!tipo || !parceiro || !cc || !bruto || !comissao) {
+  if (!tipo || !parceiro || !cliente || !cc || !bruto || !comissao) {
     return showAlert('alert-parc','Preencha todos os campos obrigatórios (*).','danger');
   }
 
@@ -4568,6 +4801,7 @@ function salvarParceria() {
     cadastradoPor: usuarioLogado ? usuarioLogado.email : '',
     tipo,
     parceiro,
+    cliente,
     descricao,
     cc,
     valorBruto:   brutoNum.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'),
@@ -4606,6 +4840,16 @@ function editarParceria(id) {
   if (!p) return;
   editingIdParc = id;
   populateParceirosSelect();
+  populateClientesParcSelect();
+  const selC = document.getElementById('parc-cliente');
+  // Se o cliente do registro não está mais cadastrado, adiciona opção "solta" só para exibir
+  if (p.cliente && selC && !Array.from(selC.options).some(o => o.value === p.cliente)) {
+    const optC = document.createElement('option');
+    optC.value = p.cliente;
+    optC.textContent = p.cliente + ' (não cadastrado)';
+    selC.appendChild(optC);
+  }
+  if (selC) selC.value = p.cliente || '';
   const selP = document.getElementById('parc-parceiro');
   // Se o parceiro do registro não está mais cadastrado, adiciona opção "solta" só para exibir
   if (p.parceiro && !Array.from(selP.options).some(o => o.value === p.parceiro)) {
@@ -4654,7 +4898,7 @@ function enviarEmailParc(id) {
   const fmtComp = v => v ? v.split('-').reverse().join('/') : '—';
 
   const assunto = encodeURIComponent(
-    `Repasse Parceiro | ${p.parceiro||'Parceiro'} | ${p.cc||'s/CC'}`
+    `Repasse Parceiro | ${p.parceiro||'Parceiro'} | ${p.cliente||'s/cliente'} | ${p.cc||'s/CC'}`
   );
 
   const linhas = [
@@ -4668,6 +4912,7 @@ function enviarEmailParc(id) {
     '📋 CLASSIFICAÇÃO',
     `   Tipo:                ${p.tipo||'—'}`,
     `   Parceiro/Benef.:     ${p.parceiro||'—'}`,
+    `   Cliente:             ${p.cliente||'—'}`,
     '',
     '📝 DESPESA',
     `   Descrição:           ${p.descricao||'—'}`,
@@ -4739,6 +4984,18 @@ function definirStatusEmailParc(id, status) {
 
 /* ── CADASTRO DE PARCEIROS ────────────────────────────────────── */
 let editingParceiroCadId = null;
+
+/* Lista suspensa de clientes (mesma base da aba Cadastro de Clientes) */
+function populateClientesParcSelect() {
+  const sel = document.getElementById('parc-cliente');
+  if (!sel) return;
+  makeSelectSearchable('parc-cliente', 'Digite para buscar o cliente...');
+  const atual = sel.value;
+  const lista = load(KEY.clientes) || [];
+  sel.innerHTML = '<option value="">— Selecione o cliente —</option>' +
+    lista.map(c => `<option value="${esc(c.nome)}">${esc(c.nome)}</option>`).join('');
+  if (atual && lista.some(c => c.nome === atual)) sel.value = atual;
+}
 
 function populateParceirosSelect() {
   const sel = document.getElementById('parc-parceiro');
@@ -4856,8 +5113,9 @@ function renderParceirosCad() {
 
 /* Render lista */
 function renderParcerias() {
-  // Popula lista suspensa de parceiros + lista de cadastros
+  // Popula listas suspensas (parceiros + clientes) e a lista de cadastros
   populateParceirosSelect();
+  populateClientesParcSelect();
   renderParceirosCad();
 
   const el = document.getElementById('lista-parc');
@@ -4883,7 +5141,7 @@ function renderParcerias() {
   const fmtComp = v => v ? v.split('-').reverse().join('/') : '—';
 
   el.innerHTML = '<table class="data-table" style="min-width:1100px"><thead><tr>' +
-    '<th>Data</th><th>Cadastrado Por</th><th>Tipo</th><th>Parceiro</th><th>Descrição</th><th>Centro Custo</th>' +
+    '<th>Data</th><th>Cadastrado Por</th><th>Tipo</th><th>Parceiro</th><th>Cliente</th><th>Descrição</th><th>Centro Custo</th>' +
     '<th>Valor Bruto</th><th>Valor Líquido</th><th>% Comissão</th><th>Valor Final</th>' +
     '<th>Competência</th><th>Prazo Pgto</th><th>Status E-mail</th><th></th>' +
     '</tr></thead><tbody>' +
@@ -4899,6 +5157,7 @@ function renderParcerias() {
         <td class="muted" style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(p.cadastradoPor||'')}">${esc(p.cadastradoPor||'—')}</td>
         <td>${tipoBadge}</td>
         <td style="font-weight:600;font-size:12px">${esc(p.parceiro||'—')}</td>
+        <td style="font-size:12px">${esc(p.cliente||'—')}</td>
         <td class="muted">${esc(p.descricao||'—')}</td>
         <td>${ccPill}</td>
         <td class="muted" style="font-family:'Montserrat',monospace;">R$ ${esc(p.valorBruto||'—')}</td>
