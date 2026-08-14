@@ -2005,23 +2005,27 @@ body {
         <span class="badge" id="badge-parceiros">0</span>
       </div>
       <p style="font-size:12px;color:var(--text-secondary);margin-bottom:14px;line-height:1.55;">
-        Os parceiros cadastrados aqui aparecem automaticamente na lista suspensa <strong>Parceiro / Beneficiário</strong> acima. Ao selecionar um parceiro no formulário, a <strong>% Comissão</strong> e o <strong>Cliente</strong> vinculados são preenchidos automaticamente.
+        Os parceiros cadastrados aqui aparecem automaticamente na lista suspensa <strong>Parceiro / Beneficiário</strong> acima. Você pode vincular <strong>vários clientes</strong> a um mesmo parceiro. Ao selecionar o parceiro no formulário, a <strong>% Comissão</strong> é preenchida e os <strong>clientes vinculados</strong> aparecem na lista de clientes.
       </p>
 
-      <div class="form-grid cols-3" style="margin-bottom:14px;">
+      <div class="form-grid cols-3" style="margin-bottom:12px;">
         <div class="form-group">
           <label for="pcad-nome">Nome do Parceiro *</label>
           <input type="text" id="pcad-nome" placeholder="Ex.: Clínica Vida Plena">
         </div>
         <div class="form-group">
-          <label for="pcad-cliente">Cliente</label>
-          <input type="text" id="pcad-cliente" placeholder="Ex.: Nome do cliente">
+          <label for="pcad-cliente-input">Clientes</label>
+          <div style="display:flex;gap:6px;align-items:stretch;">
+            <input type="text" id="pcad-cliente-input" placeholder="Digite o cliente e clique +" onkeydown="if(event.key==='Enter'){event.preventDefault();adicionarClientePcad();}" style="flex:1;min-width:0;">
+            <button type="button" class="calc-add-btn" onclick="adicionarClientePcad()" title="Adicionar cliente" style="width:38px;height:auto;align-self:stretch;">+</button>
+          </div>
         </div>
         <div class="form-group">
           <label for="pcad-comissao">% Comissão *</label>
           <input type="text" id="pcad-comissao" placeholder="Ex.: 10" inputmode="decimal" oninput="maskParcPercent(this)" style="font-family:'Montserrat',monospace;font-weight:600;">
         </div>
       </div>
+      <div id="pcad-clientes-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
       <div style="margin-bottom:14px;">
         <button class="btn btn-teal" onclick="salvarParceiroCad()" style="width:100%;">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -4865,16 +4869,6 @@ function editarParceria(id) {
   if (!p) return;
   editingIdParc = id;
   populateParceirosSelect();
-  populateClientesParcSelect();
-  const selC = document.getElementById('parc-cliente');
-  // Se o cliente do registro não está mais cadastrado, adiciona opção "solta" só para exibir
-  if (p.cliente && selC && !Array.from(selC.options).some(o => o.value === p.cliente)) {
-    const optC = document.createElement('option');
-    optC.value = p.cliente;
-    optC.textContent = p.cliente + ' (não cadastrado)';
-    selC.appendChild(optC);
-  }
-  if (selC) selC.value = p.cliente || '';
   const selP = document.getElementById('parc-parceiro');
   // Se o parceiro do registro não está mais cadastrado, adiciona opção "solta" só para exibir
   if (p.parceiro && !Array.from(selP.options).some(o => o.value === p.parceiro)) {
@@ -4885,6 +4879,10 @@ function editarParceria(id) {
   }
   document.getElementById('parc-tipo').value        = p.tipo || '';
   selP.value                                        = p.parceiro || '';
+  // Popula os clientes do parceiro selecionado, garantindo que o cliente salvo apareça
+  populateClientesParcSelect(undefined, p.cliente || '');
+  const selC = document.getElementById('parc-cliente');
+  if (selC) selC.value = p.cliente || '';
   document.getElementById('parc-descricao').value   = p.descricao || '';
   document.getElementById('parc-valor-bruto').value = p.valorBruto || '';
   document.getElementById('parc-comissao').value    = p.comissao || '';
@@ -5007,19 +5005,70 @@ function definirStatusEmailParc(id, status) {
 
 /* ── CADASTRO DE PARCEIROS ────────────────────────────────────── */
 let editingParceiroCadId = null;
+let pcadClientes = [];   // clientes vinculados ao parceiro em edição/cadastro
 
-/* Lista suspensa de clientes (mesma base da aba Cadastro de Clientes).
-   preferCliente = cliente vinculado ao parceiro selecionado (aparece e fica pré-selecionado). */
-function populateClientesParcSelect(preferCliente) {
+/* Extrai a lista de clientes de um parceiro (aceita array novo ou string antiga) */
+function clientesDoParceiro(p) {
+  if (!p) return [];
+  if (Array.isArray(p.clientes)) return p.clientes.map(s => String(s).trim()).filter(Boolean);
+  const raw = p.clientes || p.cliente || '';
+  if (!raw) return [];
+  return String(raw).split(/\s*[|,;]\s*/).map(s => s.trim()).filter(Boolean);
+}
+
+/* Adiciona o cliente digitado à lista de chips */
+function adicionarClientePcad() {
+  const inp = document.getElementById('pcad-cliente-input');
+  const nome = (inp.value || '').trim();
+  if (!nome) return;
+  if (!pcadClientes.some(c => c.toLowerCase() === nome.toLowerCase())) {
+    pcadClientes.push(nome);
+  }
+  inp.value = '';
+  inp.focus();
+  renderClientesPcadChips();
+}
+
+function removerClientePcad(idx) {
+  pcadClientes.splice(idx, 1);
+  renderClientesPcadChips();
+}
+
+function renderClientesPcadChips() {
+  const box = document.getElementById('pcad-clientes-chips');
+  if (!box) return;
+  if (!pcadClientes.length) { box.innerHTML = ''; return; }
+  box.innerHTML = pcadClientes.map((c, i) => `
+    <span style="display:inline-flex;align-items:center;gap:6px;background:var(--teal-light);color:var(--teal);border:1px solid var(--mint-dark);font-size:12px;font-weight:600;padding:4px 6px 4px 10px;border-radius:var(--r-pill);">
+      ${esc(c)}
+      <button type="button" onclick="removerClientePcad(${i})" title="Remover" style="background:none;border:none;cursor:pointer;color:var(--teal);font-size:14px;line-height:1;display:inline-flex;padding:0;">✕</button>
+    </span>`).join('');
+}
+
+/* Clientes vinculados ao parceiro atualmente selecionado no formulário */
+function clientesDoParceiroSelecionado() {
+  const selP = document.getElementById('parc-parceiro');
+  const opt = selP && selP.selectedOptions[0];
+  const str = opt ? (opt.getAttribute('data-clientes') || '') : '';
+  return str ? str.split('|').map(s => s.trim()).filter(Boolean) : [];
+}
+
+/* Lista suspensa de clientes — mostra APENAS os clientes cadastrados no parceiro selecionado.
+   clientesPermitidos: opcional, força a lista; se omitido, usa os do parceiro selecionado.
+   incluir: opcional, garante que um cliente específico apareça (usado ao editar um repasse antigo). */
+function populateClientesParcSelect(clientesPermitidos, incluir) {
   const sel = document.getElementById('parc-cliente');
   if (!sel) return;
-  makeSelectSearchable('parc-cliente', 'Digite para buscar o cliente...');
-  const atual = preferCliente || sel.value;
-  const lista = load(KEY.clientes) || [];
-  let nomes = lista.map(c => c.nome);
-  // Garante que o cliente vinculado ao parceiro apareça mesmo se não estiver na base
-  if (preferCliente && !nomes.includes(preferCliente)) nomes = [preferCliente, ...nomes];
-  sel.innerHTML = '<option value="">— Selecione o cliente —</option>' +
+  makeSelectSearchable('parc-cliente', 'Selecione o parceiro primeiro...');
+  const permit = (clientesPermitidos === undefined)
+    ? clientesDoParceiroSelecionado()
+    : (Array.isArray(clientesPermitidos) ? clientesPermitidos.filter(Boolean)
+       : (clientesPermitidos ? [clientesPermitidos] : []));
+  let nomes = [...new Set(permit)];
+  if (incluir && !nomes.includes(incluir)) nomes = [...new Set([incluir, ...nomes])];
+  const atual = sel.value;
+  const placeholder = nomes.length ? '— Selecione o cliente —' : '— Selecione o parceiro primeiro —';
+  sel.innerHTML = `<option value="">${esc(placeholder)}</option>` +
     nomes.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
   if (atual && nomes.includes(atual)) sel.value = atual;
 }
@@ -5031,7 +5080,10 @@ function populateParceirosSelect() {
   const atual = sel.value;
   const lista = load(KEY.parceirosCad) || [];
   sel.innerHTML = '<option value="">— Selecione —</option>' +
-    lista.map(p => `<option value="${esc(p.nome)}" data-comissao="${esc(p.comissao||'')}" data-cliente="${esc(p.cliente||'')}">${esc(p.nome)}${p.comissao ? ` (${esc(p.comissao)}%)` : ''}</option>`).join('');
+    lista.map(p => {
+      const cls = clientesDoParceiro(p).join('|');
+      return `<option value="${esc(p.nome)}" data-comissao="${esc(p.comissao||'')}" data-clientes="${esc(cls)}">${esc(p.nome)}${p.comissao ? ` (${esc(p.comissao)}%)` : ''}</option>`;
+    }).join('');
   // Mantém seleção atual se ainda existe
   if (atual && lista.some(p => p.nome === atual)) sel.value = atual;
 }
@@ -5039,34 +5091,45 @@ function populateParceirosSelect() {
 function onParcParceiroChange() {
   const sel = document.getElementById('parc-parceiro');
   const opt = sel.selectedOptions[0];
-  const comis   = opt ? (opt.getAttribute('data-comissao') || '') : '';
-  const cliente = opt ? (opt.getAttribute('data-cliente')  || '') : '';
+  const comis       = opt ? (opt.getAttribute('data-comissao') || '') : '';
+  const clientesStr = opt ? (opt.getAttribute('data-clientes') || '') : '';
+  const clientes = clientesStr ? clientesStr.split('|').map(s => s.trim()).filter(Boolean) : [];
   if (comis) {
     document.getElementById('parc-comissao').value = comis;
     calcParcValores();
   }
-  // Traz o cliente vinculado ao parceiro para a lista suspensa e já o seleciona
-  populateClientesParcSelect(cliente);
-  if (cliente) {
-    const selC = document.getElementById('parc-cliente');
-    if (selC) selC.value = cliente;
+  // Traz os clientes vinculados ao parceiro para o topo da lista suspensa
+  populateClientesParcSelect(clientes);
+  const selC = document.getElementById('parc-cliente');
+  if (selC) {
+    // Se houver apenas um cliente vinculado, já seleciona; com vários, deixa o usuário escolher
+    selC.value = (clientes.length === 1) ? clientes[0] : '';
   }
 }
 
 function salvarParceiroCad() {
   const nome = document.getElementById('pcad-nome').value.trim();
   const comissao = document.getElementById('pcad-comissao').value.trim();
-  const cliente = document.getElementById('pcad-cliente').value.trim();
+  // Inclui um cliente digitado que ainda não foi adicionado via botão +
+  const pend = (document.getElementById('pcad-cliente-input').value || '').trim();
+  if (pend && !pcadClientes.some(c => c.toLowerCase() === pend.toLowerCase())) {
+    pcadClientes.push(pend);
+  }
+  document.getElementById('pcad-cliente-input').value = '';
+  renderClientesPcadChips();
+
   if (!nome || !comissao) {
     return showAlert('alert-parc-cad','Informe nome e % comissão do parceiro.','danger');
   }
 
+  const clientes = [...pcadClientes];
+  const clienteJoined = clientes.join(' | ');
   let lista = load(KEY.parceirosCad) || [];
 
   if (editingParceiroCadId) {
-    lista = lista.map(p => p.id === editingParceiroCadId ? {...p, nome, comissao, cliente} : p);
+    lista = lista.map(p => p.id === editingParceiroCadId ? {...p, nome, comissao, clientes, cliente: clienteJoined} : p);
     save(KEY.parceirosCad, lista);
-    sheetsPost({ aba: 'ParceirosCad', id: String(editingParceiroCadId), acao: 'atualizar', nome, comissao, cliente });
+    sheetsPost({ aba: 'ParceirosCad', id: String(editingParceiroCadId), acao: 'atualizar', nome, comissao, cliente: clienteJoined });
     showAlert('alert-parc-cad','Parceiro atualizado com sucesso!','success');
     editingParceiroCadId = null;
     document.getElementById('btn-parc-cad-txt').textContent = 'Adicionar parceiro';
@@ -5076,16 +5139,17 @@ function salvarParceiroCad() {
       return showAlert('alert-parc-cad','Já existe um parceiro com esse nome.','danger');
     }
     const id = Date.now();
-    const novo = { id, nome, comissao, cliente, cadastradoPor: usuarioLogado ? usuarioLogado.email : '' };
+    const novo = { id, nome, comissao, clientes, cliente: clienteJoined, cadastradoPor: usuarioLogado ? usuarioLogado.email : '' };
     lista.push(novo);
     save(KEY.parceirosCad, lista);
-    sheetsPost({ aba: 'ParceirosCad', id: String(id), acao: 'inserir', ...novo });
+    sheetsPost({ aba: 'ParceirosCad', id: String(id), acao: 'inserir', nome, comissao, cliente: clienteJoined, cadastradoPor: novo.cadastradoPor });
     showAlert('alert-parc-cad','Parceiro adicionado com sucesso!','success');
   }
 
+  pcadClientes = [];
+  renderClientesPcadChips();
   document.getElementById('pcad-nome').value = '';
   document.getElementById('pcad-comissao').value = '';
-  document.getElementById('pcad-cliente').value = '';
   renderParceirosCad();
   populateParceirosSelect();
 }
@@ -5096,7 +5160,9 @@ function editarParceiroCad(id) {
   editingParceiroCadId = id;
   document.getElementById('pcad-nome').value = p.nome || '';
   document.getElementById('pcad-comissao').value = p.comissao || '';
-  document.getElementById('pcad-cliente').value = p.cliente || '';
+  document.getElementById('pcad-cliente-input').value = '';
+  pcadClientes = clientesDoParceiro(p);
+  renderClientesPcadChips();
   document.getElementById('btn-parc-cad-txt').textContent = 'Salvar alterações';
   document.getElementById('pcad-nome').focus();
 }
@@ -5134,12 +5200,19 @@ function renderParceirosCad() {
   }
 
   el.innerHTML = '<table class="data-table"><thead><tr>' +
-    '<th>#</th><th>Nome do Parceiro</th><th>Cliente</th><th>% Comissão</th><th></th>' +
+    '<th>#</th><th>Nome do Parceiro</th><th>Clientes</th><th>% Comissão</th><th></th>' +
     '</tr></thead><tbody>' +
-    lista.map((p, i) => `<tr>
+    lista.map((p, i) => {
+      const cls = clientesDoParceiro(p);
+      const clientesHtml = cls.length
+        ? '<div style="display:flex;flex-wrap:wrap;gap:4px;">' + cls.map(c =>
+            `<span style="display:inline-flex;background:var(--teal-light);color:var(--teal);border:1px solid var(--mint-dark);font-size:11px;font-weight:600;padding:2px 8px;border-radius:var(--r-pill);">${esc(c)}</span>`
+          ).join('') + '</div>'
+        : '<span class="muted">—</span>';
+      return `<tr>
       <td class="muted" style="width:50px;">${i+1}</td>
       <td style="font-weight:600;">${esc(p.nome||'—')}</td>
-      <td>${esc(p.cliente||'—')}</td>
+      <td>${clientesHtml}</td>
       <td style="font-family:'Montserrat',monospace;font-weight:700;color:var(--teal);">${esc(p.comissao||'—')}%</td>
       <td style="padding:8px 6px;text-align:right;">
         <div style="display:flex;gap:5px;justify-content:flex-end;">
@@ -5147,7 +5220,8 @@ function renderParceirosCad() {
           <button class="btn btn-danger" onclick="confirmarExclusaoParceiroCad(${p.id}, this)">🗑 Excluir</button>
         </div>
       </td>
-    </tr>`).join('') + '</tbody></table>';
+    </tr>`;
+    }).join('') + '</tbody></table>';
 }
 
 /* Limpa filtros da lista de repasses */
