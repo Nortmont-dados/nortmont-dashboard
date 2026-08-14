@@ -1895,19 +1895,10 @@ body {
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         Despesa
       </div>
-      <div class="form-grid cols-2" style="margin-bottom:16px;">
+      <div class="form-grid cols-1" style="margin-bottom:16px;">
         <div class="form-group">
           <label for="parc-descricao">Descrição da Despesa</label>
           <input type="text" id="parc-descricao" placeholder="Ex.: Material de divulgação compartilhado">
-        </div>
-        <div class="form-group">
-          <label for="parc-cc">Centro de Custo *</label>
-          <select id="parc-cc">
-            <option value="">— Selecione —</option>
-            <option value="Engenharia">Engenharia</option>
-            <option value="Gestão">Gestão</option>
-            <option value="Geral">Geral</option>
-          </select>
         </div>
       </div>
 
@@ -1965,6 +1956,38 @@ body {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
         Exibindo os ressarcimentos registrados nesta sessão por <strong id="msg-usuario-filtro-parc">—</strong>.
       </div>
+
+      <!-- FILTROS -->
+      <div class="form-grid cols-4" style="margin-bottom:10px;">
+        <div class="form-group">
+          <label>Prazo Pgto · De</label>
+          <input type="date" id="parc-filtro-prazo-de" onchange="renderParcerias()">
+        </div>
+        <div class="form-group">
+          <label>Prazo Pgto · Até</label>
+          <input type="date" id="parc-filtro-prazo-ate" onchange="renderParcerias()">
+        </div>
+        <div class="form-group">
+          <label>Parceiro</label>
+          <select id="parc-filtro-parceiro" onchange="renderParcerias()">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Cliente</label>
+          <select id="parc-filtro-cliente" onchange="renderParcerias()">
+            <option value="">Todos</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 4px 12px;">
+        <span style="font-size:12px;font-weight:600;color:var(--text-secondary);" id="parc-count-label"></span>
+        <button onclick="limparFiltrosParc()" style="background:none;border:none;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:var(--text-muted);display:flex;align-items:center;gap:5px;padding:4px 8px;border-radius:var(--r-pill);transition:background 0.15s;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background='none'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Limpar filtros
+        </button>
+      </div>
+
       <div style="overflow-x:auto;">
         <div id="lista-parc">
           <div class="empty-state">
@@ -1982,24 +2005,28 @@ body {
         <span class="badge" id="badge-parceiros">0</span>
       </div>
       <p style="font-size:12px;color:var(--text-secondary);margin-bottom:14px;line-height:1.55;">
-        Os parceiros cadastrados aqui aparecem automaticamente na lista suspensa <strong>Parceiro / Beneficiário</strong> acima. Ao selecionar um parceiro no formulário, a <strong>% Comissão</strong> é preenchida com o valor cadastrado.
+        Os parceiros cadastrados aqui aparecem automaticamente na lista suspensa <strong>Parceiro / Beneficiário</strong> acima. Ao selecionar um parceiro no formulário, a <strong>% Comissão</strong> e o <strong>Cliente</strong> vinculados são preenchidos automaticamente.
       </p>
 
-      <div class="form-grid cols-3" style="margin-bottom:14px;align-items:end;">
+      <div class="form-grid cols-3" style="margin-bottom:14px;">
         <div class="form-group">
           <label for="pcad-nome">Nome do Parceiro *</label>
           <input type="text" id="pcad-nome" placeholder="Ex.: Clínica Vida Plena">
         </div>
         <div class="form-group">
+          <label for="pcad-cliente">Cliente</label>
+          <input type="text" id="pcad-cliente" placeholder="Ex.: Nome do cliente">
+        </div>
+        <div class="form-group">
           <label for="pcad-comissao">% Comissão *</label>
           <input type="text" id="pcad-comissao" placeholder="Ex.: 10" inputmode="decimal" oninput="maskParcPercent(this)" style="font-family:'Montserrat',monospace;font-weight:600;">
         </div>
-        <div>
-          <button class="btn btn-teal" onclick="salvarParceiroCad()" style="width:100%;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            <span id="btn-parc-cad-txt">Adicionar parceiro</span>
-          </button>
-        </div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <button class="btn btn-teal" onclick="salvarParceiroCad()" style="width:100%;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span id="btn-parc-cad-txt">Adicionar parceiro</span>
+        </button>
       </div>
       <div class="alert" id="alert-parc-cad"></div>
 
@@ -4758,7 +4785,7 @@ function calcParcValores() {
 
 /* Limpa formulário */
 function limparFormParc() {
-  ['parc-tipo','parc-parceiro','parc-cliente','parc-descricao','parc-cc','parc-valor-bruto','parc-comissao','parc-competencia','parc-prazo']
+  ['parc-tipo','parc-parceiro','parc-cliente','parc-descricao','parc-valor-bruto','parc-comissao','parc-competencia','parc-prazo']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   document.getElementById('parc-valor-liquido').textContent = 'R$ —';
   document.getElementById('parc-valor-final').textContent   = 'R$ —';
@@ -4777,13 +4804,12 @@ function salvarParceria() {
   const parceiro  = document.getElementById('parc-parceiro').value.trim();
   const cliente   = document.getElementById('parc-cliente').value.trim();
   const descricao = document.getElementById('parc-descricao').value.trim();
-  const cc        = document.getElementById('parc-cc').value;
   const bruto     = document.getElementById('parc-valor-bruto').value;
   const comissao  = document.getElementById('parc-comissao').value;
   const compet    = document.getElementById('parc-competencia').value;
   const prazo     = document.getElementById('parc-prazo').value;
 
-  if (!tipo || !parceiro || !cliente || !cc || !bruto || !comissao) {
+  if (!tipo || !parceiro || !cliente || !bruto || !comissao) {
     return showAlert('alert-parc','Preencha todos os campos obrigatórios (*).','danger');
   }
 
@@ -4803,7 +4829,6 @@ function salvarParceria() {
     parceiro,
     cliente,
     descricao,
-    cc,
     valorBruto:   brutoNum.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'),
     comissao:     String(comissao).replace('.',','),
     valorLiquido: liquidoNum.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'),
@@ -4861,7 +4886,6 @@ function editarParceria(id) {
   document.getElementById('parc-tipo').value        = p.tipo || '';
   selP.value                                        = p.parceiro || '';
   document.getElementById('parc-descricao').value   = p.descricao || '';
-  document.getElementById('parc-cc').value          = p.cc || '';
   document.getElementById('parc-valor-bruto').value = p.valorBruto || '';
   document.getElementById('parc-comissao').value    = p.comissao || '';
   document.getElementById('parc-competencia').value = p.competencia || '';
@@ -4898,7 +4922,7 @@ function enviarEmailParc(id) {
   const fmtComp = v => v ? v.split('-').reverse().join('/') : '—';
 
   const assunto = encodeURIComponent(
-    `Repasse Parceiro | ${p.parceiro||'Parceiro'} | ${p.cliente||'s/cliente'} | ${p.cc||'s/CC'}`
+    `Repasse Parceiro | ${p.parceiro||'Parceiro'} | ${p.cliente||'s/cliente'}`
   );
 
   const linhas = [
@@ -4916,7 +4940,6 @@ function enviarEmailParc(id) {
     '',
     '📝 DESPESA',
     `   Descrição:           ${p.descricao||'—'}`,
-    `   Centro de Custo:     ${p.cc||'—'}`,
     '',
     '💼 CÁLCULO DO VALOR',
     `   Valor Bruto:         R$ ${p.valorBruto||'—'}`,
@@ -4985,25 +5008,30 @@ function definirStatusEmailParc(id, status) {
 /* ── CADASTRO DE PARCEIROS ────────────────────────────────────── */
 let editingParceiroCadId = null;
 
-/* Lista suspensa de clientes (mesma base da aba Cadastro de Clientes) */
-function populateClientesParcSelect() {
+/* Lista suspensa de clientes (mesma base da aba Cadastro de Clientes).
+   preferCliente = cliente vinculado ao parceiro selecionado (aparece e fica pré-selecionado). */
+function populateClientesParcSelect(preferCliente) {
   const sel = document.getElementById('parc-cliente');
   if (!sel) return;
   makeSelectSearchable('parc-cliente', 'Digite para buscar o cliente...');
-  const atual = sel.value;
+  const atual = preferCliente || sel.value;
   const lista = load(KEY.clientes) || [];
+  let nomes = lista.map(c => c.nome);
+  // Garante que o cliente vinculado ao parceiro apareça mesmo se não estiver na base
+  if (preferCliente && !nomes.includes(preferCliente)) nomes = [preferCliente, ...nomes];
   sel.innerHTML = '<option value="">— Selecione o cliente —</option>' +
-    lista.map(c => `<option value="${esc(c.nome)}">${esc(c.nome)}</option>`).join('');
-  if (atual && lista.some(c => c.nome === atual)) sel.value = atual;
+    nomes.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  if (atual && nomes.includes(atual)) sel.value = atual;
 }
 
+/* Lista suspensa de parceiros no formulário de lançamento */
 function populateParceirosSelect() {
   const sel = document.getElementById('parc-parceiro');
   if (!sel) return;
   const atual = sel.value;
   const lista = load(KEY.parceirosCad) || [];
   sel.innerHTML = '<option value="">— Selecione —</option>' +
-    lista.map(p => `<option value="${esc(p.nome)}" data-comissao="${esc(p.comissao||'')}">${esc(p.nome)}${p.comissao ? ` (${esc(p.comissao)}%)` : ''}</option>`).join('');
+    lista.map(p => `<option value="${esc(p.nome)}" data-comissao="${esc(p.comissao||'')}" data-cliente="${esc(p.cliente||'')}">${esc(p.nome)}${p.comissao ? ` (${esc(p.comissao)}%)` : ''}</option>`).join('');
   // Mantém seleção atual se ainda existe
   if (atual && lista.some(p => p.nome === atual)) sel.value = atual;
 }
@@ -5011,16 +5039,24 @@ function populateParceirosSelect() {
 function onParcParceiroChange() {
   const sel = document.getElementById('parc-parceiro');
   const opt = sel.selectedOptions[0];
-  const comis = opt ? (opt.getAttribute('data-comissao') || '') : '';
+  const comis   = opt ? (opt.getAttribute('data-comissao') || '') : '';
+  const cliente = opt ? (opt.getAttribute('data-cliente')  || '') : '';
   if (comis) {
     document.getElementById('parc-comissao').value = comis;
     calcParcValores();
+  }
+  // Traz o cliente vinculado ao parceiro para a lista suspensa e já o seleciona
+  populateClientesParcSelect(cliente);
+  if (cliente) {
+    const selC = document.getElementById('parc-cliente');
+    if (selC) selC.value = cliente;
   }
 }
 
 function salvarParceiroCad() {
   const nome = document.getElementById('pcad-nome').value.trim();
   const comissao = document.getElementById('pcad-comissao').value.trim();
+  const cliente = document.getElementById('pcad-cliente').value.trim();
   if (!nome || !comissao) {
     return showAlert('alert-parc-cad','Informe nome e % comissão do parceiro.','danger');
   }
@@ -5028,9 +5064,9 @@ function salvarParceiroCad() {
   let lista = load(KEY.parceirosCad) || [];
 
   if (editingParceiroCadId) {
-    lista = lista.map(p => p.id === editingParceiroCadId ? {...p, nome, comissao} : p);
+    lista = lista.map(p => p.id === editingParceiroCadId ? {...p, nome, comissao, cliente} : p);
     save(KEY.parceirosCad, lista);
-    sheetsPost({ aba: 'ParceirosCad', id: String(editingParceiroCadId), acao: 'atualizar', nome, comissao });
+    sheetsPost({ aba: 'ParceirosCad', id: String(editingParceiroCadId), acao: 'atualizar', nome, comissao, cliente });
     showAlert('alert-parc-cad','Parceiro atualizado com sucesso!','success');
     editingParceiroCadId = null;
     document.getElementById('btn-parc-cad-txt').textContent = 'Adicionar parceiro';
@@ -5040,7 +5076,7 @@ function salvarParceiroCad() {
       return showAlert('alert-parc-cad','Já existe um parceiro com esse nome.','danger');
     }
     const id = Date.now();
-    const novo = { id, nome, comissao, cadastradoPor: usuarioLogado ? usuarioLogado.email : '' };
+    const novo = { id, nome, comissao, cliente, cadastradoPor: usuarioLogado ? usuarioLogado.email : '' };
     lista.push(novo);
     save(KEY.parceirosCad, lista);
     sheetsPost({ aba: 'ParceirosCad', id: String(id), acao: 'inserir', ...novo });
@@ -5049,6 +5085,7 @@ function salvarParceiroCad() {
 
   document.getElementById('pcad-nome').value = '';
   document.getElementById('pcad-comissao').value = '';
+  document.getElementById('pcad-cliente').value = '';
   renderParceirosCad();
   populateParceirosSelect();
 }
@@ -5059,6 +5096,7 @@ function editarParceiroCad(id) {
   editingParceiroCadId = id;
   document.getElementById('pcad-nome').value = p.nome || '';
   document.getElementById('pcad-comissao').value = p.comissao || '';
+  document.getElementById('pcad-cliente').value = p.cliente || '';
   document.getElementById('btn-parc-cad-txt').textContent = 'Salvar alterações';
   document.getElementById('pcad-nome').focus();
 }
@@ -5096,11 +5134,12 @@ function renderParceirosCad() {
   }
 
   el.innerHTML = '<table class="data-table"><thead><tr>' +
-    '<th>#</th><th>Nome do Parceiro</th><th>% Comissão</th><th></th>' +
+    '<th>#</th><th>Nome do Parceiro</th><th>Cliente</th><th>% Comissão</th><th></th>' +
     '</tr></thead><tbody>' +
     lista.map((p, i) => `<tr>
       <td class="muted" style="width:50px;">${i+1}</td>
       <td style="font-weight:600;">${esc(p.nome||'—')}</td>
+      <td>${esc(p.cliente||'—')}</td>
       <td style="font-family:'Montserrat',monospace;font-weight:700;color:var(--teal);">${esc(p.comissao||'—')}%</td>
       <td style="padding:8px 6px;text-align:right;">
         <div style="display:flex;gap:5px;justify-content:flex-end;">
@@ -5109,6 +5148,13 @@ function renderParceirosCad() {
         </div>
       </td>
     </tr>`).join('') + '</tbody></table>';
+}
+
+/* Limpa filtros da lista de repasses */
+function limparFiltrosParc() {
+  ['parc-filtro-prazo-de','parc-filtro-prazo-ate','parc-filtro-parceiro','parc-filtro-cliente']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  renderParcerias();
 }
 
 /* Render lista */
@@ -5123,16 +5169,55 @@ function renderParcerias() {
   if (!el || !badge) return;
 
   const todas = load(KEY.parcerias);
-  const lista = usuarioLogado
+  const base = usuarioLogado
     ? todas.filter(p => (p.cadastradoPor||'').toLowerCase() === usuarioLogado.email.toLowerCase())
     : todas;
 
+  // ── Popula selects de filtro (Parceiro / Cliente) a partir dos registros existentes ──
+  const selPar = document.getElementById('parc-filtro-parceiro');
+  const selCli = document.getElementById('parc-filtro-cliente');
+  const fParceiro = selPar ? selPar.value : '';
+  const fCliente  = selCli ? selCli.value : '';
+  if (selPar) {
+    const parceiros = [...new Set(base.map(p => p.parceiro).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+    selPar.innerHTML = '<option value="">Todos</option>' +
+      parceiros.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    if (fParceiro && parceiros.includes(fParceiro)) selPar.value = fParceiro;
+  }
+  if (selCli) {
+    const clientes = [...new Set(base.map(p => p.cliente).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+    selCli.innerHTML = '<option value="">Todos</option>' +
+      clientes.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    if (fCliente && clientes.includes(fCliente)) selCli.value = fCliente;
+  }
+
+  // ── Aplica filtros ──
+  const prazoDe  = document.getElementById('parc-filtro-prazo-de')?.value || '';
+  const prazoAte = document.getElementById('parc-filtro-prazo-ate')?.value || '';
+  const vParceiro = selPar ? selPar.value : '';
+  const vCliente  = selCli ? selCli.value : '';
+
+  const lista = base.filter(p => {
+    if (vParceiro && p.parceiro !== vParceiro) return false;
+    if (vCliente  && p.cliente  !== vCliente)  return false;
+    const prazo = p.prazoPagamento || '';
+    if (prazoDe) { if (!prazo || prazo < prazoDe) return false; }
+    if (prazoAte){ if (!prazo || prazo > prazoAte) return false; }
+    return true;
+  });
+
   badge.textContent = lista.length;
+  const countLabel = document.getElementById('parc-count-label');
+  if (countLabel) {
+    countLabel.textContent = (lista.length === base.length)
+      ? `${base.length} repasse(s)`
+      : `${lista.length} de ${base.length} repasse(s)`;
+  }
 
   if (!lista.length) {
     el.innerHTML = `<div class="empty-state">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-      Nenhum ressarcimento registrado ainda.
+      ${base.length ? 'Nenhum repasse encontrado com os filtros aplicados.' : 'Nenhum ressarcimento registrado ainda.'}
     </div>`;
     return;
   }
@@ -5140,17 +5225,20 @@ function renderParcerias() {
   const fmtDate = v => v ? v.split('-').reverse().join('/') : '—';
   const fmtComp = v => v ? v.split('-').reverse().join('/') : '—';
 
-  el.innerHTML = '<table class="data-table" style="min-width:1100px"><thead><tr>' +
-    '<th>Data</th><th>Cadastrado Por</th><th>Tipo</th><th>Parceiro</th><th>Cliente</th><th>Descrição</th><th>Centro Custo</th>' +
+  // ── Totais ──
+  let totBruto = 0, totLiquido = 0, totFinal = 0;
+  lista.forEach(p => {
+    totBruto   += parseParcBRL(p.valorBruto);
+    totLiquido += parseParcBRL(p.valorLiquido);
+    totFinal   += parseParcBRL(p.valorFinal);
+  });
+
+  el.innerHTML = '<table class="data-table" style="min-width:1050px"><thead><tr>' +
+    '<th>Data</th><th>Cadastrado Por</th><th>Tipo</th><th>Parceiro</th><th>Cliente</th><th>Descrição</th>' +
     '<th>Valor Bruto</th><th>Valor Líquido</th><th>% Comissão</th><th>Valor Final</th>' +
     '<th>Competência</th><th>Prazo Pgto</th><th>Status E-mail</th><th></th>' +
     '</tr></thead><tbody>' +
     [...lista].reverse().map(p => {
-      const ccPill = p.cc==='Engenharia'
-        ? `<span class="cc-pill cc-eng">Engenharia</span>`
-        : p.cc==='Geral'
-          ? `<span class="cc-pill cc-geral">Geral</span>`
-          : `<span class="cc-pill cc-gest">Gestão</span>`;
       const tipoBadge = `<span style="display:inline-flex;align-items:center;gap:4px;background:#e6f4ef;color:#1a7a55;border:1px solid #a7d7c5;font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);white-space:nowrap;">↩ ${esc(p.tipo||'—')}</span>`;
       return `<tr>
         <td class="muted">${esc(p.data||'—')}</td>
@@ -5159,7 +5247,6 @@ function renderParcerias() {
         <td style="font-weight:600;font-size:12px">${esc(p.parceiro||'—')}</td>
         <td style="font-size:12px">${esc(p.cliente||'—')}</td>
         <td class="muted">${esc(p.descricao||'—')}</td>
-        <td>${ccPill}</td>
         <td class="muted" style="font-family:'Montserrat',monospace;">R$ ${esc(p.valorBruto||'—')}</td>
         <td class="muted" style="font-family:'Montserrat',monospace;">R$ ${esc(p.valorLiquido||'—')}</td>
         <td class="muted" style="font-family:'Montserrat',monospace;">${esc(p.comissao||'—')}%</td>
@@ -5181,7 +5268,15 @@ function renderParcerias() {
           </div>
         </td>
       </tr>`;
-    }).join('') + '</tbody></table>';
+    }).join('') + '</tbody>' +
+    '<tfoot><tr style="background:var(--surface-2);border-top:2px solid var(--border-strong);">' +
+      '<td colspan="6" style="text-align:right;font-weight:700;color:var(--text-primary);">TOTAIS</td>' +
+      `<td style="font-family:'Montserrat',monospace;font-weight:700;">${fmtParcBRL(totBruto)}</td>` +
+      `<td style="font-family:'Montserrat',monospace;font-weight:700;">${fmtParcBRL(totLiquido)}</td>` +
+      '<td></td>' +
+      `<td style="font-family:'Montserrat',monospace;font-weight:700;color:var(--teal);">${fmtParcBRL(totFinal)}</td>` +
+      '<td colspan="4"></td>' +
+    '</tr></tfoot></table>';
 }
 
 </script>
